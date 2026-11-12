@@ -13,7 +13,8 @@ The original assets (hand-drawn world map, location art, character art, lore doc
 - `npm run dev`: dev server with hot reload. "Open World Map.command" does the same with a double-click.
 - `npm run build`: builds a single self-contained HTML file into `Play/`, as both `index.html`
   (for hosting) and `World Map.html` (opens with a double-click over file://).
-- Hosting: upload the `Play/` folder to Netlify (free).
+- Hosting: Netlify builds and deploys automatically on every push to `main` (see `netlify.toml`).
+  Live site: https://cool-jelly-22cdf9.netlify.app
 - `npm run bake`: regenerates `src/data/world-grid.json` from the map PNG. This is only needed
   if the source map changes.
 - `npm run postcards`: re-renders the location pictures in `public/art/places/` (needs the dev
