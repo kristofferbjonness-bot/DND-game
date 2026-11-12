@@ -168,6 +168,15 @@ body:not(.is-ready) #app::after {
 .hud--help b { color: var(--ink); font-weight: 700; }
 .toggle { display: flex; align-items: center; gap: 6px; cursor: pointer; }
 
+/* ---------- Compass ---------- */
+
+.compass {
+  bottom: max(16px, var(--safe-b)); right: max(16px, var(--safe-r));
+  width: 48px; height: 48px; padding: 0; border-radius: 50%;
+  display: grid; place-items: center; cursor: pointer;
+}
+.compass__needle { width: 40px; height: 40px; }
+
 /* ---------- Info panel ---------- */
 
 .panel {

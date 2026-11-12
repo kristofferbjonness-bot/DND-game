@@ -12,6 +12,7 @@ import { buildLandmark } from './world/landmarks.js';
 import { LOCATIONS } from './world/locations.js';
 import { CITIES } from './city/cities.js';
 import { createTiltShiftPasses } from './fx/tiltShift.js';
+import { attachTouchGestures } from './fx/touchGestures.js';
 import './style.css';
 
 // The app shows one "view" at a time: the world map, or a city map. Each view
@@ -62,6 +63,7 @@ function makeControls(camera, { min, max }) {
   c.minPolarAngle = 0.35;
   c.maxPolarAngle = 1.15;
   c.zoomToCursor = true;
+  c.touches.TWO = null; // two-finger twist/pinch/tilt is handled in touchGestures.js
   c.enabled = false;
   c.addEventListener('start', () => { flight = null; });
   return c;
@@ -359,6 +361,28 @@ homeButton.addEventListener('click', () => {
   flyBetween(view.start.target.clone(), view.start.target.clone().add(startOffset(view)));
 });
 
+// --- Touch gestures & compass -------------------------------------------------------------------
+attachTouchGestures(labelRenderer.domElement, () => view, () => { flight = null; spin = null; });
+
+// The compass needle points north; tapping it turns the map back to north-up.
+const compass = document.getElementById('compass');
+const compassNeedle = compass.querySelector('.compass__needle');
+const azimuth = () => Math.atan2(view.camera.position.x - view.controls.target.x, view.camera.position.z - view.controls.target.z);
+let spin = null;
+compass.addEventListener('click', () => {
+  flight = null;
+  spin = { from: azimuth(), t: 0 };
+});
+function updateSpin(dt) {
+  if (!spin) return;
+  spin.t = Math.min(1, spin.t + dt / 0.6);
+  const e = 1 - (1 - spin.t) ** 3;
+  const offset = view.camera.position.clone().sub(view.controls.target);
+  offset.applyAxisAngle(new THREE.Vector3(0, 1, 0), spin.from * (1 - e) - azimuth());
+  view.camera.position.copy(view.controls.target).add(offset);
+  if (spin.t === 1) spin = null;
+}
+
 // --- Post-processing ---------------------------------------------------------------------------
 const composer = new EffectComposer(renderer);
 const renderPass = new RenderPass(views.world.scene, views.world.camera);
@@ -426,6 +450,7 @@ renderer.setAnimationLoop(() => {
   if (portraitPhone.matches) return;
   applyKeys(dt);
   updateFlight(dt);
+  updateSpin(dt);
   view.controls.update();
   clampTarget();
   view.update(dt);
@@ -435,6 +460,7 @@ renderer.setAnimationLoop(() => {
   composer.render();
   labelRenderer.render(view.scene, view.camera);
   updateLabels(dist);
+  compassNeedle.style.transform = `rotate(${azimuth()}rad)`;
 });
 
 if (import.meta.env.DEV) window.__debug = { renderer, get view() { return view; } };

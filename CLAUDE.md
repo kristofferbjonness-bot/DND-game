@@ -49,6 +49,11 @@ The original assets (hand-drawn world map, location art, character art, lore doc
   views pull the camera back on tall screens.
 - Map labels appear by zoom level and tier. Overlapping labels are hidden, with priority going to
   the higher tier.
+- Touch controls are in `src/fx/touchGestures.js`, using TouchEvents.
+  - One finger pans, through MapControls; its `touches.TWO` is turned off.
+  - Two fingers: twist rotates the map with the fingers (after a dead zone of about 10°),
+    pinch zooms, and sliding up or down tilts.
+  - The compass button (bottom right) shows north and returns the view to north-up when tapped.
 - Phones are landscape-only: held upright, they show a "turn your phone sideways" screen and stop
   rendering. iOS can't lock the orientation of a home-screen app.
 - Performance:
