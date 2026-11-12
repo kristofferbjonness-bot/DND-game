@@ -1,0 +1,7 @@
+# Netlify rebuilds the game from GitHub on every push.
+[build]
+  command = "npm run build"
+  publish = "Play"
+
+[build.environment]
+  NODE_VERSION = "22"
