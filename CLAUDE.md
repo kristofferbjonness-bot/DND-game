@@ -49,10 +49,18 @@ The original assets (hand-drawn world map, location art, character art, lore doc
   views pull the camera back on tall screens.
 - Map labels appear by zoom level and tier. Overlapping labels are hidden, with priority going to
   the higher tier.
+- Phones are landscape-only: held upright, they show a "turn your phone sideways" screen and stop
+  rendering. iOS can't lock the orientation of a home-screen app.
+- Performance:
+  - Voxels use `src/fx/bevelBox.js`, a 44-triangle bevelled box. The earlier RoundedBoxGeometry
+    took 300 triangles per voxel, and there are about 65k instances.
+  - The shadow map only updates when needed: on view switch, and every `view.shadowEvery`
+    frames on the world view because of the clouds.
+  - In dev, `window.__debug` exposes the renderer and the current view.
 
 ## Roadmap (agreed order)
 
-1. Performance and app shell.
+1. Performance and app shell. The cheap voxels and on-demand shadows are done.
    - Merge the voxels into chunked meshes with face culling, instead of one instance per cube.
    - Render on demand instead of every frame, and use lighter shadows on phones.
    - Add a home screen with tabs (World Map · Characters · later Party, Journal, DM tools),

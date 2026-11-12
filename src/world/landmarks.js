@@ -1,7 +1,7 @@
 // Small voxel towns that mark each location on the map. Each style is a
 // recipe of blocks; sizes are in world units (one map cell = 1 unit).
 import * as THREE from 'three';
-import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+import { bevelBox } from '../fx/bevelBox.js';
 
 const geoCache = new Map();
 const matCache = new Map();
@@ -9,7 +9,7 @@ const matCache = new Map();
 function block(group, [w, h, d], [x, y, z], colour, rotY = 0) {
   const key = `${w}|${h}|${d}`;
   if (!geoCache.has(key)) {
-    const g = new RoundedBoxGeometry(w, h, d, 1, Math.min(w, h, d) * 0.12);
+    const g = bevelBox(w, h, d, Math.min(w, h, d) * 0.12).clone();
     g.translate(0, h / 2, 0); // y is the block's base
     geoCache.set(key, g);
   }

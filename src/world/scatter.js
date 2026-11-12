@@ -1,6 +1,6 @@
 // Trees, pines and cacti scattered across the land, and drifting voxel clouds.
 import * as THREE from 'three';
-import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+import { bevelBox } from '../fx/bevelBox.js';
 import { grid, BIOME, idx, cellToWorld, distToSea, hash, LAYER } from './grid.js';
 
 // Chance of a plant per cell, by biome.
@@ -75,7 +75,7 @@ export function buildPlants(avoid) {
     const list = spots[kind];
     if (!list.length) continue;
     for (const [w, h, d, y, colour] of parts) {
-      const geo = new RoundedBoxGeometry(w, h, d, 1, Math.min(w, h, d) * 0.18);
+      const geo = bevelBox(w, h, d, Math.min(w, h, d) * 0.18).clone();
       geo.translate(0, y, 0);
       const mesh = new THREE.InstancedMesh(geo, mat, list.length);
       const c = new THREE.Color(colour);
@@ -100,7 +100,7 @@ export function buildClouds() {
   const mat = new THREE.MeshStandardMaterial({
     color: '#ffffff', roughness: 1, transparent: true, opacity: 0.92,
   });
-  const geo = new RoundedBoxGeometry(1, 1, 1, 2, 0.2);
+  const geo = bevelBox(1, 1, 1, 0.2);
   const clouds = [];
   for (let i = 0; i < 14; i++) {
     const cloud = new THREE.Group();

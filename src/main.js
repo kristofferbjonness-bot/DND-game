@@ -28,6 +28,9 @@ const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, TOUCH ? 1.5 : 2));
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+// The land never moves, so shadows are only recalculated when something does
+// (see `shadowEvery` on a view) instead of every frame.
+renderer.shadowMap.autoUpdate = false;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.05;
 app.appendChild(renderer.domElement);
@@ -124,6 +127,7 @@ function buildWorldView() {
     bounds: [grid.cols / 2, grid.rows / 2],
     focusDistance: (p) => ({ continent: 200, region: 70, water: 60 }[p.tier] ?? 38),
     listTiers: ['city', 'local', 'region', 'water', 'continent'],
+    shadowEvery: 4, // drifting clouds cast shadows
     update(dt) {
       clouds.userData.update(dt);
       for (const s of spinners) s.rotation.z += dt * 1.6;
@@ -190,6 +194,7 @@ function show(next, { at } = {}) {
   }
   select(null);
   flight = null;
+  renderer.shadowMap.needsUpdate = true;
   view = next;
   view.controls.enabled = true;
   renderPass.scene = view.scene;
@@ -412,17 +417,25 @@ function updateLabels(dist) {
 
 // --- Loop ------------------------------------------------------------------------------------------
 const clock = new THREE.Clock();
+let frame = 0;
+// Phones held upright show the "turn sideways" screen; nothing is drawn meanwhile.
+const portraitPhone = window.matchMedia('(orientation: portrait) and (pointer: coarse) and (max-width: 640px)');
+
 renderer.setAnimationLoop(() => {
   const dt = Math.min(clock.getDelta(), 0.05);
+  if (portraitPhone.matches) return;
   applyKeys(dt);
   updateFlight(dt);
   view.controls.update();
   clampTarget();
   view.update(dt);
+  frame++;
+  if (view.shadowEvery && frame % view.shadowEvery === 0) renderer.shadowMap.needsUpdate = true;
   const dist = view.camera.position.distanceTo(view.controls.target);
   composer.render();
   labelRenderer.render(view.scene, view.camera);
   updateLabels(dist);
 });
 
+if (import.meta.env.DEV) window.__debug = { renderer, get view() { return view; } };
 document.body.classList.add('is-ready');

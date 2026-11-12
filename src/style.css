@@ -266,3 +266,23 @@ button, summary, .label { -webkit-tap-highlight-color: transparent; touch-action
   .panel__action { position: sticky; bottom: 14px; box-shadow: 0 0 0 14px var(--parchment); }
 }
 
+
+/* ---------- Phones held upright: ask for landscape ---------- */
+
+.rotate { display: none; }
+@media (orientation: portrait) and (pointer: coarse) and (max-width: 640px) {
+  .rotate {
+    position: fixed; inset: 0; z-index: 10;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+    padding: 24px; text-align: center;
+    background: var(--parchment); color: var(--ink);
+  }
+  .hud, .panel, .labels { visibility: hidden; }
+}
+.rotate__phone { width: 88px; height: 88px; color: var(--ink); animation: turn 2.4s ease-in-out infinite; }
+.rotate__title { margin: 14px 0 0; font-family: var(--font-display); font-size: 22px; font-weight: 700; }
+.rotate__text { margin: 0; font-size: 16px; color: var(--ink-soft); }
+@keyframes turn {
+  0%, 25% { transform: rotate(0deg); }
+  55%, 100% { transform: rotate(-90deg); }
+}

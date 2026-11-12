@@ -3,7 +3,7 @@
 // Scenes paint coloured voxels into a grid; render() turns them into
 // instanced rounded blocks with the same look as the world map.
 import * as THREE from 'three';
-import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+import { bevelBox } from '../fx/bevelBox.js';
 
 export function hash(x, y, z = 0) {
   let h = (x * 374761393 + y * 668265263 + z * 1442695041) | 0;
@@ -88,7 +88,7 @@ export class Vox {
 
   render(scene) {
     const off = this.half;
-    const solidGeo = new RoundedBoxGeometry(1, 1, 1, 2, 0.1);
+    const solidGeo = bevelBox(1, 1, 1, 0.1);
     const m = new THREE.Matrix4();
     const col = new THREE.Color();
     const exposed = (map, x, y, z) =>
@@ -140,7 +140,7 @@ export class Vox {
       const mistMat = new THREE.MeshStandardMaterial({
         color: '#ffffff', transparent: true, opacity: 0.3, roughness: 1, depthWrite: false,
       });
-      build(this.mist, new RoundedBoxGeometry(1, 1, 1, 2, 0.3), mistMat,
+      build(this.mist, bevelBox(1, 1, 1, 0.3), mistMat,
         (t, c, x, y, z) => t.set(this.mistColour ?? '#eef1f4').multiplyScalar(0.95 + hash(x, y, z) * 0.05), false);
     }
   }

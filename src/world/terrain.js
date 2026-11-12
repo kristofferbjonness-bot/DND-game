@@ -1,7 +1,7 @@
 // Builds the voxel terrain: one rounded block per visible layer of each land
 // column, one flat block per sea cell, a water surface and a distant ocean floor.
 import * as THREE from 'three';
-import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+import { bevelBox } from '../fx/bevelBox.js';
 import {
   grid, LAYER, WATER_LEVEL, BIOME, idx, heightAt, cellToWorld, distToSea, hash,
 } from './grid.js';
@@ -72,7 +72,7 @@ export function buildTerrain() {
   const col = new THREE.Color();
 
   // Land: softly rounded blocks.
-  const landGeo = new RoundedBoxGeometry(1, LAYER, 1, 2, 0.05);
+  const landGeo = bevelBox(1, LAYER, 1, 0.05);
   const landMat = new THREE.MeshStandardMaterial({ roughness: 0.9, metalness: 0 });
   const land = new THREE.InstancedMesh(landGeo, landMat, landBlocks.length);
   landBlocks.forEach(([k, x, z, layer, h], i) => {
