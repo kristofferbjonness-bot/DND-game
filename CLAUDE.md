@@ -41,6 +41,23 @@ The original assets (hand-drawn world map, location art, character art, lore doc
   - `bake-map.mjs`: map bake.
   - `postcards/`: headless-Chrome diorama renders for the location images.
 
+## Screens
+
+- The top nav has three screens: **Map · Status · Party**. The map only renders while it is showing.
+- **Status** (`src/status/`) has the character sheet on the left and a 3D figure on the right.
+  - The sheet is a trimmed-down 5e sheet: level, XP, HP, AC, initiative, speed, proficiency and
+    the six abilities, plus tabs for Combat, Skills, Gear, Features and Story.
+  - Character data is in `src/data/characters.js` and stores only the basics. The 5e maths
+    (modifiers, saves, skills, attacks, XP levels) is in `src/character/rules.js`.
+  - Rikart's numbers are PLACEHOLDERS until the real sheets are filled in.
+- Character figures are in `src/character/model.js`, styled after the game Erosion: tall and
+  slender low-detail voxels with no faces, in soft pastel light.
+  - Each figure is built from moving parts (legs, body, cloak, head, arms, weapon) for an idle
+    animation.
+  - The stage (`src/status/viewer.js`) has its own small renderer: a round plinth, and drag to
+    turn the figure.
+- **Party** is a placeholder list for now.
+
 ## Decisions so far
 
 - Tech stack: a web app built with Vite and three.js. No App Store; it's installed by adding it

@@ -13,6 +13,8 @@ import { LOCATIONS } from './world/locations.js';
 import { CITIES } from './city/cities.js';
 import { createTiltShiftPasses } from './fx/tiltShift.js';
 import { attachTouchGestures } from './fx/touchGestures.js';
+import { createStatusScreen } from './status/statusScreen.js';
+import { CHARACTERS, PARTY } from './data/characters.js';
 import './style.css';
 
 // The app shows one "view" at a time: the world map, or a city map. Each view
@@ -439,6 +441,45 @@ function updateLabels(dist) {
   for (const p of view.places) p.label.classList.toggle('is-hidden', !shown.has(p));
 }
 
+// --- Screens: Map · Status · Party -------------------------------------------------------------
+// The map only renders while its screen is showing; the others are plain pages
+// (Status has its own small 3D stage for the character figure).
+let screen = 'map';
+let statusScreen = null;
+const screens = { status: document.getElementById('status'), party: document.getElementById('party') };
+
+function renderParty() {
+  screens.party.innerHTML = `
+    <div class="party__inner">
+      <h2 class="party__title">The Party</h2>
+      <ul class="party__list">
+        ${PARTY.map((p) => `<li class="party__card"><b>${p.name}</b><span>${p.line}</span></li>`).join('')}
+      </ul>
+      <p class="party__note">Party sheets are coming soon.</p>
+    </div>`;
+}
+
+function showScreen(id) {
+  if (id === screen) return;
+  screen = id;
+  document.querySelectorAll('.topnav__tab').forEach((b) => b.classList.toggle('is-active', b.dataset.screen === id));
+  document.body.dataset.screen = id;
+  for (const [key, el] of Object.entries(screens)) el.hidden = key !== id;
+  if (id === 'status') {
+    statusScreen ??= createStatusScreen(screens.status, CHARACTERS[0]);
+    statusScreen.start();
+  } else {
+    statusScreen?.stop();
+  }
+  if (id === 'party' && !screens.party.innerHTML) renderParty();
+  if (id === 'map') clock.getDelta(); // no time jump after being away
+}
+document.querySelector('.topnav').addEventListener('click', (e) => {
+  const btn = e.target.closest('.topnav__tab');
+  if (btn) showScreen(btn.dataset.screen);
+});
+document.body.dataset.screen = 'map';
+
 // --- Loop ------------------------------------------------------------------------------------------
 const clock = new THREE.Clock();
 let frame = 0;
@@ -447,7 +488,7 @@ const portraitPhone = window.matchMedia('(orientation: portrait) and (pointer: c
 
 renderer.setAnimationLoop(() => {
   const dt = Math.min(clock.getDelta(), 0.05);
-  if (portraitPhone.matches) return;
+  if (portraitPhone.matches || screen !== 'map') return;
   applyKeys(dt);
   updateFlight(dt);
   updateSpin(dt);
