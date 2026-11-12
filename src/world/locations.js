@@ -1,0 +1,156 @@
+// Every named place on the world map.
+// `px` is the position in pixels on the source map (assets/source/world-map.png),
+// so new places can be added by reading coordinates straight off the drawing.
+//
+// tier: 'continent' | 'city' | 'local' | 'region' | 'water' | 'unnamed'
+//   continent - huge faint names, visible when zoomed out
+//   city      - main settlements, always visible
+//   local     - smaller places, appear when zoomed in
+//   region    - mountains / areas, no building
+//   water     - seas and straits, no building
+//   unnamed   - dots on the map without a name yet
+//
+// style picks the little voxel town that marks the place (see landmarks.js).
+// Only write what players are allowed to know: this text is shown in the game.
+
+export const LOCATIONS = [
+  {
+    id: 'lama',
+    name: 'Lama',
+    tier: 'continent',
+    px: [436, 420],
+    subtitle: 'The western continent',
+    text: 'One half of the sundered world. When the Twin-Born struck their final blow, the land split and the sea poured into the wound between Lama and Rama.',
+    image: 'art/places/lama.jpg',
+  },
+  {
+    id: 'rama',
+    name: 'Rama',
+    tier: 'continent',
+    px: [870, 493],
+    subtitle: 'The eastern continent',
+    text: 'A vast land of cold northern peaks, temperate midlands, a great desert and tropical southern coasts.',
+    image: 'art/places/rama.jpg',
+  },
+  {
+    id: 'razz',
+    name: 'Razz of Mataz',
+    tier: 'city',
+    style: 'razz',
+    cityMap: 'razz',
+    px: [497, 582],
+    subtitle: 'Rama · southern coast',
+    text: 'A hot maze-city of bowed stone. The streets are tight and every road somehow leads back to the central plaza. Only the local guides can lead you out, for a fee. The underground answers to the Man Who Makes Himself Known.',
+    image: 'art/places/razz.jpg',
+  },
+  {
+    id: 'tine',
+    name: 'The Empire of Tine',
+    tier: 'city',
+    style: 'castle',
+    px: [562, 368],
+    subtitle: 'Rama · north of the Strait',
+    text: 'A grand medieval monarchy ruled by Torgrim the Glaced, the young lord Flame Slinger once saved. Rumours speak of civil war and usurpation.',
+    image: 'art/places/tine.jpg',
+  },
+  {
+    id: 'bartedalen',
+    name: 'Bartedalen',
+    tier: 'city',
+    style: 'nordic',
+    px: [834, 401],
+    subtitle: 'Rama · northern mountains',
+    text: 'A windswept seafaring democracy. You earn the vote by growing your first proper mustache, and the bigger the mustache, the higher your standing. They export salt, metal and wind-dried fish, and worship the Great Tusked One. An election is approaching.',
+    image: 'art/places/bartedalen.jpg',
+  },
+  {
+    id: 'kolaveri',
+    name: 'Kolaveri Di',
+    tier: 'city',
+    style: 'village',
+    px: [693, 665],
+    subtitle: 'Rama · southern coast',
+    text: '',
+    image: 'art/places/kolaveri.jpg',
+  },
+  {
+    id: 'hrimnir',
+    name: 'Hrimnir',
+    tier: 'city',
+    style: 'pagoda',
+    px: [985, 727],
+    subtitle: 'Rama · south-east',
+    text: 'Where Rikart Hagenstorm trained under his master Levi Itadori, before Sukuna Matamoto and the Grey Hand killed him.',
+    image: 'art/places/hrimnir.jpg',
+  },
+  {
+    id: 'ferran',
+    name: 'Fjellene av Ferran',
+    tier: 'region',
+    px: [411, 318],
+    subtitle: 'Lama · mountains',
+    text: 'Home of Edbart Frostvarg, who rescued the wolf Varg from poachers. Together they now hunt those poachers down.',
+    image: 'art/places/ferran.jpg',
+  },
+  {
+    id: 'ytterhavn',
+    name: 'Ytterhavn',
+    tier: 'local',
+    style: 'harbour',
+    px: [481, 548],
+    subtitle: 'Rama · north of Razz',
+    text: 'A bustling shipping town grown rich on trade, with great ports.',
+    image: 'art/places/ytterhavn.jpg',
+  },
+  {
+    id: 'sirivik',
+    name: 'Sirivik',
+    tier: 'local',
+    style: 'sirivik',
+    px: [488, 496],
+    subtitle: 'Rama · cliffs above Siri’s Gap',
+    text: 'A gloomy, fog-bound town on smooth black obsidian cliffs high above the water. Lifts lower ships down to the sea. Thieves hang from the cliff walls for the crows, and every inhabitant is missing a body part.',
+    image: 'art/places/sirivik.jpg',
+  },
+  {
+    id: 'ikeheim',
+    name: 'Ikeheim',
+    tier: 'local',
+    style: 'castle-small',
+    px: [539, 430],
+    subtitle: 'Rama · on the road to Tine',
+    text: '',
+    image: 'art/places/ikeheim.jpg',
+  },
+  {
+    id: 'sortland',
+    name: 'Sortland',
+    tier: 'region',
+    px: [595, 492],
+    subtitle: 'Rama · dark mountains',
+    text: 'Dark mountains along the Sortland river. The higher up the river you go, the darker the water becomes.',
+    image: 'art/places/sortland.jpg',
+  },
+  {
+    id: 'skinder',
+    name: 'Strait of Skinder',
+    tier: 'water',
+    px: [512, 452],
+    subtitle: 'Between Lama and Rama',
+    text: 'An important trade route with a high toll to enter. Spice from the south passes through on its way to the Empire. Its shores are 100-metre cliffs of obsidian.',
+    image: 'art/places/skinder.jpg',
+  },
+  {
+    id: 'siris-gap',
+    name: 'Siri’s Gap',
+    tier: 'water',
+    px: [478, 527],
+    subtitle: 'Below Sirivik',
+    text: '',
+    image: 'art/places/siris-gap.jpg',
+  },
+  { id: 'unnamed-1', name: '?', tier: 'unnamed', style: 'village', px: [242, 508] },
+  { id: 'unnamed-2', name: '?', tier: 'unnamed', style: 'village', px: [233, 590] },
+  { id: 'unnamed-3', name: '?', tier: 'unnamed', style: 'village', px: [425, 501] },
+  { id: 'unnamed-4', name: '?', tier: 'unnamed', style: 'village', px: [488, 440] },
+];

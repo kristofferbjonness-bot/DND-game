@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+    <meta name="theme-color" content="#cfe9f0" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="World Map" />
+    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <title>World Map</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 16 16%27%3E%3Crect x=%272%27 y=%276%27 width=%2712%27 height=%278%27 fill=%27%2386c95c%27/%3E%3Crect x=%275%27 y=%272%27 width=%276%27 height=%274%27 fill=%27%23eef4f8%27/%3E%3C/svg%3E" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Alegreya+Sans:ital,wght@0,400;0,500;0,700;1,400&display=swap" rel="stylesheet" />
+  </head>
+  <body>
+    <div id="app"></div>
+
+    <header class="hud hud--title">
+      <h1>World Map</h1>
+      <button id="home" type="button" class="hud__button">Whole world</button>
+    </header>
+
+    <nav class="hud hud--places" aria-label="Places">
+      <details>
+        <summary>Places</summary>
+        <ul id="places"></ul>
+      </details>
+    </nav>
+
+    <aside id="panel" class="panel" hidden>
+      <button type="button" class="panel__close" aria-label="Close">×</button>
+      <img class="panel__image" hidden />
+      <div class="panel__body">
+        <p class="panel__subtitle"></p>
+        <h2 class="panel__title"></h2>
+        <p class="panel__text"></p>
+        <button type="button" class="panel__action" hidden>Explore the city →</button>
+      </div>
+    </aside>
+
+    <footer class="hud hud--help">
+      <span class="for-mouse"><b>Drag</b> move</span>
+      <span class="for-mouse"><b>Right-drag</b> rotate</span>
+      <span class="for-mouse"><b>Scroll</b> zoom</span>
+      <span class="for-mouse"><b>WASD / Q E</b> keys</span>
+      <span class="for-touch"><b>Drag</b> move</span>
+      <span class="for-touch"><b>Pinch</b> zoom</span>
+      <span class="for-touch"><b>Two-finger twist</b> rotate</span>
+      <label class="toggle"><input id="tilt" type="checkbox" checked /> Miniature blur</label>
+    </footer>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
