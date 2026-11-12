@@ -7,10 +7,9 @@ import { MODELS } from '../character/model.js';
 
 const TOUCH = window.matchMedia('(pointer: coarse)').matches;
 
-function plinth() {
+function plinth(r = 6) {
   const group = new THREE.Group();
   const cells = [];
-  const r = 6;
   for (let x = -r; x <= r; x++) for (let z = -r; z <= r; z++) {
     const d = Math.hypot(x, z);
     if (d > r + 0.3) continue;
@@ -54,15 +53,17 @@ export function createCharacterViewer(container) {
   rim.position.set(20, 18, -24);
   scene.add(rim);
 
-  scene.add(plinth());
   const turntable = new THREE.Group();
   scene.add(turntable);
-  let figure = null;
+  let figure = null, stage = null;
 
   function show(modelId) {
-    if (figure) turntable.remove(figure.group);
+    turntable.clear();
     figure = MODELS[modelId]?.() ?? null;
+    stage = plinth(figure?.stage ?? 6);
+    turntable.add(stage);
     if (figure) turntable.add(figure.group);
+    resize();
   }
 
   function resize() {
@@ -71,8 +72,8 @@ export function createCharacterViewer(container) {
     renderer.setSize(w, h);
     camera.aspect = w / h;
     // Keep the whole figure in frame whatever the shape of the stage.
-    const fit = Math.max(1, 0.75 / camera.aspect);
-    camera.position.set(0, 30, 60 * fit);
+    const fit = Math.max(1, 0.75 / camera.aspect) * (figure?.zoom ?? 1);
+    camera.position.set(0, 30 * fit, 60 * fit);
     camera.lookAt(0, 10, 0);
     camera.updateProjectionMatrix();
   }

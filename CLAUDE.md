@@ -44,19 +44,31 @@ The original assets (hand-drawn world map, location art, character art, lore doc
 ## Screens
 
 - The top nav has three screens: **Map · Status · Party**. The map only renders while it is showing.
-- **Status** (`src/status/`) has the character sheet on the left and a 3D figure on the right.
+- **Status** (`src/status/statusScreen.js`) has the character sheet on the left and a 3D figure
+  on the right, with ‹ › arrows to switch hero.
   - The sheet is a trimmed-down 5e sheet: level, XP, HP, AC, initiative, speed, proficiency and
-    the six abilities, plus tabs for Combat, Skills, Gear, Features and Story.
-  - Character data is in `src/data/characters.js` and stores only the basics. The 5e maths
-    (modifiers, saves, skills, attacks, XP levels) is in `src/character/rules.js`.
-  - Rikart's numbers are PLACEHOLDERS until the real sheets are filled in.
+    the six abilities, plus tabs for Combat (attacks and features), Skills (saves and skills),
+    Gear and Story.
+  - Design rule: keep it calm. Use one card, plain rows with thin dividers, and no boxes inside
+    boxes.
+- Character data is in `src/data/characters.js` and stores only the basics. The 5e maths
+  (modifiers, saves, skills with expertise, attacks, XP levels) is in `src/character/rules.js`.
+  - Heroes: Rikart Hagenstorm (Fighter), Flame Slinger (Rogue) and Edbart Frostvarg (Ranger).
+  - Every stat, and the classes of Flame Slinger and Edbart, is a PLACEHOLDER until the owner
+    gives the real sheets.
 - Character figures are in `src/character/model.js`, styled after the game Erosion: tall and
   slender low-detail voxels with no faces, in soft pastel light.
-  - Each figure is built from moving parts (legs, body, cloak, head, arms, weapon) for an idle
-    animation.
-  - The stage (`src/status/viewer.js`) has its own small renderer: a round plinth, and drag to
-    turn the figure.
-- **Party** is a placeholder list for now.
+  - Every hero shares one build and one idle animation (`assemble`).
+  - Varg the wolf stands beside Edbart.
+  - The stage (`src/status/viewer.js`) has its own small renderer, a round plinth sized per
+    figure, and drag to turn.
+- **Party** (`src/status/partyScreen.js`) shows a card per hero with HP, AC, initiative and
+  passive perception. Tapping a card opens that hero on Status.
+- Map HUD is kept minimal:
+  - Top left: a "‹ World" back button (in cities) and the Places menu, titled with the current
+    map.
+  - Bottom right: show-whole-map and compass.
+  - Bottom left: "?" opens the controls help and the miniature-blur setting.
 
 ## Decisions so far
 

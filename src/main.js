@@ -14,7 +14,8 @@ import { CITIES } from './city/cities.js';
 import { createTiltShiftPasses } from './fx/tiltShift.js';
 import { attachTouchGestures } from './fx/touchGestures.js';
 import { createStatusScreen } from './status/statusScreen.js';
-import { CHARACTERS, PARTY } from './data/characters.js';
+import { renderParty } from './status/partyScreen.js';
+import { CHARACTERS } from './data/characters.js';
 import './style.css';
 
 // The app shows one "view" at a time: the world map, or a city map. Each view
@@ -124,7 +125,6 @@ function buildWorldView() {
   const view = {
     id: 'world',
     title: 'World Map',
-    homeLabel: 'Whole world',
     scene, camera, places,
     controls: makeControls(camera, { min: 18, max: 240 }),
     start: { target: new THREE.Vector3(0, 0, 8), offset: new THREE.Vector3(0, 175, 120) },
@@ -173,7 +173,6 @@ function buildCityView(id) {
   const view = {
     id,
     title: def.name,
-    homeLabel: 'Back to world map',
     scene, camera, places,
     controls: makeControls(camera, { min: 14, max: 240 }),
     start: { target: new THREE.Vector3(4, 6, 4), offset: new THREE.Vector3(70, 105, 95) },
@@ -203,8 +202,9 @@ function show(next, { at } = {}) {
   view.controls.enabled = true;
   renderPass.scene = view.scene;
   renderPass.camera = view.camera;
-  document.querySelector('.hud--title h1').textContent = view.title;
-  homeButton.textContent = view.homeLabel;
+  viewTitle.textContent = view.title;
+  backButton.hidden = view.id === 'world';
+  placesMenu.open = false;
   buildPlacesList();
   resize();
   if (at) {
@@ -342,6 +342,9 @@ function select(p) {
 // --- HUD ---------------------------------------------------------------------------------------
 const list = document.getElementById('places');
 const homeButton = document.getElementById('home');
+const backButton = document.getElementById('back');
+const viewTitle = document.getElementById('view-title');
+const placesMenu = document.querySelector('.hud--places details');
 function buildPlacesList() {
   list.replaceChildren();
   for (const tier of view.listTiers) {
@@ -351,14 +354,14 @@ function buildPlacesList() {
       b.type = 'button';
       b.textContent = p.name;
       b.className = `places__item places__item--${tier}`;
-      b.addEventListener('click', () => select(p));
+      b.addEventListener('click', () => { placesMenu.open = false; select(p); });
       li.appendChild(b);
       list.appendChild(li);
     }
   }
 }
+backButton.addEventListener('click', () => backToWorld());
 homeButton.addEventListener('click', () => {
-  if (view.id !== 'world') { backToWorld(); return; }
   select(null);
   flyBetween(view.start.target.clone(), view.start.target.clone().add(startOffset(view)));
 });
@@ -392,6 +395,13 @@ composer.addPass(renderPass);
 const tilt = createTiltShiftPasses();
 tilt.passes.forEach((p) => composer.addPass(p));
 composer.addPass(new OutputPass());
+
+const helpToggle = document.getElementById('help-toggle');
+const help = document.getElementById('help');
+helpToggle.addEventListener('click', () => {
+  help.hidden = !help.hidden;
+  helpToggle.setAttribute('aria-expanded', String(!help.hidden));
+});
 
 const tiltToggle = document.getElementById('tilt');
 if (TOUCH) tiltToggle.checked = false;
@@ -448,17 +458,6 @@ let screen = 'map';
 let statusScreen = null;
 const screens = { status: document.getElementById('status'), party: document.getElementById('party') };
 
-function renderParty() {
-  screens.party.innerHTML = `
-    <div class="party__inner">
-      <h2 class="party__title">The Party</h2>
-      <ul class="party__list">
-        ${PARTY.map((p) => `<li class="party__card"><b>${p.name}</b><span>${p.line}</span></li>`).join('')}
-      </ul>
-      <p class="party__note">Party sheets are coming soon.</p>
-    </div>`;
-}
-
 function showScreen(id) {
   if (id === screen) return;
   screen = id;
@@ -466,12 +465,17 @@ function showScreen(id) {
   document.body.dataset.screen = id;
   for (const [key, el] of Object.entries(screens)) el.hidden = key !== id;
   if (id === 'status') {
-    statusScreen ??= createStatusScreen(screens.status, CHARACTERS[0]);
+    statusScreen ??= createStatusScreen(screens.status, CHARACTERS);
     statusScreen.start();
   } else {
     statusScreen?.stop();
   }
-  if (id === 'party' && !screens.party.innerHTML) renderParty();
+  if (id === 'party' && !screens.party.innerHTML) {
+    renderParty(screens.party, CHARACTERS, (characterId) => {
+      showScreen('status');
+      statusScreen.showCharacter(characterId);
+    });
+  }
   if (id === 'map') clock.getDelta(); // no time jump after being away
 }
 document.querySelector('.topnav').addEventListener('click', (e) => {

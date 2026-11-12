@@ -28,17 +28,15 @@
     <main id="status" class="screen status" hidden></main>
     <main id="party" class="screen party" hidden></main>
 
-    <header class="hud hud--title">
-      <h1>World Map</h1>
-      <button id="home" type="button" class="hud__button">Whole world</button>
-    </header>
-
-    <nav class="hud hud--places" aria-label="Places">
-      <details>
-        <summary>Places</summary>
-        <ul id="places"></ul>
-      </details>
-    </nav>
+    <div class="hud-corner">
+      <button id="back" type="button" class="hud chip" hidden>‹ World</button>
+      <nav class="hud hud--places" aria-label="Places">
+        <details>
+          <summary id="view-title">World Map</summary>
+          <ul id="places"></ul>
+        </details>
+      </nav>
+    </div>
 
     <aside id="panel" class="panel" hidden>
       <button type="button" class="panel__close" aria-label="Close">×</button>
@@ -51,25 +49,29 @@
       </div>
     </aside>
 
-    <button id="compass" type="button" class="hud compass" aria-label="Turn the map north-up" title="North up">
-      <svg class="compass__needle" viewBox="0 0 40 40" aria-hidden="true">
-        <path d="M20 5 L26 20 L14 20 Z" fill="#9a3b3b" />
-        <path d="M20 35 L26 20 L14 20 Z" fill="#d9c7a0" />
-        <text x="20" y="4.5" text-anchor="middle" font-size="7" font-weight="700" fill="#3b2f22" dominant-baseline="hanging">N</text>
-      </svg>
-    </button>
+    <div class="hud-stack">
+      <button id="home" type="button" class="hud round" aria-label="Show the whole map" title="Show the whole map">
+        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" />
+        </svg>
+      </button>
+      <button id="compass" type="button" class="hud round compass" aria-label="Turn the map north-up" title="North up">
+        <svg class="compass__needle" viewBox="0 0 40 40" aria-hidden="true">
+          <path d="M20 5 L26 20 L14 20 Z" fill="#9a3b3b" />
+          <path d="M20 35 L26 20 L14 20 Z" fill="#d9c7a0" />
+          <text x="20" y="4.5" text-anchor="middle" font-size="7" font-weight="700" fill="#3b2f22" dominant-baseline="hanging">N</text>
+        </svg>
+      </button>
+    </div>
 
-    <footer class="hud hud--help">
-      <span class="for-mouse"><b>Drag</b> move</span>
-      <span class="for-mouse"><b>Right-drag</b> rotate</span>
-      <span class="for-mouse"><b>Scroll</b> zoom</span>
-      <span class="for-mouse"><b>WASD / Q E</b> keys</span>
-      <span class="for-touch"><b>Drag</b> move</span>
-      <span class="for-touch"><b>Pinch</b> zoom</span>
-      <span class="for-touch"><b>Twist</b> rotate</span>
-      <span class="for-touch"><b>Two fingers up/down</b> tilt</span>
+    <button id="help-toggle" type="button" class="hud round" aria-label="Controls and settings" aria-expanded="false">?</button>
+    <div id="help" class="hud help" hidden>
+      <span class="for-mouse"><b>Drag</b> move · <b>Right-drag</b> rotate · <b>Scroll</b> zoom</span>
+      <span class="for-mouse"><b>WASD</b> move · <b>Q E</b> rotate</span>
+      <span class="for-touch"><b>Drag</b> move · <b>Pinch</b> zoom</span>
+      <span class="for-touch"><b>Twist</b> rotate · <b>Two fingers up/down</b> tilt</span>
       <label class="toggle"><input id="tilt" type="checkbox" checked /> Miniature blur</label>
-    </footer>
+    </div>
 
     <div class="rotate" aria-live="polite">
       <svg class="rotate__phone" viewBox="0 0 64 64" aria-hidden="true">

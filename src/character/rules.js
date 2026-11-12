@@ -45,12 +45,13 @@ export function derive(c) {
   const mod = (ability) => modifier(c.abilities[ability]);
   const skill = (id) => {
     const s = SKILLS.find((k) => k.id === id);
-    return mod(s.ability) + (c.skills.includes(id) ? prof : 0);
+    // Expertise doubles the proficiency bonus.
+    return mod(s.ability) + (c.skills.includes(id) ? prof : 0) + (c.expertise?.includes(id) ? prof : 0);
   };
   const attack = (a) => {
     const m = a.finesse ? Math.max(mod('str'), mod('dex')) : mod(a.ability);
     return {
-      toHit: m + prof,
+      toHit: m + prof + (a.toHitBonus ?? 0),
       damage: `${a.dice}${m + (a.damageBonus ?? 0) ? ` ${signed(m + (a.damageBonus ?? 0)).replace(/^([+−])/, '$1 ')}` : ''}`,
     };
   };
