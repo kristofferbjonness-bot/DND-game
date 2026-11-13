@@ -15,6 +15,12 @@ The original assets (hand-drawn world map, location art, character art, lore doc
   (for hosting) and `World Map.html` (opens with a double-click over file://).
 - Hosting: Netlify builds and deploys automatically on every push to `main` (see `netlify.toml`).
   Live site: https://cool-jelly-22cdf9.netlify.app
+- **Deploy only when the owner asks.** Every push to `main` uses one of a limited number of
+  Netlify deploys. Commit locally while working, test on the dev server, and push only when
+  the owner says "deploy".
+  - To test on an iPhone, run the dev server with `--host`; the phone opens the Mac's IP on the
+    same Wi-Fi.
+  - The Claude generators (edge function) only run on the live site.
 - `npm run bake`: regenerates `src/data/world-grid.json` from the map PNG. This is only needed
   if the source map changes.
 - `npm run postcards`: re-renders the location pictures in `public/art/places/` (needs the dev
