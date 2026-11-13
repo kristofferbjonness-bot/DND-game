@@ -227,6 +227,13 @@ export function maxHp(cls, race, level, con) {
   return perLevel(die) + (level - 1) * perLevel(die / 2 + 1);
 }
 
+// A feature ready for a sheet: uses that depend on Charisma are worked out.
+export function featureFor(f, abilities) {
+  const cha = modifier(abilities.cha);
+  const resolve = (max) => (max === 'cha' ? cha : max === 'cha+1' ? 1 + cha : max);
+  return { ...f, ...(f.uses ? { uses: { ...f.uses, max: Math.max(1, resolve(f.uses.max)) } } : {}) };
+}
+
 const slug = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 24) || 'hero';
 
 // Turns the creator's choices into a character sheet.
@@ -236,10 +243,7 @@ export function buildCharacter(c, look) {
   const cls = CLASSES[c.cls], race = RACES[c.race];
   const abilities = finalScores(c.base, c.race);
   const mod = (id) => modifier(abilities[id]);
-  const resolve = (max) => (max === 'cha' ? Math.max(1, mod('cha')) : max === 'cha+1' ? 1 + mod('cha') : max);
-  const features = [...cls.features.slice(0, c.level).flat(), ...race.features].map((f) => ({
-    ...f, ...(f.uses ? { uses: { ...f.uses, max: Math.max(1, resolve(f.uses.max)) } } : {}),
-  }));
+  const features = [...cls.features.slice(0, c.level).flat(), ...race.features].map((f) => featureFor(f, abilities));
   if (c.style) features.unshift({ name: `Fighting Style: ${STYLES[c.style].name}`, text: STYLES[c.style].text });
   if (cls.expertise) features.push({ name: 'Expertise', text: `Double proficiency in ${c.expertise.map((id) => id.replace(/-/g, ' ')).join(' and ')}.` });
   const hp = maxHp(c.cls, c.race, c.level, abilities.con);

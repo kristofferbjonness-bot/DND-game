@@ -4,6 +4,7 @@ import { ABILITIES, SKILLS, derive, signed } from '../character/rules.js';
 import { createCharacterViewer } from './viewer.js';
 import { ITEMS } from '../data/items.js';
 import { SLOTS, optionsFor, equip } from '../character/equipment.js';
+import { itemInfo } from '../character/progress.js';
 
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
 
@@ -70,7 +71,7 @@ function sheet(c, tab, editable, dm) {
     </div>
     <h3 class="sheet__h">Inventory</h3>
     ${list(c.items.map((i) => {
-      const it = ITEMS[i.id];
+      const it = itemInfo(i);
       const note = [describe(it), i.note ?? it.note].filter(Boolean).join(' · ');
       const side = equippedIds.has(i.id) ? '<span class="list__tag list__tag--on">Equipped</span>' : `<span class="list__qty">×${i.qty ?? 1}</span>`;
       return item(esc(it.name), esc(note), side);

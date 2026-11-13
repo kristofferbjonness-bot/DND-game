@@ -23,6 +23,8 @@ import { registerRecipe } from './character/model.js';
 import { CHARACTERS as STARTING_HEROES } from './data/characters.js';
 import { createStartScreen } from './start/startScreen.js';
 import { createCreatorScreen } from './creator/creatorScreen.js';
+import { createHeroManager } from './status/heroManager.js';
+import { shortRest, longRest, readyToLevel } from './character/progress.js';
 import { supabase, myProfile, loadCharacters, seedCharacters, saveCharacter, deleteCharacter, watchCharacters, signOut, explain, encounterChannel, loadMonsters, watchMonsters } from './net/backend.js';
 import './style.css';
 
@@ -522,7 +524,33 @@ const startScreen = createStartScreen(document.getElementById('start'), { onLogg
 
 function drawParty() {
   const open = (id) => { showScreen('status'); statusScreen.showCharacter(id); };
-  renderParty(screens.party, party, open, { onNew: me?.dm && !viewAs ? () => creator.open() : null });
+  const dm = me?.dm && !viewAs;
+  renderParty(screens.party, party, open, dm ? { onNew: () => creator.open(), onManage: (id) => manager.open(id), onEveryone: everyone } : {});
+}
+
+// The Dungeon Master's tools for heroes (Party → Manage).
+const manager = createHeroManager(document.getElementById('manage'), {
+  party,
+  onSave(c) { saveHero(c); heroChanged(c.id); },
+});
+function everyone(what, amount) {
+  for (const c of party) {
+    if (what === 'short') shortRest(c);
+    else if (what === 'long') longRest(c);
+    else c.xp += amount;
+    saveHero(c);
+    heroChanged(c.id);
+  }
+  const ready = party.filter(readyToLevel).map((c) => c.name);
+  toast(what === 'xp' ? `Everyone gained ${amount} XP.${ready.length ? ` Ready to level up: ${ready.join(', ')}.` : ''}`
+    : `The party took a ${what} rest.`);
+}
+// Redraws whatever shows a hero after a change made here.
+function heroChanged(id) {
+  statusScreen.refresh(id);
+  combatScreen.refresh();
+  combatView.refresh();
+  if (screen === 'party') drawParty();
 }
 
 const saveHero = (c) => saveCharacter(c).catch((err) => toast(`Could not save: ${explain(err)}`));
@@ -609,12 +637,26 @@ function applyRow(row) {
     if (viewAs === row.id) previewAs(null);
   } else {
     owners.set(row.id, row.owner);
+    if (me && !me.dm && me.heroId === row.id && i >= 0) tellPlayer(party[i], row.data);
     if (i >= 0) party[i] = row.data; else party.push(row.data);
   }
-  statusScreen.refresh(row.id);
-  combatScreen.refresh();
-  combatView.refresh();
-  if (screen === 'party') drawParty();
+  manager.refresh(row.id);
+  heroChanged(row.id);
+}
+
+// Tells a player what the Dungeon Master just did to their hero.
+function tellPlayer(before, after) {
+  const news = [];
+  if (after.level > before.level) news.push(`You reached level ${after.level}!`);
+  else if (after.xp > before.xp) news.push(`You gained ${after.xp - before.xp} XP.`);
+  const hp = after.hp.current - before.hp.current;
+  if (hp > 0 && after.level === before.level) news.push(`You regained ${hp} HP.`);
+  if (hp < 0) news.push(`You took ${-hp} damage.`);
+  const count = (c) => c.items.reduce((n, i) => n + (i.qty ?? 1), 0);
+  if (count(after) > count(before)) news.push('You received an item. Check your Gear.');
+  const gold = (c) => (c.coins.pp ?? 0) * 10 + (c.coins.gp ?? 0) + (c.coins.sp ?? 0) / 10 + (c.coins.cp ?? 0) / 100;
+  if (gold(after) > gold(before)) news.push('You received coins.');
+  if (news.length) toast(news.join(' '));
 }
 
 // Decides where a logged-in person goes. Called on start-up and after logging in.

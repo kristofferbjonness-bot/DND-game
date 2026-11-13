@@ -179,6 +179,17 @@ The original assets (hand-drawn world map, location art, character art, lore doc
   - The DM can delete a hero from the Story tab on Status.
 - **Party** (`src/status/partyScreen.js`) shows a card per hero with HP, AC, initiative and
   passive perception. Tapping a card opens that hero on Status.
+  - DM tools (hidden while previewing as a player):
+    - A "Manage" button per hero opens `src/status/heroManager.js`, with heal, damage, temp HP,
+      short and long rest, give XP, level up, give an item (from the catalogue, or "Something
+      new…" as a custom gear row `{ id: 'custom-…', name, note }`), give or take coins, and take
+      items away.
+    - An "Everyone" row does party-wide short or long rests and XP.
+    - The rules are in `src/character/progress.js`. Level up adds the average hit die + Con to
+      max HP, one hit die, and class features for the new level when `CLASSES` has them (only
+      levels 1–2 so far). It does no ability score improvements or subclasses yet.
+    - Every change is saved at once. Players get a toast for XP, levels, HP, items and coins
+      (`tellPlayer` in main.js).
 - Map HUD is kept minimal:
   - Top left: a "‹ World" back button (in cities) and the Places menu, titled with the current
     map.
