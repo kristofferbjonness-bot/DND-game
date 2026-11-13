@@ -529,5 +529,97 @@ function buildHooknose() {
 
 const MONSTER_LOOKS = { hooknose: buildHooknose };
 
+// --- Recipe figures (made by the monster generator) ----------------------------------------------
+// A recipe describes a figure as parts made of coloured boxes:
+//   palette: { key: '#hex' }
+//   parts:   [{ name, pivot: [x,y,z], motion, phase, boxes: [[x0,y0,z0, x1,y1,z1, key], …], glow: [key] }]
+// Boxes are inclusive voxel ranges; the figure stands on y = 0 and faces +z.
+// `motion` animates the part around its pivot (see MOTIONS). Recipes come from
+// Claude, so everything is checked and clamped in sanitizeRecipe first.
+const MOTIONS = {
+  none: () => {},
+  breathe: (g, t, p) => { g.position.y = g.userData.y + Math.sin(t * 1.8 + p) * 0.12; },
+  bob: (g, t, p) => { g.position.y = g.userData.y + Math.abs(Math.sin(t * 2.6 + p)) * 0.3; },
+  sway: (g, t, p) => { g.rotation.y = Math.sin(t * 0.6 + p) * 0.3; },
+  swing: (g, t, p) => { g.rotation.x = Math.sin(t * 1.4 + p) * 0.2; },
+  wag: (g, t, p) => { g.rotation.y = Math.sin(t * 5 + p) * 0.35; },
+  flap: (g, t, p) => { g.rotation.z = Math.sin(t * 4 + p) * 0.45; },
+  nod: (g, t, p) => { g.rotation.x = Math.sin(t * 0.9 + p) * 0.08; },
+  spin: (g, t, p) => { g.rotation.y = t * 1.2 + p; },
+  hover: (g, t, p) => { g.position.y = g.userData.y + Math.sin(t * 1.3 + p) * 0.6; },
+};
+
+export function buildRecipeFigure(recipe) {
+  const root = new THREE.Group();
+  const animated = [];
+  for (const part of recipe.parts) {
+    const p = new Part(part.pivot);
+    const glow = new Set(part.glow);
+    for (const [x0, y0, z0, x1, y1, z1, key] of part.boxes) {
+      const colour = recipe.palette[key];
+      for (let x = Math.min(x0, x1); x <= Math.max(x0, x1); x++)
+        for (let y = Math.min(y0, y1); y <= Math.max(y0, y1); y++)
+          for (let z = Math.min(z0, z1); z <= Math.max(z0, z1); z++) p.set(x, y, z, colour, glow.has(key));
+    }
+    if (!p.cells.size) continue;
+    const g = p.build();
+    g.userData.y = g.position.y;
+    root.add(g);
+    if (part.motion !== 'none') animated.push([g, MOTIONS[part.motion], part.phase]);
+  }
+  const height = Math.max(8, ...recipe.parts.flatMap((pt) => pt.boxes.map((b) => Math.max(b[1], b[4]) + 1)));
+  return {
+    group: root,
+    update(t) { for (const [g, move, phase] of animated) move(g, t, phase); },
+    stage: Math.min(12, Math.max(5, Math.round(recipe.footprint ?? 6))),
+    zoom: Math.max(0.8, height / 24, (recipe.footprint ?? 6) / 8), // fit tall and wide creatures
+  };
+}
+
+const clampInt = (v, lo, hi, d = 0) => (Number.isFinite(Number(v)) ? Math.min(hi, Math.max(lo, Math.round(Number(v)))) : d);
+const HEX = /^#[0-9a-f]{6}$/i;
+const LIMITS = { x: 12, yMax: 44, z: 12, boxes: 500, cells: 9000 };
+
+// Makes a recipe safe to build: valid colours, coordinates in range, a cap on
+// size. Returns null if nothing usable is left.
+export function sanitizeRecipe(raw) {
+  const palette = {};
+  for (const [k, v] of Object.entries(raw?.palette ?? {})) if (HEX.test(String(v))) palette[String(k)] = String(v);
+  let boxes = 0, cells = 0, xs = 0;
+  const parts = [];
+  for (const part of Array.isArray(raw?.parts) ? raw.parts.slice(0, 16) : []) {
+    const clean = {
+      name: String(part?.name ?? 'part').slice(0, 30),
+      pivot: [clampInt(part?.pivot?.[0], -LIMITS.x, LIMITS.x), clampInt(part?.pivot?.[1], 0, LIMITS.yMax), clampInt(part?.pivot?.[2], -LIMITS.z, LIMITS.z)],
+      motion: MOTIONS[part?.motion] ? part.motion : 'none',
+      phase: Number.isFinite(Number(part?.phase)) ? Number(part.phase) : 0,
+      glow: Array.isArray(part?.glow) ? part.glow.map(String) : [],
+      boxes: [],
+    };
+    for (const b of Array.isArray(part?.boxes) ? part.boxes : []) {
+      if (!Array.isArray(b) || b.length < 7 || !palette[String(b[6])]) continue;
+      const box = [
+        clampInt(b[0], -LIMITS.x, LIMITS.x), clampInt(b[1], 0, LIMITS.yMax), clampInt(b[2], -LIMITS.z, LIMITS.z),
+        clampInt(b[3], -LIMITS.x, LIMITS.x), clampInt(b[4], 0, LIMITS.yMax), clampInt(b[5], -LIMITS.z, LIMITS.z), String(b[6]),
+      ];
+      const volume = (Math.abs(box[3] - box[0]) + 1) * (Math.abs(box[4] - box[1]) + 1) * (Math.abs(box[5] - box[2]) + 1);
+      if (boxes >= LIMITS.boxes || cells + volume > LIMITS.cells) break;
+      boxes += 1; cells += volume;
+      xs = Math.max(xs, Math.abs(box[0]), Math.abs(box[3]), Math.abs(box[2]), Math.abs(box[5]));
+      clean.boxes.push(box);
+    }
+    if (clean.boxes.length) parts.push(clean);
+  }
+  if (!parts.length) return null;
+  return { palette, parts, footprint: xs + 2 };
+}
+
+const recipes = new Map(); // monster id -> recipe, for generated monsters
+export const registerRecipe = (id, recipe) => recipes.set(id, recipe);
+
 // Builds the figure for an enemy type (see data/monsters.js).
-export const buildMonsterFigure = (model) => MONSTER_LOOKS[model]?.() ?? null;
+export function buildMonsterFigure(model) {
+  if (MONSTER_LOOKS[model]) return MONSTER_LOOKS[model]();
+  const recipe = recipes.get(model);
+  return recipe ? buildRecipeFigure(recipe) : null;
+}

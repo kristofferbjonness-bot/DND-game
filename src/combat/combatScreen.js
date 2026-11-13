@@ -121,7 +121,7 @@ export function createCombatScreen(root, { party, onHeroChange, onPublic }) {
         <span class="pick__who"><b>${esc(m.name)}</b><small>AC ${m.ac} · ${m.hp} HP · ${esc(m.kind)}</small></span>
         <span class="stepper">
           <button type="button" data-type="${type}" data-step="-1" aria-label="One fewer">−</button>
-          <b>${counts[type]}</b>
+          <b>${counts[type] ?? 0}</b>
           <button type="button" data-type="${type}" data-step="1" aria-label="One more">+</button>
         </span>
       </li>`).join('');
@@ -142,7 +142,7 @@ export function createCombatScreen(root, { party, onHeroChange, onPublic }) {
     const total = Object.values(counts).reduce((a, c) => a + c, 0);
     const step = Number(b.dataset.step);
     if (step > 0 && total >= MAX_ENEMIES) return;
-    counts[b.dataset.type] = Math.max(0, counts[b.dataset.type] + step);
+    counts[b.dataset.type] = Math.max(0, (counts[b.dataset.type] ?? 0) + step);
     renderSetup();
   });
 
@@ -150,6 +150,7 @@ export function createCombatScreen(root, { party, onHeroChange, onPublic }) {
     const enemies = [];
     for (const [type, n] of Object.entries(counts)) {
       const m = MONSTERS[type];
+      if (!m) continue;
       for (let i = 1; i <= n; i++) {
         const name = n > 1 ? `${m.short ?? m.name} ${i}` : m.short ?? m.name;
         enemies.push({ uid: `${type}-${i}`, type, name, hp: m.hp, max: m.hp, ac: m.ac, model: m.model });

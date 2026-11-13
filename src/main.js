@@ -17,9 +17,12 @@ import { createStatusScreen } from './status/statusScreen.js';
 import { renderParty } from './status/partyScreen.js';
 import { createCombatScreen } from './combat/combatScreen.js';
 import { createCombatView } from './combat/combatView.js';
+import { createBestiaryScreen } from './bestiary/bestiaryScreen.js';
+import { addMonster, removeMonster } from './data/monsters.js';
+import { registerRecipe } from './character/model.js';
 import { CHARACTERS as STARTING_HEROES } from './data/characters.js';
 import { createStartScreen } from './start/startScreen.js';
-import { supabase, myProfile, loadCharacters, seedCharacters, saveCharacter, watchCharacters, signOut, explain, encounterChannel } from './net/backend.js';
+import { supabase, myProfile, loadCharacters, seedCharacters, saveCharacter, watchCharacters, signOut, explain, encounterChannel, loadMonsters, watchMonsters } from './net/backend.js';
 import './style.css';
 
 // The app shows one "view" at a time: the world map, or a city map. Each view
@@ -467,7 +470,9 @@ const owners = new Map(); // character id -> profile id of the player
 const screens = {
   status: document.getElementById('status'), party: document.getElementById('party'),
   combat: document.getElementById('combat'), fight: document.getElementById('fight'),
+  bestiary: document.getElementById('bestiary'),
 };
+let bestiaryScreen = null;
 let combatScreen = null; // the DM's controls
 let combatView = null;   // the players' view of a fight
 
@@ -493,6 +498,7 @@ function showScreen(id) {
   }
   if (id === 'combat') combatScreen.start(); else combatScreen?.stop();
   if (id === 'fight') combatView.start(); else combatView?.stop();
+  if (id === 'bestiary') bestiaryScreen.start(); else bestiaryScreen?.stop();
   if (id === 'map') clock.getDelta(); // no time jump after being away
 }
 document.querySelector('.topnav').addEventListener('click', (e) => {
@@ -510,6 +516,29 @@ const saveHero = (c) => saveCharacter(c).catch((err) => toast(`Could not save: $
 statusScreen = createStatusScreen(screens.status, party, { onChange: saveHero });
 combatScreen = createCombatScreen(screens.combat, { party, onHeroChange: saveHero, onPublic: publishFight });
 combatView = createCombatView(screens.fight, { party });
+bestiaryScreen = createBestiaryScreen(screens.bestiary, { onChanged: () => combatScreen.refresh() });
+
+// Generated monsters live in the database; everyone loads them so fights can show them.
+function useMonster(row) {
+  registerRecipe(row.id, row.data.figure);
+  addMonster(row.id, row.data);
+}
+let watchingMonsters = null;
+async function loadBestiary() {
+  try {
+    (await loadMonsters()).forEach(useMonster);
+  } catch (err) {
+    console.warn('Bestiary not available yet:', err.message); // e.g. before supabase/monsters.sql has been run
+    return;
+  }
+  watchingMonsters ??= watchMonsters((event, row) => {
+    if (event === 'DELETE') removeMonster(row.id); else useMonster(row);
+    bestiaryScreen.refresh();
+    combatScreen.refresh();
+  });
+  bestiaryScreen.refresh();
+  combatScreen.refresh();
+}
 
 // --- Sharing fights with the players ----------------------------------------------------------
 // The DM's app broadcasts what players may see; players' apps show it read-only.
@@ -578,6 +607,7 @@ async function enter() {
     return;
   }
   setParty(rows);
+  await loadBestiary();
 
   const mine = rows.find((r) => r.owner === profile.id);
   if (profile.role !== 'dm' && !mine) { startScreen.showClaim(rows); return; }
@@ -638,6 +668,7 @@ roleMenu.addEventListener('click', async (e) => {
   supabase.removeAllChannels();
   watching = null;
   fightChannel = null;
+  watchingMonsters = null;
   combatView.show({ active: false });
   document.body.dataset.fight = '';
   me = null;

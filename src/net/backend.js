@@ -98,3 +98,79 @@ export function encounterChannel({ onState, onHello }) {
     publish(state) { if (ready) send('state', state); else pending = state; },
   };
 }
+
+// --- Bestiary ---------------------------------------------------------------------------------
+// Generated monsters: { id, data } where data holds the stats and the figure recipe.
+
+export async function loadMonsters() {
+  const { data, error } = await supabase.from('monsters').select('id, data').order('created_at');
+  if (error) throw error;
+  return data;
+}
+
+export async function saveMonster(id, data) {
+  const { error } = await supabase.from('monsters').upsert({ id, data });
+  if (error) throw error;
+}
+
+export async function deleteMonster(id) {
+  const { error } = await supabase.from('monsters').delete().eq('id', id);
+  if (error) throw error;
+}
+
+export function watchMonsters(onChange) {
+  return supabase
+    .channel('monsters')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'monsters' }, (msg) => onChange(msg.eventType, msg.new?.id ? msg.new : msg.old))
+    .subscribe();
+}
+
+// Asks the server (netlify/edge-functions/generate-monster.js) to have Claude
+// design a monster. Claude's answer streams in; `onProgress(characters)` is
+// called as it grows. Resolves with the parsed monster (stats + figure).
+export async function generateMonster(prompt, onProgress) {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) throw new Error('Please log in again.');
+  const res = await fetch('/api/generate-monster', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', authorization: `Bearer ${session.access_token}` },
+    body: JSON.stringify({ prompt }),
+  });
+  if (!res.ok || !res.headers.get('content-type')?.includes('text/event-stream')) {
+    let message = `The generator answered ${res.status}.`;
+    try { message = (await res.json()).error ?? message; } catch { /* keep the status */ }
+    throw new Error(message);
+  }
+
+  // Read the server-sent events and collect Claude's text.
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '', text = '';
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    let cut;
+    while ((cut = buffer.indexOf('\n\n')) >= 0) {
+      const chunk = buffer.slice(0, cut);
+      buffer = buffer.slice(cut + 2);
+      const line = chunk.split('\n').find((l) => l.startsWith('data:'));
+      if (!line) continue;
+      let event;
+      try { event = JSON.parse(line.slice(5)); } catch { continue; }
+      if (event.type === 'content_block_delta' && event.delta?.type === 'text_delta') {
+        text += event.delta.text;
+        onProgress?.(text.length);
+      } else if (event.type === 'error') {
+        throw new Error(event.error?.message ?? 'Claude stopped with an error.');
+      }
+    }
+  }
+  const start = text.indexOf('{'), end = text.lastIndexOf('}');
+  if (start < 0 || end < start) throw new Error('Claude did not send a monster. Try again.');
+  try {
+    return JSON.parse(text.slice(start, end + 1));
+  } catch {
+    throw new Error('The monster came back garbled. Try again.');
+  }
+}

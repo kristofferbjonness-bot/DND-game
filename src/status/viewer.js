@@ -3,7 +3,7 @@
 import * as THREE from 'three';
 import { bevelBox } from '../fx/bevelBox.js';
 import { hash } from '../city/vox.js';
-import { buildFigure } from '../character/model.js';
+import { buildFigure, buildMonsterFigure } from '../character/model.js';
 
 const TOUCH = window.matchMedia('(pointer: coarse)').matches;
 
@@ -58,9 +58,10 @@ export function createCharacterViewer(container) {
   let figure = null, stage = null;
 
   // Shows a character dressed in their current gear; call again after a change.
+  // `{ monster: model }` shows an enemy instead.
   function show(character) {
     turntable.clear();
-    figure = buildFigure(character);
+    figure = character?.monster ? buildMonsterFigure(character.monster) : buildFigure(character);
     stage = plinth(figure?.stage ?? 6);
     turntable.add(stage);
     if (figure) turntable.add(figure.group);

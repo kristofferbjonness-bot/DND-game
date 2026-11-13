@@ -15,3 +15,12 @@ export const MONSTERS = {
     model: 'hooknose',
   },
 };
+
+// Generated monsters from the bestiary (database) join the built-in ones here.
+// Their figure recipe is registered with the model builder under the same id.
+export function addMonster(id, data) {
+  MONSTERS[id] = { ...data, model: id, generated: true };
+}
+export function removeMonster(id) {
+  if (MONSTERS[id]?.generated) delete MONSTERS[id];
+}

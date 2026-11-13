@@ -136,6 +136,24 @@ The original assets (hand-drawn world map, location art, character art, lore doc
     view resets for each new encounter.
   - The health-box columns scroll when they don't fit, and the boxes are kept compact.
   - The encounter itself is not saved online yet, so a reload loses it.
+- **Bestiary** (DM only, `src/bestiary/bestiaryScreen.js`) lists every enemy with its 3D figure
+  and stat block. "Generate new" has Claude design one from a text prompt.
+  - Server: `netlify/edge-functions/generate-monster.js` at POST `/api/generate-monster`.
+    - It checks the caller's Supabase token and that their profile is the DM, then calls the
+      Claude API (`claude-sonnet-5-5`, streaming) with the system prompt that defines the JSON
+      format.
+    - The key is the Netlify environment variable `ANTHROPIC_API_KEY`.
+    - It's an edge function so the long stream isn't cut off by the 10-second limit on normal
+      functions.
+  - The client (`generateMonster` in backend.js) reads the SSE stream, shows progress, and
+    parses the JSON.
+  - `cleanMonster` and `sanitizeRecipe` clamp everything Claude sends.
+  - Figure recipe: palette plus parts, where each part has boxes, a pivot, a motion and glow
+    colours. Built by `buildRecipeFigure` in model.js.
+  - Saved in the Supabase table `monsters` (`supabase/monsters.sql`): everyone reads, the DM
+    writes, with realtime.
+  - At login, everyone loads the table into the MONSTERS registry (`addMonster`) and the recipe
+    registry (`registerRecipe`), so players can see generated enemies in fights.
 - **Party** (`src/status/partyScreen.js`) shows a card per hero with HP, AC, initiative and
   passive perception. Tapping a card opens that hero on Status.
 - Map HUD is kept minimal:

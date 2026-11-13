@@ -653,7 +653,8 @@ body[data-screen="map"] .panel { top: 70px; }
 /* ---------- Combat (Dungeon Master) ---------- */
 
 .topnav__tab--dm { display: none; }
-body[data-role="dm"] .topnav__tab--dm, body[data-fight="on"] .topnav__tab--dm { display: block; }
+.topnav__tab--dmonly { display: none; }
+body[data-role="dm"] .topnav__tab--dm, body[data-fight="on"] .topnav__tab--dm, body[data-role="dm"] .topnav__tab--dmonly { display: block; }
 body[data-role="player"][data-fight="on"] .topnav__tab--dm { color: var(--accent); }
 
 /* Players' read-only view of a fight */
@@ -893,4 +894,81 @@ input.is-bad { border-color: var(--accent); background: #fbe7e2; }
   .attack__head b { font-size: 17px; }
   .attack__label { margin: 8px 0 4px; }
   .attack__apply { padding: 9px; margin-top: 10px; }
+}
+
+/* ---------- Bestiary (Dungeon Master) ---------- */
+
+.bestiary { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); gap: 20px; }
+.bestiary__side {
+  min-height: 0; overflow-y: auto; overscroll-behavior: contain;
+  background: rgba(251, 247, 238, 0.86); border-radius: 20px; box-shadow: 0 10px 30px rgba(60, 40, 20, 0.12);
+  padding: 16px 18px;
+}
+.bestiary__head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+.bestiary__head h2 { margin: 0; font: 700 22px var(--font-display); }
+.bestiary__new, .bestiary__go, .bestiary__keep {
+  font: 700 14px var(--font-display); letter-spacing: 0.04em; color: var(--parchment); background: var(--accent);
+  border: 0; border-radius: 999px; padding: 9px 16px; cursor: pointer;
+}
+.bestiary__cancel, .bestiary__again {
+  font: 700 14px var(--font-display); color: var(--ink); background: #fffaf0;
+  border: 1.5px solid var(--parchment-edge); border-radius: 999px; padding: 8px 16px; cursor: pointer;
+}
+.bestiary__list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.bestiary__list-view[hidden], .bestiary__gen[hidden], .bestiary__decide[hidden], .bestiary__progress[hidden], .bestiary__error[hidden] { display: none; }
+.beast {
+  width: 100%; display: flex; align-items: center; gap: 12px; text-align: left; font: inherit; color: var(--ink);
+  background: #fffaf0; border: 1.5px solid transparent; border-radius: 14px; padding: 6px 12px 6px 6px; cursor: pointer;
+}
+.beast.is-on { border-color: var(--ink); }
+.beast__who { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.beast__who b { font: 700 15px var(--font-display); }
+.beast__who small { font-size: 12px; color: var(--ink-soft); }
+.beast__tag { font: 700 10px var(--font-display); letter-spacing: 0.08em; text-transform: uppercase; color: #8a5cc7; background: #efe6fa; border-radius: 999px; padding: 3px 8px; }
+.bestiary__gen { display: grid; gap: 10px; }
+.bestiary__gen .bestiary__head { margin-bottom: 0; }
+.bestiary__prompt {
+  width: 100%; resize: vertical; font: 16px/1.4 var(--font-body); color: var(--ink);
+  background: #fffaf0; border: 1.5px solid var(--parchment-edge); border-radius: 12px; padding: 10px 12px;
+}
+.bestiary__go { justify-self: start; padding: 11px 22px; font-size: 15px; }
+.bestiary__progress { display: grid; gap: 6px; }
+.bestiary__progress span { display: block; height: 8px; width: 4%; border-radius: 8px; background: linear-gradient(90deg, #8a5cc7, #c99a3c); transition: width 0.4s ease; }
+.bestiary__progress small { color: var(--ink-soft); font-size: 14px; }
+.bestiary__error { margin: 0; color: var(--accent); font-size: 14px; }
+.bestiary__decide { display: flex; gap: 8px; }
+
+.bestiary__detail { position: relative; min-height: 0; display: flex; flex-direction: column; }
+.bestiary__stage { position: relative; flex: 1; min-height: 120px; touch-action: none; }
+.bestiary__stage canvas { position: absolute; inset: 0; }
+.bestiary__stats { flex-shrink: 0; max-height: 45%; overflow-y: auto; }
+.statblock { background: rgba(251, 247, 238, 0.92); border-radius: 16px; box-shadow: 0 6px 20px rgba(60, 40, 20, 0.1); padding: 12px 16px; }
+.statblock__head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+.statblock__head h3 { margin: 0; font: 700 19px var(--font-display); }
+.statblock__head p { margin: 0; font-size: 13px; color: var(--ink-soft); }
+.statblock__delete { font: 600 13px var(--font-body); color: var(--accent); background: none; border: 1px solid rgba(154, 59, 59, 0.4); border-radius: 999px; padding: 4px 12px; cursor: pointer; }
+.statblock__nums { display: flex; gap: 18px; margin: 8px 0 6px; }
+.statblock__nums span { display: flex; flex-direction: column; font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-soft); }
+.statblock__nums b { font: 700 18px var(--font-display); color: var(--ink); letter-spacing: 0; }
+.statblock__attacks { list-style: none; margin: 0; padding: 0; font-size: 14px; }
+.statblock__attacks li { padding: 3px 0; }
+.statblock__attacks span { color: var(--ink-soft); }
+.statblock__note { margin: 6px 0 0; font-size: 14px; font-style: italic; color: var(--ink-soft); }
+
+@media (max-height: 500px) and (orientation: landscape) {
+  .bestiary { gap: 10px; }
+  .bestiary__side { padding: 10px 12px; border-radius: 16px; }
+  .bestiary__head { margin-bottom: 8px; }
+  .bestiary__head h2 { font-size: 17px; }
+  .bestiary__new, .bestiary__go, .bestiary__keep, .bestiary__cancel, .bestiary__again { padding: 6px 12px; font-size: 12px; }
+  .beast { padding: 4px 10px 4px 4px; }
+  .beast .pick__badge { width: 30px; height: 30px; font-size: 14px; }
+  .bestiary__prompt { font-size: 15px; padding: 7px 10px; }
+  .statblock { padding: 8px 12px; }
+  .statblock__head h3 { font-size: 16px; }
+  .statblock__nums { margin: 4px 0; gap: 14px; }
+  .statblock__nums b { font-size: 15px; }
+  .statblock__attacks { font-size: 12px; }
+  .statblock__note { display: none; }
+  .topnav__tab { padding: 6px 11px; }
 }
