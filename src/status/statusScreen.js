@@ -220,6 +220,7 @@ export function createStatusScreen(root, characters, { onChange, onDelete } = {}
   if (characters.length) showCharacter(characters[0].id);
   return {
     start: () => viewer.start(), stop: () => viewer.stop(), showCharacter, setPlayer, refresh,
+    current: () => pickerName.dataset.id ?? null,
     setDm(on) { dm = on; if (characters[index]) render({ keepScroll: true }); },
   };
 }

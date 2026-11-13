@@ -215,6 +215,15 @@ The original assets (hand-drawn world map, location art, character art, lore doc
     ground) or with "Move the party here" on a place card. Tapping the tag opens Party.
   - Stored in the Supabase table `world` (one row, `supabase/world.sql`) with realtime. A local
     change wins over incoming updates for 2.5 s, so sliders don't jump back.
+- **Rulebook** (`src/rulebook/rulebook.js`): a little book tab on the left edge of every screen
+  (bottom-left above the tab bar on upright phones).
+  - It opens a book of 8 short, symbol-first pages: Rolling, The dice, Attacking, Your
+    weapons, The six stats, Checks & saves, Your turn, Health & rest.
+  - Wide screens show two pages side by side; phones show one. Turn pages with the tabs, the
+    arrows, swiping or the arrow keys.
+  - "Your weapons" shows the d20 bonus and damage dice from derive() for the player's hero, or
+    for the DM the hero last shown on Status (`statusScreen.current()`).
+  - The dice are small inline SVGs (`die()`).
 - **Party** (`src/status/partyScreen.js`) shows a card per hero with HP, AC, initiative and
   passive perception. Tapping a card opens that hero on Status.
   - DM tools (hidden while previewing as a player):

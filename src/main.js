@@ -26,6 +26,7 @@ import { registerRecipe } from './character/model.js';
 import { CHARACTERS as STARTING_HEROES } from './data/characters.js';
 import { createStartScreen } from './start/startScreen.js';
 import { createCreatorScreen } from './creator/creatorScreen.js';
+import { createRulebook } from './rulebook/rulebook.js';
 import { createHeroManager } from './status/heroManager.js';
 import { shortRest, longRest, readyToLevel } from './character/progress.js';
 import { loadRevealed, setRevealed, watchRevealed, loadWorld, saveWorld, watchWorld } from './net/backend.js';
@@ -923,6 +924,14 @@ roleMenu.addEventListener('click', async (e) => {
 });
 document.addEventListener('click', (e) => {
   if (!roleMenu.hidden && !roleMenu.contains(e.target)) roleMenu.hidden = true;
+});
+
+// The little rulebook, always one tap away. Its weapons page shows the player's
+// own hero, or for the Dungeon Master the hero last opened on Status.
+const rulebook = createRulebook({
+  button: document.getElementById('rulebook-toggle'),
+  root: document.getElementById('rulebook'),
+  getHero: () => party.find((c) => c.id === (me && !me.dm ? me.heroId : viewAs ?? statusScreen.current())) ?? null,
 });
 
 // A short message at the bottom of the screen.
