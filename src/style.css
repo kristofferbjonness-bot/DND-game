@@ -652,7 +652,16 @@ body[data-screen="map"] .panel { top: 70px; }
 /* ---------- Combat (Dungeon Master) ---------- */
 
 .topnav__tab--dm { display: none; }
-body[data-role="dm"] .topnav__tab--dm { display: block; }
+body[data-role="dm"] .topnav__tab--dm, body[data-fight="on"] .topnav__tab--dm { display: block; }
+body[data-role="player"][data-fight="on"] .topnav__tab--dm { color: var(--accent); }
+
+/* Players' read-only view of a fight */
+.combat__toggle { display: flex; align-items: center; gap: 8px; margin-right: auto; font-size: 15px; cursor: pointer; }
+.turnbar--view { padding: 8px 18px; }
+.hpbox--view { width: 172px; }
+.hpbox__track--hidden { background: repeating-linear-gradient(135deg, rgba(59, 47, 34, 0.12) 0 6px, rgba(59, 47, 34, 0.04) 6px 12px); }
+.fight-wait { display: grid; place-items: center; height: 100%; color: var(--ink-soft); }
+.fight-wait[hidden] { display: none; }
 
 /* Setup: heroes on the left, enemies on the right, start below. */
 .combat__setup {

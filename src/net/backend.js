@@ -78,3 +78,23 @@ export function watchCharacters(onRow) {
     })
     .subscribe();
 }
+
+// --- Live encounter ------------------------------------------------------------------------
+// The Dungeon Master broadcasts what players may see of a fight; players who join
+// late say hello and the DM answers with the current state. Nothing is stored.
+export function encounterChannel({ onState, onHello }) {
+  const ch = supabase.channel('encounter', { config: { broadcast: { self: false } } });
+  if (onState) ch.on('broadcast', { event: 'state' }, (m) => onState(m.payload));
+  if (onHello) ch.on('broadcast', { event: 'hello' }, () => onHello());
+  let ready = false, pending = null;
+  const send = (event, payload) => ch.send({ type: 'broadcast', event, payload });
+  ch.subscribe((status) => {
+    if (status !== 'SUBSCRIBED') return;
+    ready = true;
+    if (onState) send('hello', {});
+    if (pending) { send('state', pending); pending = null; }
+  });
+  return {
+    publish(state) { if (ready) send('state', state); else pending = state; },
+  };
+}

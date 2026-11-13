@@ -16,9 +16,10 @@ import { attachTouchGestures } from './fx/touchGestures.js';
 import { createStatusScreen } from './status/statusScreen.js';
 import { renderParty } from './status/partyScreen.js';
 import { createCombatScreen } from './combat/combatScreen.js';
+import { createCombatView } from './combat/combatView.js';
 import { CHARACTERS as STARTING_HEROES } from './data/characters.js';
 import { createStartScreen } from './start/startScreen.js';
-import { supabase, myProfile, loadCharacters, seedCharacters, saveCharacter, watchCharacters, signOut, explain } from './net/backend.js';
+import { supabase, myProfile, loadCharacters, seedCharacters, saveCharacter, watchCharacters, signOut, explain, encounterChannel } from './net/backend.js';
 import './style.css';
 
 // The app shows one "view" at a time: the world map, or a city map. Each view
@@ -463,13 +464,20 @@ let statusScreen = null;
 // in place when anyone changes a character, so every screen sees the same objects.
 const party = [];
 const owners = new Map(); // character id -> profile id of the player
-const screens = { status: document.getElementById('status'), party: document.getElementById('party'), combat: document.getElementById('combat') };
-let combatScreen = null;
+const screens = {
+  status: document.getElementById('status'), party: document.getElementById('party'),
+  combat: document.getElementById('combat'), fight: document.getElementById('fight'),
+};
+let combatScreen = null; // the DM's controls
+let combatView = null;   // the players' view of a fight
 
 function showScreen(id) {
+  // The Combat tab opens the DM's controls, or the player's view of the fight.
+  if (id === 'combat' && document.body.dataset.role !== 'dm') id = 'fight';
   if (id === screen) return;
   screen = id;
-  document.querySelectorAll('.topnav__tab').forEach((b) => b.classList.toggle('is-active', b.dataset.screen === id));
+  const tab = id === 'fight' ? 'combat' : id;
+  document.querySelectorAll('.topnav__tab').forEach((b) => b.classList.toggle('is-active', b.dataset.screen === tab));
   document.body.dataset.screen = id;
   for (const [key, el] of Object.entries(screens)) el.hidden = key !== id;
   if (id === 'status') {
@@ -484,6 +492,7 @@ function showScreen(id) {
     });
   }
   if (id === 'combat') combatScreen.start(); else combatScreen?.stop();
+  if (id === 'fight') combatView.start(); else combatView?.stop();
   if (id === 'map') clock.getDelta(); // no time jump after being away
 }
 document.querySelector('.topnav').addEventListener('click', (e) => {
@@ -499,7 +508,36 @@ let watching = null;
 
 const saveHero = (c) => saveCharacter(c).catch((err) => toast(`Could not save: ${explain(err)}`));
 statusScreen = createStatusScreen(screens.status, party, { onChange: saveHero });
-combatScreen = createCombatScreen(screens.combat, { party, onHeroChange: saveHero });
+combatScreen = createCombatScreen(screens.combat, { party, onHeroChange: saveHero, onPublic: publishFight });
+combatView = createCombatView(screens.fight, { party });
+
+// --- Sharing fights with the players ----------------------------------------------------------
+// The DM's app broadcasts what players may see; players' apps show it read-only.
+let fightChannel = null;
+
+function publishFight(state) {
+  fightChannel?.publish(state);
+  receiveFight(state); // the DM's own "view as player" preview
+}
+
+function receiveFight(state) {
+  const wasActive = combatView.active;
+  combatView.show(state);
+  document.body.dataset.fight = state.active ? 'on' : '';
+  const player = document.body.dataset.role === 'player';
+  if (player && state.active && !wasActive && me && !me.dm) {
+    toast('A fight has begun!');
+    showScreen('fight');
+  }
+  if (player && !state.active && screen === 'fight') showScreen('status');
+}
+
+function openFightChannel() {
+  if (fightChannel) return;
+  fightChannel = me.dm
+    ? encounterChannel({ onHello: () => fightChannel.publish(combatScreen.publicState()) })
+    : encounterChannel({ onState: receiveFight });
+}
 
 // Fills `party` from database rows, keeping the starting heroes' order.
 function setParty(rows) {
@@ -517,6 +555,7 @@ function applyRow(row) {
   if (i >= 0) party[i] = row.data; else party.push(row.data);
   statusScreen.refresh(row.id);
   combatScreen.refresh();
+  combatView.refresh();
   if (screen === 'party') {
     renderParty(screens.party, party, (id) => { showScreen('status'); statusScreen.showCharacter(id); });
   }
@@ -548,7 +587,8 @@ async function enter() {
   me = { dm: profile.role === 'dm', heroId: mine?.id ?? null };
   viewAs = null;
   applyView();
-  showScreen(me.dm ? 'map' : 'status');
+  openFightChannel();
+  showScreen(me.dm ? 'map' : combatView.active ? 'fight' : 'status');
 }
 
 // --- Who the app is showing things for -------------------------------------------------------
@@ -573,7 +613,7 @@ function applyView() {
 function previewAs(heroId) {
   viewAs = heroId;
   applyView();
-  showScreen(heroId ? 'status' : 'map');
+  showScreen(heroId ? (combatView.active ? 'fight' : 'status') : 'map');
 }
 
 roleChip.addEventListener('click', (e) => {
@@ -596,6 +636,9 @@ roleMenu.addEventListener('click', async (e) => {
   await signOut();
   supabase.removeAllChannels();
   watching = null;
+  fightChannel = null;
+  combatView.show({ active: false });
+  document.body.dataset.fight = '';
   me = null;
   viewAs = null;
   roleChip.hidden = true;

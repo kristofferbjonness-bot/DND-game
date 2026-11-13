@@ -14,7 +14,8 @@ const plus = (n) => (n ? ` ${n > 0 ? '+' : '−'} ${Math.abs(n)}` : '');
 
 // `party` is the live list of characters; `onHeroChange(character)` saves a hero
 // whose HP changed, so the player sees it on their own sheet.
-export function createCombatScreen(root, { party, onHeroChange }) {
+// `onPublic(state)` receives what players may see, after every change (see publicState).
+export function createCombatScreen(root, { party, onHeroChange, onPublic }) {
   root.innerHTML = `
     <div class="combat__setup">
       <div class="combat__col">
@@ -26,6 +27,7 @@ export function createCombatScreen(root, { party, onHeroChange }) {
         <ul class="combat__enemies-pick"></ul>
       </div>
       <div class="combat__go">
+        <label class="combat__toggle"><input type="checkbox" class="combat__show-hp" checked /> Players can see enemy health</label>
         <p class="combat__summary"></p>
         <button type="button" class="combat__start">Next: initiative</button>
       </div>
@@ -153,7 +155,10 @@ export function createCombatScreen(root, { party, onHeroChange }) {
         enemies.push({ uid: `${type}-${i}`, type, name, hp: m.hp, max: m.hp, ac: m.ac, model: m.model });
       }
     }
-    encounter = { heroes: party.filter((c) => chosen.has(c.id)).map((c) => c.id), enemies, rolls: {}, order: [], turn: 0, round: 1 };
+    encounter = {
+      heroes: party.filter((c) => chosen.has(c.id)).map((c) => c.id), enemies, rolls: {}, order: [], turn: 0, round: 1,
+      showEnemyHp: $('.combat__show-hp').checked,
+    };
     showStep('init');
     renderInit();
   });
@@ -246,7 +251,28 @@ export function createCombatScreen(root, { party, onHeroChange }) {
     for (const f of fs) scene.setDown(f.key, f.hp <= 0);
     scene.setActive(now?.key ?? null);
     turnsEl.querySelector('.is-now')?.scrollIntoView({ inline: 'center', block: 'nearest' });
+    publish();
   }
+
+  // What players may see: names, turn order and who is down, but no rolls, no
+  // stats, and enemy health only if the DM allowed it.
+  function publicState(hit = null) {
+    if (!encounter?.order.length) return { active: false };
+    return {
+      active: true,
+      round: encounter.round,
+      turn: encounter.turn,
+      heroes: encounter.heroes,
+      hit,
+      fighters: encounter.order.map(fighter).filter(Boolean).map((f) => ({
+        key: f.key, side: f.side, name: f.name, colour: f.colour, down: f.hp <= 0,
+        chip: f.side === 'enemy' ? `${f.short[0]}${f.short.match(/\d+$/)?.[0] ?? ''}` : f.short[0],
+        model: f.enemy?.model,
+        ...(f.side === 'enemy' && encounter.showEnemyHp ? { hp: f.hp, max: f.max } : {}),
+      })),
+    };
+  }
+  const publish = (hit) => onPublic?.(publicState(hit));
 
   // Fighters at 0 HP are skipped. Returns false when nobody can act.
   function skipDowned() {
@@ -275,6 +301,7 @@ export function createCombatScreen(root, { party, onHeroChange }) {
     setHp(f, f.hp + step);
     if (step < 0) scene.hit(f.key);
     renderBattle();
+    if (step < 0) publish(f.key);
   });
 
   $('.combat__end').addEventListener('click', () => {
@@ -283,6 +310,7 @@ export function createCombatScreen(root, { party, onHeroChange }) {
     attackEl.hidden = true;
     showStep('setup');
     renderSetup();
+    publish();
   });
 
   // --- Attack calculator ---------------------------------------------------------------------------
@@ -415,6 +443,7 @@ export function createCombatScreen(root, { party, onHeroChange }) {
     }
     attackEl.hidden = true;
     renderBattle();
+    if (apply.dataset.action === 'apply') publish(atk.target);
   });
 
   attackCard.addEventListener('input', (e) => {
@@ -446,6 +475,7 @@ export function createCombatScreen(root, { party, onHeroChange }) {
       if (encounter?.order.length) { renderBattle(); scene.start(); } else if (!encounter) renderSetup();
     },
     stop() { visible = false; scene.stop(); },
+    publicState: () => publicState(),
     // A hero changed elsewhere (another device): update what shows them.
     refresh() {
       if (!visible) return;

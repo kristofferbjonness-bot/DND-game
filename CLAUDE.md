@@ -122,6 +122,16 @@ The original assets (hand-drawn world map, location art, character art, lore doc
     miss.
   - Damage: type each die the weapon uses (doubled on a crit). Rogues get optional Sneak
     Attack d6s (`sneakAttackDice`), and the modifier is added automatically.
+  - Players see the fight live, read-only (`src/combat/combatView.js`, screen `#fight`).
+    - The DM's app broadcasts `publicState()` over the Supabase Realtime broadcast channel
+      `encounter` (`encounterChannel` in backend.js). Nothing is stored.
+    - Late joiners send `hello`, and the DM answers with the current state.
+    - The public state has no rolls or stats. Enemy HP is included only if "Players can see
+      enemy health" was ticked at setup.
+    - Players get a Combat tab while a fight is on, and are switched to it when one starts.
+    - The DM's "view as" preview is fed locally with the same state.
+    - Caveat: broadcast isn't locked down, so any logged-in user could send fake state. That's
+      fine among friends; use a table with RLS if needed.
   - The arena camera uses OrbitControls: one finger turns, two fingers pinch-zoom and pan. The
     view resets for each new encounter.
   - The health-box columns scroll when they don't fit, and the boxes are kept compact.
