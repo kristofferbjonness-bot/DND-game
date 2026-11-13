@@ -236,7 +236,7 @@ function show(next, { at } = {}) {
   renderPass.camera = view.camera;
   viewTitle.textContent = view.title;
   backButton.hidden = view.id === 'world';
-  placesMenu.open = false;
+  openPlaces(false);
   buildPlacesList();
   resize();
   if (at) {
@@ -538,7 +538,22 @@ const list = document.getElementById('places');
 const homeButton = document.getElementById('home');
 const backButton = document.getElementById('back');
 const viewTitle = document.getElementById('view-title');
-const placesMenu = document.querySelector('.places');
+const placesMenu = document.getElementById('places-menu');
+const mapTab = document.querySelector('.topnav__tab--map');
+// The Map tab doubles as the places menu: tapping it while on the map opens the list.
+function openPlaces(open) {
+  placesMenu.hidden = !open;
+  mapTab.classList.toggle('is-open', open);
+  if (!open) return;
+  const r = mapTab.getBoundingClientRect();
+  const bottomDock = r.top > window.innerHeight / 2;
+  placesMenu.style.left = `${Math.max(8, Math.min(r.left, window.innerWidth - placesMenu.offsetWidth - 8))}px`;
+  placesMenu.style.top = bottomDock ? '' : `${r.bottom + 10}px`;
+  placesMenu.style.bottom = bottomDock ? `${window.innerHeight - document.getElementById('bar').getBoundingClientRect().top + 8}px` : '';
+}
+document.addEventListener('click', (e) => {
+  if (!placesMenu.hidden && !e.composedPath().some((el) => el === placesMenu || el === mapTab)) openPlaces(false);
+});
 function buildPlacesList() {
   list.replaceChildren();
   for (const tier of view.listTiers) {
@@ -550,7 +565,7 @@ function buildPlacesList() {
       b.textContent = p.name;
       if (seesAll() && isSecretable(p) && !revealed.has(p.id)) b.classList.add('is-secret');
       b.className = `places__item places__item--${tier}`;
-      b.addEventListener('click', () => { placesMenu.open = false; showScreen('map'); select(p); });
+      b.addEventListener('click', () => { openPlaces(false); showScreen('map'); select(p); });
       li.appendChild(b);
       list.appendChild(li);
     }
@@ -701,7 +716,10 @@ function showScreen(id) {
 for (const b of document.querySelectorAll('.topnav__tab')) b.insertAdjacentHTML('afterbegin', icon(b.dataset.icon));
 document.querySelector('.topnav').addEventListener('click', (e) => {
   const btn = e.target.closest('.topnav__tab');
-  if (btn) showScreen(btn.dataset.screen);
+  if (!btn) return;
+  if (btn === mapTab && screen === 'map') { openPlaces(placesMenu.hidden); return; }
+  openPlaces(false);
+  showScreen(btn.dataset.screen);
 });
 document.body.dataset.screen = 'map';
 

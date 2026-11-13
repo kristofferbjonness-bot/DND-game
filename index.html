@@ -23,21 +23,16 @@
          Along the top on wide screens; a dock along the bottom on upright phones. -->
     <header id="bar" class="bar" hidden>
       <button id="sky-toggle" type="button" class="bar__sky" aria-label="Weather and time"></button>
-      <div class="bar__place">
-        <button id="back" type="button" class="bar__back" hidden aria-label="Back to the world map">‹</button>
-        <details class="places">
-          <summary id="view-title">World Map</summary>
-          <ul id="places"></ul>
-        </details>
-      </div>
       <nav class="topnav" aria-label="Game">
-        <button type="button" class="topnav__tab is-active" data-screen="map" data-icon="map"><span>Map</span></button>
+        <button id="back" type="button" class="bar__back" hidden aria-label="Back to the world map">‹</button>
+        <button type="button" class="topnav__tab topnav__tab--map is-active" data-screen="map" data-icon="map" aria-haspopup="true"><span id="view-title">World Map</span><i class="topnav__chev" aria-hidden="true"></i></button>
         <button type="button" class="topnav__tab" data-screen="status" data-icon="hero"><span>Hero</span></button>
         <button type="button" class="topnav__tab" data-screen="party" data-icon="party"><span>Party</span></button>
         <button type="button" class="topnav__tab" data-screen="journal" data-icon="journal"><span>Journal</span></button>
         <button type="button" class="topnav__tab topnav__tab--dm" data-screen="combat" data-icon="combat"><span>Fight</span></button>
         <button type="button" class="topnav__tab topnav__tab--dmonly" data-screen="bestiary" data-icon="bestiary"><span>Beasts</span></button>
       </nav>
+      <div id="places-menu" class="places" hidden><ul id="places"></ul></div>
       <button id="dice-toggle" type="button" class="bar__dice" aria-label="Dice and the roll log"></button>
       <div id="bar-party" class="bar__party"></div>
       <button id="role" type="button" class="bar__me" aria-label="You"></button>

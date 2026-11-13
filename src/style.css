@@ -213,7 +213,7 @@ button, summary, .label { -webkit-tap-highlight-color: transparent; touch-action
   position: fixed; z-index: 6; top: 0; left: 0; right: 0;
   height: calc(var(--bar) + var(--safe-t));
   padding: var(--safe-t) max(12px, var(--safe-r)) 0 max(12px, var(--safe-l));
-  display: grid; grid-template-columns: auto auto minmax(0, 1fr) auto auto auto; align-items: center; gap: 10px;
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto auto; align-items: center; gap: 10px;
   background: linear-gradient(180deg, #2b2330, #1e1823);
   box-shadow: 0 1px 0 #0c090e, 0 2px 0 rgba(201, 164, 92, 0.45), 0 3px 0 #0c090e, 0 8px 22px rgba(0, 0, 0, 0.45);
 }
@@ -236,30 +236,21 @@ button, summary, .label { -webkit-tap-highlight-color: transparent; touch-action
 .bar__sky-text b { font: 700 15px var(--font-display); color: var(--bone); }
 .bar__sky-text small { font-size: 12px; color: var(--bone-soft); }
 
-/* Where you are: the map's name; opens the list of places. */
-.bar__place { display: flex; align-items: center; gap: 4px; min-width: 0; position: relative; }
+/* Back to the world from a city, beside the Map tab. */
 .bar__back {
-  width: 30px; height: 34px; border-radius: 6px; font: 700 22px/1 var(--font-display); color: var(--gold);
+  align-self: center; width: 28px; height: 34px; flex-shrink: 0; border-radius: 6px; font: 700 22px/1 var(--font-display); color: var(--gold);
   background: var(--panel-2); border: 1px solid #0c090e; cursor: pointer; box-shadow: inset 0 0 0 1px rgba(201, 164, 92, 0.25);
 }
 .bar__back[hidden] { display: none; }
-.places summary {
-  list-style: none; cursor: pointer; display: flex; align-items: center; gap: 8px; white-space: nowrap;
-  font: 400 17px var(--font-title); color: var(--bone); padding: 6px 12px; border-radius: 6px;
-  max-width: 230px; overflow: hidden; text-overflow: ellipsis;
-}
-.places summary:hover { background: rgba(255, 255, 255, 0.05); }
-.places summary::-webkit-details-marker { display: none; }
-.places summary::after {
-  content: ''; width: 6px; height: 6px; margin-top: -3px; flex-shrink: 0;
-  border-right: 2px solid var(--gold); border-bottom: 2px solid var(--gold); transform: rotate(45deg); transition: transform 0.2s;
-}
-.places[open] summary::after { transform: rotate(-135deg); margin-top: 3px; }
-.places ul {
-  position: absolute; top: calc(100% + 10px); left: 0; z-index: 8; list-style: none; margin: 0; padding: 10px 8px;
-  min-width: 240px; max-height: calc(100vh - var(--top) - 30px); overflow: auto; overscroll-behavior: contain;
+
+/* The places list, opened from the Map tab. */
+.places {
+  position: fixed; z-index: 8; list-style: none; margin: 0; padding: 10px 8px;
+  min-width: 240px; max-height: calc(100vh - var(--top) - var(--nav)); overflow: auto; overscroll-behavior: contain;
   background: var(--corners), var(--panel); border-radius: 4px; box-shadow: var(--frame);
 }
+.places[hidden] { display: none; }
+.places ul { list-style: none; margin: 0; padding: 0; }
 .places__item {
   display: block; width: 100%; text-align: left; font: 15px var(--font-body); color: var(--bone);
   background: none; border: 0; border-radius: 5px; padding: 6px 10px; cursor: pointer;
@@ -286,6 +277,13 @@ button, summary, .label { -webkit-tap-highlight-color: transparent; touch-action
   content: ''; position: absolute; left: 12px; right: 12px; bottom: -8px; height: 2px;
   background: linear-gradient(90deg, transparent, var(--gold), transparent);
 }
+.topnav__tab--map span { max-width: 190px; overflow: hidden; text-overflow: ellipsis; font-family: var(--font-title); font-size: 16px; letter-spacing: 0.02em; text-transform: none; }
+.topnav__chev {
+  width: 6px; height: 6px; margin: -3px 0 0 -1px; flex-shrink: 0;
+  border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(45deg); transition: transform 0.2s; opacity: 0.8;
+}
+.topnav__tab--map.is-open .topnav__chev { transform: rotate(-135deg); margin-top: 3px; }
+body:not([data-screen="map"]) .topnav__chev { display: none; }
 .topnav__tab--dm, .topnav__tab--dmonly { display: none; }
 body[data-role="dm"] .topnav__tab--dm, body[data-fight="on"] .topnav__tab--dm, body[data-role="dm"] .topnav__tab--dmonly { display: flex; }
 body[data-role="player"][data-fight="on"] .topnav__tab--dm { color: #f08a72; }
@@ -1371,7 +1369,6 @@ input.is-bad { box-shadow: inset 0 0 0 2px #e2634e; }
   .dial { width: 32px; height: 32px; }
   .bar__face { width: 32px; height: 32px; }
   .bar__dice .die-icon { width: 30px; height: 30px; }
-  .places summary { font-size: 15px; max-width: 170px; padding: 4px 8px; }
   .topnav__tab { height: 36px; padding: 0 9px; }
   .topnav__tab span { display: none; }
   .topnav__tab .ic { width: 24px; height: 24px; }
@@ -1469,26 +1466,28 @@ input.is-bad { box-shadow: inset 0 0 0 2px #e2634e; }
   .bar {
     top: auto; bottom: 0; height: auto;
     padding: 8px max(8px, var(--safe-r)) calc(4px + var(--safe-b)) max(8px, var(--safe-l));
-    grid-template-columns: auto minmax(0, 1fr) auto auto; grid-template-areas: "sky place dice me" "tabs tabs tabs tabs";
+    grid-template-columns: auto minmax(0, 1fr) auto auto; grid-template-areas: "sky . dice me" "tabs tabs tabs tabs";
     gap: 6px 8px;
     background: linear-gradient(0deg, #1e1823, #2b2330);
     box-shadow: 0 -1px 0 #0c090e, 0 -2px 0 rgba(201, 164, 92, 0.45), 0 -3px 0 #0c090e, 0 -8px 22px rgba(0, 0, 0, 0.45);
   }
   .bar__sky { grid-area: sky; }
-  .bar__place { grid-area: place; }
   .bar__dice { grid-area: dice; }
   .bar__me { grid-area: me; }
   .topnav { grid-area: tabs; justify-self: stretch; justify-content: space-between; border-top: 1px solid var(--line); padding-top: 4px; }
   .bar__party, .bar__sky-text, .bar__dice-text { display: none; }
   .bar__me-text { display: flex; }
   .bar__me-text small { display: none; }
-  .bar__me-text b { max-width: 84px; font-size: 12px; }
-  .bar__hp { width: 84px; }
+  .bar__me-text b { font-size: 12px; }
   .bar__face { width: 34px; height: 34px; }
   .dial { width: 34px; height: 34px; }
   .bar__dice .die-icon { width: 34px; height: 34px; }
-  .places summary { font-size: 16px; max-width: 100%; padding: 4px 6px; }
-  .places ul { top: auto; bottom: calc(100% + 14px); max-height: 55vh; }
+  .places { max-height: 55vh; }
+  .topnav__tab--map span { max-width: 72px; font-size: 11px; }
+  .topnav__chev { display: none; }
+  .bar__back { width: 24px; height: 50px; }
+  .bar__me-text b { max-width: 120px; }
+  .bar__hp { width: 120px; }
   .topnav__tab { flex: 1; flex-direction: column; justify-content: center; gap: 2px; height: 50px; padding: 0 2px; font-size: 9.5px; letter-spacing: 0.06em; }
   .topnav__tab span { display: block; }
   .topnav__tab .ic { width: 26px; height: 26px; }
