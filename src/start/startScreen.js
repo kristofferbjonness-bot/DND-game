@@ -57,7 +57,14 @@ export function createStartScreen(root, { onLoggedIn }) {
         form.password.value = '';
         await onLoggedIn();
       } catch (err) {
-        showError(form, explain(err));
+        let message = explain(err);
+        // The usual first-time mistake: logging in before the account exists.
+        if (/invalid login credentials/i.test(err?.message ?? '')) {
+          message = form.dataset.side === 'dm'
+            ? 'Wrong email or password. No account yet? Create one on the Player side first.'
+            : 'Wrong email or password. First time here? Tap "Create an account" below.';
+        }
+        showError(form, message);
       } finally {
         busy(form, false);
       }
