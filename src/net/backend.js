@@ -149,6 +149,49 @@ export function watchWorld(onChange) {
     .subscribe();
 }
 
+// --- The running fight (Dungeon Master only, supabase/session.sql) ---------------------------
+
+export async function loadEncounter() {
+  const { data, error } = await supabase.from('encounters').select('data').eq('id', 1).maybeSingle();
+  if (error) throw error;
+  return data?.data ?? null;
+}
+
+// Saves the fight, or clears it when `encounter` is null.
+export async function saveEncounter(encounter) {
+  const { error } = encounter
+    ? await supabase.from('encounters').upsert({ id: 1, data: encounter })
+    : await supabase.from('encounters').delete().eq('id', 1);
+  if (error) throw error;
+}
+
+// --- Dice log (supabase/session.sql) -------------------------------------------------------------
+
+export async function loadRolls(limit = 40) {
+  const { data, error } = await supabase.from('rolls').select('*').order('id', { ascending: false }).limit(limit);
+  if (error) throw error;
+  return data;
+}
+
+export async function addRoll(roll) {
+  const { data, error } = await supabase.from('rolls').insert(roll).select().single();
+  if (error) throw error;
+  return data;
+}
+
+export async function clearRolls() {
+  const { error } = await supabase.from('rolls').delete().gt('id', 0);
+  if (error) throw error;
+}
+
+// Calls back with ('INSERT', row) or ('DELETE', { id }).
+export function watchRolls(onChange) {
+  return supabase
+    .channel('rolls')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'rolls' }, (msg) => onChange(msg.eventType, msg.eventType === 'DELETE' ? msg.old : msg.new))
+    .subscribe();
+}
+
 // --- Live encounter ------------------------------------------------------------------------
 // The Dungeon Master broadcasts what players may see of a fight; players who join
 // late say hello and the DM answers with the current state. Nothing is stored.

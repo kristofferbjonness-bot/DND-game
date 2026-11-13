@@ -27,9 +27,10 @@ import { CHARACTERS as STARTING_HEROES } from './data/characters.js';
 import { createStartScreen } from './start/startScreen.js';
 import { createCreatorScreen } from './creator/creatorScreen.js';
 import { createRulebook } from './rulebook/rulebook.js';
+import { createDiceTray } from './dice/diceTray.js';
 import { createHeroManager } from './status/heroManager.js';
 import { shortRest, longRest, readyToLevel } from './character/progress.js';
-import { loadRevealed, setRevealed, watchRevealed, loadWorld, saveWorld, watchWorld } from './net/backend.js';
+import { loadRevealed, setRevealed, watchRevealed, loadWorld, saveWorld, watchWorld, loadEncounter, saveEncounter, loadRolls, addRoll, clearRolls, watchRolls } from './net/backend.js';
 import { supabase, myProfile, loadCharacters, seedCharacters, saveCharacter, deleteCharacter, watchCharacters, signOut, explain, encounterChannel, loadMonsters, watchMonsters } from './net/backend.js';
 import './style.css';
 
@@ -727,7 +728,27 @@ async function removeHero(c) {
   } catch (err) { toast(`Could not delete: ${explain(err)}`); }
 }
 statusScreen = createStatusScreen(screens.status, party, { onChange: saveHero, onDelete: removeHero });
-combatScreen = createCombatScreen(screens.combat, { party, onHeroChange: saveHero, onPublic: publishFight });
+combatScreen = createCombatScreen(screens.combat, { party, onHeroChange: saveHero, onPublic: publishFight, onSave: saveFightSoon });
+
+// The running fight is saved online (DM only, supabase/session.sql), so a reload
+// or a closed app picks it up again where it was.
+let fightTimer = null, fightWarned = false;
+function saveFightSoon(encounter) {
+  clearTimeout(fightTimer);
+  const copy = encounter ? JSON.parse(JSON.stringify(encounter)) : null;
+  fightTimer = setTimeout(() => saveEncounter(copy).catch((err) => {
+    if (!fightWarned) toast(`The fight is not being saved: ${/encounters/.test(err.message) ? 'run supabase/session.sql in Supabase.' : explain(err)}`);
+    fightWarned = true;
+  }), 600);
+}
+async function restoreFight() {
+  try {
+    if (combatScreen.restore(await loadEncounter())) {
+      publishFight(combatScreen.publicState());
+      toast('Your fight is back where you left it.');
+    }
+  } catch (err) { console.warn('No saved fight:', err.message); }
+}
 combatView = createCombatView(screens.fight, { party });
 bestiaryScreen = createBestiaryScreen(screens.bestiary, { onChanged: () => combatScreen.refresh() });
 
@@ -848,13 +869,15 @@ async function enter() {
 
   watching ??= watchCharacters(applyRow);
   startScreen.hide();
-  me = { dm: profile.role === 'dm', heroId: mine?.id ?? null };
+  me = { dm: profile.role === 'dm', heroId: mine?.id ?? null, uid: profile.id };
   viewAs = null;
   applyView();
   await loadFog(me.dm);
   applyParty();
   await loadWorldState();
   openFightChannel();
+  if (me.dm) await restoreFight();
+  loadDiceLog();
   showScreen(me.dm ? 'map' : combatView.active ? 'fight' : 'status');
 }
 
@@ -911,6 +934,7 @@ roleMenu.addEventListener('click', async (e) => {
   watchingMonsters = null;
   watchingPlaces = null;
   watchingWorld = null;
+  watchingRolls = null;
   combatView.show({ active: false });
   document.body.dataset.fight = '';
   me = null;
@@ -933,6 +957,42 @@ const rulebook = createRulebook({
   root: document.getElementById('rulebook'),
   getHero: () => party.find((c) => c.id === (me && !me.dm ? me.heroId : viewAs ?? statusScreen.current())) ?? null,
 });
+
+// The dice tray and the table's roll log (supabase/session.sql).
+let diceWarned = false;
+const diceTray = createDiceTray({
+  button: document.getElementById('dice-toggle'),
+  root: document.getElementById('dice'),
+  who() {
+    const hero = party.find((c) => c.id === (me && !me.dm ? me.heroId : viewAs)) ?? null;
+    if (me?.dm) return { name: 'Dungeon Master', colour: '#3b2f22', hero, dm: true };
+    return { name: hero?.name ?? 'Someone', colour: hero?.colour, hero, dm: false };
+  },
+  save: (row) => addRoll(row).catch((err) => {
+    if (!diceWarned) toast(`Rolls are not shared yet: ${/rolls/.test(err.message) ? 'run supabase/session.sql in Supabase.' : explain(err)}`);
+    diceWarned = true;
+    throw err;
+  }),
+  clear: clearRolls,
+});
+let watchingRolls = null;
+async function loadDiceLog() {
+  try { diceTray.setLog(await loadRolls()); } catch (err) { console.warn('Dice log not available yet:', err.message); return; }
+  watchingRolls ??= watchRolls((event, row) => {
+    if (event === 'DELETE') { diceTray.remove(row.id); return; }
+    diceTray.add(row);
+    if (row.user_id !== me?.uid && document.getElementById('dice').hidden) rollPop(row);
+  });
+}
+// Someone else rolled while the tray is closed: a small note by the dice tab.
+function rollPop(row) {
+  const clean = (t) => String(t ?? '').replace(/[<>&"]/g, '');
+  const el = document.createElement('div');
+  el.className = 'roll-pop';
+  el.innerHTML = `<i style="background:${clean(row.colour) || '#3b2f22'}"></i><span>${clean(row.who)}${row.label ? ` · ${clean(row.label)}` : ''}</span><b>${Number(row.total)}</b>`;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 4500);
+}
 
 // A short message at the bottom of the screen.
 function toast(message) {

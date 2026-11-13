@@ -155,7 +155,12 @@ The original assets (hand-drawn world map, location art, character art, lore doc
   - The arena camera uses OrbitControls: one finger turns, two fingers pinch-zoom and pan. The
     view resets for each new encounter.
   - The health-box columns scroll when they don't fit, and the boxes are kept compact.
-  - The encounter itself is not saved online yet, so a reload loses it.
+  - The running encounter is saved online:
+    - Every publish, setup and initiative change calls `onSave` → `saveFightSoon` in main.js,
+      a 0.6 s debounce writing to the Supabase table `encounters` (one row, DM only,
+      `supabase/session.sql`).
+    - On DM login `restoreFight()` loads it into `combatScreen.restore()` and re-broadcasts it.
+    - End (or Back from initiative) deletes it.
 - **Bestiary** (DM only, `src/bestiary/bestiaryScreen.js`) lists every enemy with its 3D figure
   and stat block. "Generate new" has Claude design one from a text prompt.
   - Server: `netlify/edge-functions/generate.js` at POST `/api/generate-monster`.
@@ -224,6 +229,16 @@ The original assets (hand-drawn world map, location art, character art, lore doc
   - "Your weapons" shows the d20 bonus and damage dice from derive() for the player's hero, or
     for the DM the hero last shown on Status (`statusScreen.current()`).
   - The dice are small inline SVGs (`die()`).
+- **Dice tray** (`src/dice/diceTray.js`): a d20 tab under the rulebook tab.
+  - Tap dice to build a pool, set a bonus, and choose advantage or disadvantage (single d20
+    only). "Quick rolls" offers initiative and each attack's to-hit and damage for the
+    player's hero, or the previewed hero for the DM.
+  - Rolls use `crypto.getRandomValues`, with no bias.
+  - Every roll goes into the Supabase table `rolls` (session.sql) and shows in a shared live
+    log; nat 20/1 are highlighted.
+  - The DM can make hidden rolls (RLS lets only the DM read them) and clear the log.
+  - Others' rolls pop up next to the tab while the tray is closed (`rollPop`).
+  - Roll values come from the roller's own app, so trust among friends is assumed.
 - **Party** (`src/status/partyScreen.js`) shows a card per hero with HP, AC, initiative and
   passive perception. Tapping a card opens that hero on Status.
   - DM tools (hidden while previewing as a player):

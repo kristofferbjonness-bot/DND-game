@@ -15,7 +15,8 @@ const plus = (n) => (n ? ` ${n > 0 ? '+' : '−'} ${Math.abs(n)}` : '');
 // `party` is the live list of characters; `onHeroChange(character)` saves a hero
 // whose HP changed, so the player sees it on their own sheet.
 // `onPublic(state)` receives what players may see, after every change (see publicState).
-export function createCombatScreen(root, { party, onHeroChange, onPublic }) {
+// `onSave(encounter | null)` keeps the running fight safe online (null when it ends).
+export function createCombatScreen(root, { party, onHeroChange, onPublic, onSave }) {
   root.innerHTML = `
     <div class="combat__setup">
       <div class="combat__col">
@@ -181,6 +182,7 @@ export function createCombatScreen(root, { party, onHeroChange, onPublic }) {
     };
     showStep('init');
     renderInit();
+    onSave?.(encounter);
   });
 
   // --- 2. Initiative ------------------------------------------------------------------------------
@@ -210,6 +212,7 @@ export function createCombatScreen(root, { party, onHeroChange, onPublic }) {
     const key = input.dataset.key;
     const n = Math.round(Number(input.value));
     if (input.value && n >= 1 && n <= 20) encounter.rolls[key] = n; else delete encounter.rolls[key];
+    onSave?.(encounter);
     const total = root.querySelector(`[data-total="${CSS.escape(key)}"]`);
     total.textContent = encounter.rolls[key] ? `= ${encounter.rolls[key] + fighter(key).initBonus}` : '';
     input.classList.toggle('is-bad', Boolean(input.value) && !encounter.rolls[key]);
@@ -220,7 +223,7 @@ export function createCombatScreen(root, { party, onHeroChange, onPublic }) {
     for (const e of encounter.enemies) encounter.rolls[`enemy:${e.uid}`] = d20();
     renderInit();
   });
-  $('.combat__back').addEventListener('click', () => { encounter = null; showStep('setup'); renderSetup(); });
+  $('.combat__back').addEventListener('click', () => { encounter = null; showStep('setup'); renderSetup(); onSave?.(null); });
 
   beginBtn.addEventListener('click', () => {
     // Highest total first; ties go to the higher bonus, then the higher roll.
@@ -293,7 +296,7 @@ export function createCombatScreen(root, { party, onHeroChange, onPublic }) {
       })),
     };
   }
-  const publish = (hit, anim) => onPublic?.(publicState(hit, anim));
+  const publish = (hit, anim) => { onPublic?.(publicState(hit, anim)); onSave?.(encounter); };
 
   // Fighters at 0 HP are skipped. Returns false when nobody can act.
   function skipDowned() {
@@ -505,6 +508,26 @@ export function createCombatScreen(root, { party, onHeroChange, onPublic }) {
     },
     stop() { visible = false; scene.stop(); },
     publicState: () => publicState(),
+    // Picks up a fight saved online (after a reload). Enemies whose type no
+    // longer exists in the bestiary are left out.
+    restore(saved) {
+      if (!saved?.heroes) return false;
+      saved.enemies = saved.enemies.filter((e) => MONSTERS[e.type]);
+      const known = new Set([...saved.heroes.map((id) => `hero:${id}`), ...saved.enemies.map((e) => `enemy:${e.uid}`)]);
+      saved.order = saved.order.filter((k) => known.has(k));
+      encounter = saved;
+      if (encounter.order.length) {
+        encounter.turn = Math.min(encounter.turn, encounter.order.length - 1);
+        showStep('battle');
+        scene.setFighters(heroesInFight(), encounter.enemies);
+        renderBattle();
+        if (visible) scene.start();
+      } else {
+        showStep('init');
+        renderInit();
+      }
+      return true;
+    },
     // A hero changed elsewhere (another device): update what shows them.
     refresh() {
       if (!visible) return;
