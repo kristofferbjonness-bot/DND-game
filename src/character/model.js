@@ -64,9 +64,12 @@ const ARMOUR_LOOKS = {
   lamellar: { torso: (x, y) => (y === 13 ? GOLD : y % 2 ? '#4a5a78' : '#3b4862'), shoulder: '#3b4862' },
   leather: { torso: (x, y, z) => (x === 0 && z === 1 && y % 2 === 0 ? '#5e3d27' : '#8a5a34'), shoulder: '#6b4a2e' },
   hide: { torso: speckle('#7d6650', '#9a8468', 0.55), shoulder: '#c9c3b6' },
+  scale: { torso: (x, y) => (y % 2 ? '#a8865a' : '#8f7048'), shoulder: '#7d5f3c' },
+  chain: { torso: speckle('#aab3bd', '#8d96a1', 0.5), shoulder: STEEL_DARK },
 };
 
 // Weapons drawn from the grip (origin) along +y.
+const WOOD = '#7a5132', GRIP = '#3a2a20';
 const WEAPON_LOOKS = {
   katana(p) {
     for (let y = -1; y <= 1; y++) p.set(0, y, 0, y % 2 ? '#2b3150' : '#e8e1d0');
@@ -77,9 +80,9 @@ const WEAPON_LOOKS = {
     p.set(0, -1, 0, '#2b3150').set(0, 0, 0, '#e8e1d0').set(0, 1, 0, GOLD);
     for (let y = 2; y <= 4; y++) p.set(0, y, 0, STEEL);
   },
-  longsword(p) {
-    p.set(0, -2, 0, '#ff5a3c', true);
-    for (let y = -1; y <= 1; y++) p.set(0, y, 0, '#3a2a20');
+  longsword(p, item) {
+    if (item.gem) p.set(0, -2, 0, '#ff5a3c', true); else p.set(0, -2, 0, STEEL_DARK);
+    for (let y = -1; y <= 1; y++) p.set(0, y, 0, GRIP);
     p.set(-1, 2, 0, STEEL_DARK).set(0, 2, 0, STEEL_DARK).set(1, 2, 0, STEEL_DARK);
     for (let y = 3; y <= 11; y++) p.set(0, y, 0, STEEL);
   },
@@ -91,9 +94,58 @@ const WEAPON_LOOKS = {
     for (let y = -2; y <= 4; y++) p.set(0, y, 0, '#6b4a2e');
     p.set(0, 3, 1, STEEL_DARK).set(0, 4, 1, STEEL_DARK).set(0, 2, 2, STEEL).set(0, 3, 2, STEEL).set(0, 4, 2, STEEL).set(0, 5, 2, STEEL);
   },
+  shortsword(p) {
+    p.set(0, -1, 0, GRIP).set(0, 0, 0, GRIP);
+    p.set(-1, 1, 0, STEEL_DARK).set(0, 1, 0, STEEL_DARK).set(1, 1, 0, STEEL_DARK);
+    for (let y = 2; y <= 7; y++) p.set(0, y, 0, STEEL);
+  },
+  rapier(p) {
+    p.set(0, -1, 0, GRIP).set(0, 0, 0, GRIP);
+    p.set(0, 1, 1, GOLD).set(0, 0, 1, GOLD).set(-1, 1, 0, GOLD).set(1, 1, 0, GOLD);
+    for (let y = 2; y <= 11; y++) p.set(0, y, 0, y > 8 ? STEEL_DARK : STEEL);
+  },
+  mace(p) {
+    for (let y = -1; y <= 3; y++) p.set(0, y, 0, y < 1 ? GRIP : WOOD);
+    p.box(-1, 4, -1, 1, 6, 1, (x, y, z) => (Math.abs(x) + Math.abs(z) === 2 ? STEEL_DARK : STEEL));
+    p.set(0, 7, 0, STEEL);
+  },
+  staff(p) {
+    for (let y = -6; y <= 10; y++) p.set(0, y, 0, y % 5 === 0 ? '#5e3d27' : WOOD);
+    p.set(0, 11, 0, '#5e3d27').set(1, 11, 0, WOOD).set(-1, 12, 0, WOOD);
+  },
+  spear(p) {
+    for (let y = -6; y <= 9; y++) p.set(0, y, 0, WOOD);
+    p.set(0, 10, 0, STEEL_DARK).set(-1, 11, 0, STEEL).set(0, 11, 0, STEEL).set(1, 11, 0, STEEL).set(0, 12, 0, STEEL).set(0, 13, 0, STEEL);
+  },
+  greataxe(p) {
+    for (let y = -3; y <= 10; y++) p.set(0, y, 0, y < 0 ? GRIP : WOOD);
+    p.box(0, 6, 1, 0, 10, 1, STEEL_DARK);
+    p.box(0, 5, 2, 0, 11, 3, STEEL);
+    p.box(0, 7, -1, 0, 9, -1, STEEL_DARK).set(0, 8, -2, STEEL);
+  },
+  crossbow(p) {
+    for (let y = -2; y <= 4; y++) p.set(0, y, 0, WOOD);
+    for (let x = -3; x <= 3; x++) p.set(x, 4 - Math.round(Math.abs(x) / 2), 0, '#5e3d27');
+    p.set(0, 5, 0, STEEL);
+  },
   shortbow: (p) => bow(p, 5, '#8a5a34'),
-  longbow: (p) => bow(p, 7, '#7a5132'),
+  longbow: (p) => bow(p, 7, WOOD),
 };
+
+// A shield strapped to the forearm, facing outwards.
+function shieldPart(side) {
+  const p = new Part();
+  const rim = '#6b4a2e', face = '#8a5a34', boss = STEEL;
+  for (let y = -4; y <= 2; y++) for (let z = -2; z <= 2; z++) {
+    const edge = Math.abs(z) === 2 || y === -4 || y === 2;
+    if ((y === -4 || y === 2) && Math.abs(z) === 2) continue;
+    p.set(0, y, z, edge ? rim : face);
+  }
+  p.set(side, -1, 0, boss);
+  const g = p.build();
+  g.position.set(side, -3, 0.5);
+  return g;
+}
 
 // A bow held upright, bowing forward, with its string.
 function bow(p, half, wood) {
@@ -105,15 +157,22 @@ function bow(p, half, wood) {
 }
 
 // A weapon in a hand. Blades point forward and a little down; bows stand upright.
-function heldWeapon(item, side) {
+// Staffs and spears are held upright; crossbows point forward. `hand` is where
+// the hand is, relative to the shoulder.
+function heldWeapon(item, side, hand = [0, -5, 0]) {
+  if (item.kind === 'shield') return shieldPart(side);
   const p = new Part();
-  WEAPON_LOOKS[item.model]?.(p);
+  WEAPON_LOOKS[item.model]?.(p, item);
   const g = p.build();
-  g.position.set(0, -5, 0); // the hand, relative to the shoulder
-  if (has(item, 'ranged')) g.rotation.y = side * 0.3;
+  g.position.set(...hand);
+  if (item.model === 'crossbow') g.rotation.x = 1.5;
+  else if (has(item, 'ranged')) g.rotation.y = side * 0.3;
+  else if (item.model === 'staff' || item.model === 'spear') g.rotation.x = 0.25;
   else g.rotation.x = 1.9;
   return g;
 }
+
+const SWORDS = ['katana', 'longsword', 'shortsword', 'rapier'];
 
 // A sheathed sword at the left hip: hilt forward and up, scabbard back and down.
 // `drawn` leaves only the empty scabbard.
@@ -125,12 +184,12 @@ function hipSword(item, drawn) {
       for (let z = 2; z <= 5; z++) p.set(3, 11, z, z % 2 ? '#2b3150' : '#e8e1d0');
       p.set(3, 11, 1, GOLD).set(3, 12, 1, GOLD).set(3, 10, 1, GOLD);
     } else {
-      p.set(3, 11, 5, '#ff5a3c', true);
-      for (let z = 2; z <= 4; z++) p.set(3, 11, z, '#3a2a20');
+      if (item.gem) p.set(3, 11, 5, '#ff5a3c', true); else p.set(3, 11, 5, STEEL_DARK);
+      for (let z = 2; z <= 4; z++) p.set(3, 11, z, GRIP);
       p.set(3, 12, 1, STEEL_DARK).set(3, 11, 1, STEEL_DARK).set(3, 10, 1, STEEL_DARK);
     }
   }
-  for (let z = 0; z >= (katana ? -10 : -9); z--) {
+  for (let z = 0; z >= (katana ? -10 : item.model === 'shortsword' ? -6 : -9); z--) {
     const rune = katana && (z === -3 || z === -6 || z === -9);
     p.set(3, 11, z, rune ? RUNE : katana ? '#1e1b24' : '#4a2f22', rune);
   }
@@ -178,30 +237,36 @@ function arm(side, { sleeve, sleeveShade, cuff, cuffLine = cuff, skin, shoulder 
   return a;
 }
 
-// Puts the gear on a figure. `look` is the character's own colours and parts;
-// `gear` is what they own and have equipped.
-function dress(look, gear) {
+// What a character's gear adds to a figure: what each hand holds, things
+// hanging at the hips, and the quiver (and stowed bow) on the back.
+function gearOn(gear) {
   const main = ITEMS[gear.equipped.mainHand] ?? null;
   const off = ITEMS[gear.equipped.offHand] ?? null;
-  const armour = ARMOUR_LOOKS[ITEMS[gear.equipped.armour]?.model] ?? null;
   const owned = gear.items.map((i) => ITEMS[i.id]).filter(Boolean);
 
-  // Bows are held in the left hand; everything else in the right.
+  // Bows and crossbows are held in the left hand; everything else in the right.
   const hands = { right: null, left: off };
   if (main && has(main, 'ranged')) hands.left = main; else hands.right = main;
 
+  const statics = [];
+  const sword = owned.find((i) => SWORDS.includes(i.model));
+  if (sword) statics.push(hipSword(sword, sword === main || sword === off));
+  if (owned.some((i) => i.model === 'handaxe') && ![main, off].some((i) => i?.model === 'handaxe')) statics.push(hipAxe());
+  const bowItem = owned.find((i) => has(i, 'ranged'));
+  const back = bowItem ? backGear(bowItem, bowItem === main || bowItem.model === 'crossbow') : null;
+  return { hands, statics, back };
+}
+
+// Puts the gear on a figure. `look` is the character's own colours and parts;
+// `gear` is what they own and have equipped.
+function dress(look, gear) {
+  const armour = ARMOUR_LOOKS[ITEMS[gear.equipped.armour]?.model] ?? null;
   const body = look.body(armour?.torso ?? look.clothes);
   const arms = [-1, 1].map((side) => arm(side, { ...look.sleeves, shoulder: armour?.shoulder }));
-
-  const extras = [];
-  const sword = owned.find((i) => i.model === 'katana' || i.model === 'longsword');
-  if (sword) extras.push(hipSword(sword, sword === main || sword === off));
-  if (owned.some((i) => i.model === 'handaxe') && ![main, off].some((i) => i?.model === 'handaxe')) extras.push(hipAxe());
-  const bowItem = owned.find((i) => has(i, 'ranged'));
-  const back = bowItem ? backGear(bowItem, bowItem === main) : null;
-
-  return assemble({ ...look, body, arms, back, hands, statics: extras });
+  return assemble({ ...look, body, arms, ...gearOn(gear) });
 }
+
+const liftFor = (item) => (!item ? 0 : item.kind === 'shield' || has(item, 'ranged') ? -0.15 : -0.3);
 
 // Assembles parts into a figure with a shared idle animation: breathing, a slow
 // look around, arms and cloak swaying. `extras` animate themselves.
@@ -217,7 +282,7 @@ function assemble({ legs, body, cloak, head, arms, back, hands = {}, statics = [
     const m = a.build();
     const item = i === 0 ? hands.right : hands.left;
     if (item) m.add(heldWeapon(item, i === 0 ? -1 : 1));
-    m.userData.lift = item && !has(item, 'ranged') ? -0.3 : item ? -0.15 : 0; // raise a held weapon
+    m.userData.lift = liftFor(item); // raise a held weapon
     root.add(m);
     return m;
   });
@@ -447,8 +512,10 @@ function edbart() {
 
 const LOOKS = { rikart, 'flame-slinger': flameSlinger, edbart };
 
-// Builds the figure for a character, dressed in their current gear.
+// Builds the figure for a character, dressed in their current gear. Heroes made
+// in the character creator carry a recipe Claude designed (`figure`).
 export function buildFigure(character) {
+  if (character.figure) return buildRecipeHero(character.figure, character);
   const look = LOOKS[character.model]?.();
   if (!look) return null;
   const figure = dress(look, character);
@@ -552,7 +619,8 @@ const MOTIONS = {
 export function buildRecipeFigure(recipe) {
   const root = new THREE.Group();
   const animated = [];
-  for (const part of recipe.parts) {
+  const built = []; // index in recipe.parts of each child of root
+  for (const [index, part] of recipe.parts.entries()) {
     const p = new Part(part.pivot);
     const glow = new Set(part.glow);
     for (const [x0, y0, z0, x1, y1, z1, key] of part.boxes) {
@@ -565,15 +633,67 @@ export function buildRecipeFigure(recipe) {
     const g = p.build();
     g.userData.y = g.position.y;
     root.add(g);
+    built.push(index);
     if (part.motion !== 'none') animated.push([g, MOTIONS[part.motion], part.phase]);
   }
   const height = Math.max(8, ...recipe.parts.flatMap((pt) => pt.boxes.map((b) => Math.max(b[1], b[4]) + 1)));
   return {
     group: root,
-    update(t) { for (const [g, move, phase] of animated) move(g, t, phase); },
+    parts: built,
+    // `skip`: groups animated by someone else (a hero's arms).
+    update(t, skip) { for (const [g, move, phase] of animated) if (!skip?.has(g)) move(g, t, phase); },
     stage: Math.min(12, Math.max(5, Math.round(recipe.footprint ?? 6))),
     zoom: Math.max(0.8, height / 24, (recipe.footprint ?? 6) / 8), // fit tall and wide creatures
   };
+}
+
+// A hero from the creator: a recipe with the shared hero skeleton, where the parts
+// named "armR" and "armL" are the arms (the figure's right arm is at −x). The
+// gear is added like on the hand-made heroes: weapons in the hands, swords and
+// axes at the hips, the quiver on the back, all scaled to the hero's height.
+function buildRecipeHero(recipe, gear) {
+  const figure = buildRecipeFigure(recipe);
+  const { hands, statics, back } = gearOn(gear);
+  const arms = [];
+  let shoulder = 15;
+  for (const [side, name] of [[-1, 'armR'], [1, 'armL']]) {
+    const i = recipe.parts.findIndex((pt) => pt.name === name);
+    const part = recipe.parts[i];
+    const g = figure.group.children[figure.parts.indexOf(i)];
+    if (!part || !g) continue;
+    shoulder = part.pivot[1];
+    // The hand is the lowest voxel of the arm.
+    const low = part.boxes.reduce((best, b) => (Math.min(b[1], b[4]) < Math.min(best[1], best[4]) ? b : best));
+    const hand = [(low[0] + low[3]) / 2 - part.pivot[0], Math.min(low[1], low[4]) - part.pivot[1], (low[2] + low[5]) / 2 - part.pivot[2]];
+    const item = side === -1 ? hands.right : hands.left;
+    if (item) g.add(heldWeapon(item, side, hand));
+    g.userData.lift = liftFor(item);
+    arms.push([g, side]);
+  }
+  // Hip and back gear were made for a 24-voxel hero with shoulders at 15.
+  const scale = Math.min(1.3, Math.max(0.55, shoulder / 15));
+  const kit = new THREE.Group();
+  statics.forEach((g) => kit.add(g));
+  if (back) kit.add(back.build());
+  kit.scale.setScalar(scale);
+  figure.group.add(kit);
+
+  const update = figure.update;
+  figure.update = (t) => {
+    update(t, new Set(arms.map(([g]) => g)));
+    const breathe = Math.sin(t * 1.8) * 0.1;
+    kit.position.y = breathe * 0.4;
+    for (const [g, side] of arms) {
+      g.rotation.x = g.userData.lift + Math.sin(t * 1.1 + (side + 1) * 0.85) * 0.06;
+      g.rotation.z = side * (0.04 + Math.sin(t * 1.8) * 0.015);
+    }
+  };
+  // Keep a hero with a companion animal centred on the stage.
+  const box = new THREE.Box3().setFromObject(figure.group);
+  figure.group.position.x = -(box.min.x + box.max.x) / 2;
+  figure.stage = Math.max(6, figure.stage);
+  figure.zoom = Math.max(1, figure.zoom);
+  return figure;
 }
 
 const clampInt = (v, lo, hi, d = 0) => (Number.isFinite(Number(v)) ? Math.min(hi, Math.max(lo, Math.round(Number(v)))) : d);

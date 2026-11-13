@@ -54,10 +54,15 @@ export function derive(c) {
   const off = ITEMS[c.equipped?.offHand] ?? null;
   const armour = ITEMS[c.equipped?.armour] ?? null;
 
-  // AC: worn armour plus Dex (capped for medium armour); 10 + Dex without armour.
-  const ac = armour
-    ? armour.ac + Math.min(mod('dex'), armour.dexCap ?? Infinity)
-    : 10 + mod('dex');
+  // AC: worn armour plus Dex (capped for medium armour, none for heavy); without
+  // armour 10 + Dex, or a class's Unarmoured Defence (Barbarian + Con, Monk + Wis).
+  const shield = off?.kind === 'shield' ? off : null;
+  const offWeapon = off?.kind === 'weapon' ? off : null;
+  const ac = (armour
+    ? armour.ac + (armour.category === 'Heavy' ? 0 : Math.min(mod('dex'), armour.dexCap ?? Infinity))
+    : 10 + mod('dex') + (c.unarmoured && !(c.unarmoured === 'wis' && shield) ? mod(c.unarmoured) : 0))
+    + (shield?.ac ?? 0)
+    + (c.style === 'defense' && armour ? 1 : 0);
 
   // One attack per weapon in hand.
   const plus = (n) => (n ? ` ${n > 0 ? '+' : '−'} ${Math.abs(n)}` : '');
@@ -65,7 +70,7 @@ export function derive(c) {
     const ranged = has(w, 'ranged');
     const m = ranged ? mod('dex') : has(w, 'finesse') ? Math.max(mod('str'), mod('dex')) : mod('str');
     const archery = c.style === 'archery' && ranged ? 2 : 0;
-    const dueling = c.style === 'dueling' && !ranged && hand === 'main' && !off && !has(w, 'two-handed') ? 2 : 0;
+    const dueling = c.style === 'dueling' && !ranged && hand === 'main' && !offWeapon && !has(w, 'two-handed') ? 2 : 0;
     // The off-hand attack only adds the modifier when it is negative.
     const dmg = (hand === 'off' ? Math.min(m, 0) : m) + dueling;
     const twoHands = hand === 'main' && !off && w.versatile;
@@ -82,7 +87,16 @@ export function derive(c) {
       note: notes.join(' · '),
     };
   };
-  const attacks = [main && attack(main, 'main'), off && attack(off, 'off')].filter(Boolean);
+  const attacks = [main && attack(main, 'main'), offWeapon && attack(offWeapon, 'off')].filter(Boolean);
+  // Attacks that need no weapon: attack cantrips (Fire Bolt, Eldritch Blast, …) and a
+  // Monk's martial arts. `addMod` adds the ability modifier to the damage.
+  for (const a of c.extraAttacks ?? []) {
+    const bonus = a.addMod ? mod(a.ability) : 0;
+    attacks.push({
+      name: a.name, type: a.type, toHit: mod(a.ability) + prof,
+      damage: `${a.dice}${plus(bonus)}`, dice: a.dice, bonus, sneakable: false, note: a.note ?? '',
+    });
+  }
   if (!attacks.length) {
     const fist = Math.max(1, 1 + mod('str'));
     attacks.push({ name: 'Unarmed strike', type: 'bludgeoning', toHit: mod('str') + prof, damage: `${fist}`, dice: null, bonus: fist, note: 'No weapon in hand' });

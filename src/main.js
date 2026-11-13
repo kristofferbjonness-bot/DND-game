@@ -22,7 +22,8 @@ import { addMonster, removeMonster } from './data/monsters.js';
 import { registerRecipe } from './character/model.js';
 import { CHARACTERS as STARTING_HEROES } from './data/characters.js';
 import { createStartScreen } from './start/startScreen.js';
-import { supabase, myProfile, loadCharacters, seedCharacters, saveCharacter, watchCharacters, signOut, explain, encounterChannel, loadMonsters, watchMonsters } from './net/backend.js';
+import { createCreatorScreen } from './creator/creatorScreen.js';
+import { supabase, myProfile, loadCharacters, seedCharacters, saveCharacter, deleteCharacter, watchCharacters, signOut, explain, encounterChannel, loadMonsters, watchMonsters } from './net/backend.js';
 import './style.css';
 
 // The app shows one "view" at a time: the world map, or a city map. Each view
@@ -490,12 +491,7 @@ function showScreen(id) {
   } else {
     statusScreen?.stop();
   }
-  if (id === 'party') { // re-rendered each time, so AC and HP follow gear changes
-    renderParty(screens.party, party, (characterId) => {
-      showScreen('status');
-      statusScreen.showCharacter(characterId);
-    });
-  }
+  if (id === 'party') drawParty(); // re-rendered each time, so AC and HP follow gear changes
   if (id === 'combat') combatScreen.start(); else combatScreen?.stop();
   if (id === 'fight') combatView.start(); else combatView?.stop();
   if (id === 'bestiary') bestiaryScreen.start(); else bestiaryScreen?.stop();
@@ -509,11 +505,35 @@ document.body.dataset.screen = 'map';
 
 // --- Start: log in, load the party, and go in as the DM or a player ---------------------------
 const roleChip = document.getElementById('role');
-const startScreen = createStartScreen(document.getElementById('start'), { onLoggedIn: enter });
 let watching = null;
 
+// The character creator: players make their own hero when they first log in;
+// the Dungeon Master can add heroes from the Party screen for anyone to claim.
+const creator = createCreatorScreen(document.getElementById('creator'), {
+  async onCreated(c) {
+    if (!me?.dm) { await enter(); return; } // the player's new hero is theirs: go in
+    applyRow({ id: c.id, owner: null, data: c });
+    showScreen('status');
+    statusScreen.showCharacter(c.id);
+    toast(`${c.name} joined the party. A player can now pick them.`);
+  },
+});
+const startScreen = createStartScreen(document.getElementById('start'), { onLoggedIn: enter, onCreateHero: () => creator.open() });
+
+function drawParty() {
+  const open = (id) => { showScreen('status'); statusScreen.showCharacter(id); };
+  renderParty(screens.party, party, open, { onNew: me?.dm && !viewAs ? () => creator.open() : null });
+}
+
 const saveHero = (c) => saveCharacter(c).catch((err) => toast(`Could not save: ${explain(err)}`));
-statusScreen = createStatusScreen(screens.status, party, { onChange: saveHero });
+async function removeHero(c) {
+  try {
+    await deleteCharacter(c.id);
+    applyRow({ id: c.id, deleted: true });
+    toast(`${c.name} was deleted.`);
+  } catch (err) { toast(`Could not delete: ${explain(err)}`); }
+}
+statusScreen = createStatusScreen(screens.status, party, { onChange: saveHero, onDelete: removeHero });
 combatScreen = createCombatScreen(screens.combat, { party, onHeroChange: saveHero, onPublic: publishFight });
 combatView = createCombatView(screens.fight, { party });
 bestiaryScreen = createBestiaryScreen(screens.bestiary, { onChanged: () => combatScreen.refresh() });
@@ -577,17 +597,24 @@ function setParty(rows) {
   for (const r of rows) owners.set(r.id, r.owner);
 }
 
-// A character changed somewhere: update it here and redraw what shows it.
+// A character changed (or was deleted) somewhere: update it here and redraw what shows it.
 function applyRow(row) {
-  owners.set(row.id, row.owner);
   const i = party.findIndex((c) => c.id === row.id);
-  if (i >= 0) party[i] = row.data; else party.push(row.data);
+  if (row.deleted) {
+    if (i < 0) return;
+    party.splice(i, 1);
+    owners.delete(row.id);
+    // A player whose hero was deleted goes back to pick or make a new one.
+    if (me && !me.dm && me.heroId === row.id) { location.reload(); return; }
+    if (viewAs === row.id) previewAs(null);
+  } else {
+    owners.set(row.id, row.owner);
+    if (i >= 0) party[i] = row.data; else party.push(row.data);
+  }
   statusScreen.refresh(row.id);
   combatScreen.refresh();
   combatView.refresh();
-  if (screen === 'party') {
-    renderParty(screens.party, party, (id) => { showScreen('status'); statusScreen.showCharacter(id); });
-  }
+  if (screen === 'party') drawParty();
 }
 
 // Decides where a logged-in person goes. Called on start-up and after logging in.
@@ -637,7 +664,9 @@ function applyView() {
   roleChip.style.setProperty('--badge', heroId ? hero.colour : '#3b2f22');
   roleChip.classList.toggle('is-previewing', Boolean(viewAs));
   roleChip.hidden = false;
+  statusScreen.setDm(me.dm);
   statusScreen.setPlayer(heroId);
+  if (screen === 'party') drawParty();
 }
 
 function previewAs(heroId) {

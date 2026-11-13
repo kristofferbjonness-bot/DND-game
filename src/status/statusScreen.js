@@ -21,7 +21,7 @@ const item = (main, sub, side = '') => `
     ${side}
   </li>`;
 
-function sheet(c, tab, editable) {
+function sheet(c, tab, editable, dm) {
   const d = derive(c);
   const hpPct = Math.round((c.hp.current / c.hp.max) * 100);
 
@@ -49,8 +49,9 @@ function sheet(c, tab, editable) {
 
   const equippedIds = new Set(Object.values(c.equipped));
   const describe = (it) => it.kind === 'armour'
-    ? `${it.category} armour · AC ${it.ac}${it.dexCap === null ? ' + Dex' : ` + Dex (max ${it.dexCap})`}`
-    : it.kind === 'weapon' ? `${it.dice} ${it.type}${it.props.length ? ` · ${it.props.join(', ')}` : ''}` : '';
+    ? `${it.category} armour · AC ${it.ac}${it.category === 'Heavy' ? '' : it.dexCap === null ? ' + Dex' : ` + Dex (max ${it.dexCap})`}`
+    : it.kind === 'weapon' ? `${it.dice} ${it.type}${it.props.length ? ` · ${it.props.join(', ')}` : ''}`
+    : it.kind === 'shield' ? `+${it.ac} AC` : '';
   const gear = `
     <h3 class="sheet__h">Equipped</h3>
     <div class="slots">
@@ -80,13 +81,15 @@ function sheet(c, tab, editable) {
 
   const story = `
     <dl class="story">
-      <dt>Origin</dt><dd>${esc(c.story.origin)}</dd>
-      <dt>Goal</dt><dd>${esc(c.story.goal)}</dd>
+      ${c.story.origin ? `<dt>${c.figure ? 'Backstory' : 'Origin'}</dt><dd>${esc(c.story.origin)}</dd>` : ''}
+      ${c.story.goal ? `<dt>Goal</dt><dd>${esc(c.story.goal)}</dd>` : ''}
       ${c.story.notes ? `<dt>Notes</dt><dd>${esc(c.story.notes)}</dd>` : ''}
+      ${c.story.design ? `<dt>Look</dt><dd>${esc(c.story.design)}</dd>` : ''}
       <dt>Background</dt><dd>${esc(c.background)} · ${esc(c.alignment)}</dd>
       <dt>Proficient with</dt><dd>${esc(c.proficiencies)}</dd>
       <dt>Languages</dt><dd>${esc(c.languages)}</dd>
-    </dl>`;
+    </dl>
+    ${dm ? '<button type="button" class="sheet__delete">Delete this hero</button>' : ''}`;
 
   const panels = { combat, skills, gear, story };
 
@@ -123,7 +126,8 @@ function sheet(c, tab, editable) {
 }
 
 // `onChange(character)` is called after the gear changes, to save it.
-export function createStatusScreen(root, characters, { onChange } = {}) {
+// `onDelete(character)` lets the Dungeon Master delete a hero.
+export function createStatusScreen(root, characters, { onChange, onDelete } = {}) {
   root.innerHTML = `
     <div class="status__sheet"></div>
     <div class="status__stage">
@@ -138,7 +142,7 @@ export function createStatusScreen(root, characters, { onChange } = {}) {
   const pickerName = root.querySelector('.picker__name b');
   const pickerLine = root.querySelector('.picker__name small');
   const viewer = createCharacterViewer(root.querySelector('.status__canvas'));
-  let index = 0, tab = 'combat', player = null;
+  let index = 0, tab = 'combat', player = null, dm = false;
 
   // Players may change their own hero's gear; the Dungeon Master may change anyone's.
   const editable = (c) => !player || player === c.id;
@@ -146,15 +150,17 @@ export function createStatusScreen(root, characters, { onChange } = {}) {
   function render({ keepScroll = false } = {}) {
     const c = characters[index];
     const scroll = sheetEl.scrollTop;
-    sheetEl.innerHTML = sheet(c, tab, editable(c));
+    sheetEl.innerHTML = sheet(c, tab, editable(c), dm && !player);
     sheetEl.scrollTop = keepScroll ? scroll : 0;
   }
 
   function showCharacter(id) {
     index = Math.max(0, characters.findIndex((c) => c.id === id));
     const c = characters[index];
+    if (!c) return;
     render();
     pickerName.textContent = c.name;
+    pickerName.dataset.id = c.id;
     pickerLine.textContent = c.tagline ?? '';
     viewer.show(c);
   }
@@ -171,13 +177,24 @@ export function createStatusScreen(root, characters, { onChange } = {}) {
 
   // Someone (maybe on another device) changed a character: redraw if it is showing.
   function refresh(id) {
-    const c = characters[index];
-    if (!c || c.id !== id) return;
+    const shown = pickerName.dataset.id;
+    if (!characters.some((x) => x.id === shown)) { // the hero on show was deleted
+      const next = player ?? characters[0]?.id;
+      if (next) showCharacter(next);
+      return;
+    }
+    if (shown !== id) return;
+    index = characters.findIndex((x) => x.id === id);
     render({ keepScroll: true });
-    viewer.show(c);
+    viewer.show(characters[index]);
   }
 
   sheetEl.addEventListener('click', (e) => {
+    if (e.target.closest('.sheet__delete')) {
+      const c = characters[index];
+      if (confirm(`Delete ${c.name} for good? Their player will have to pick or make a new hero.`)) onDelete?.(c);
+      return;
+    }
     const btn = e.target.closest('.tab');
     if (!btn) return;
     tab = btn.dataset.tab;
@@ -200,5 +217,8 @@ export function createStatusScreen(root, characters, { onChange } = {}) {
   }
 
   if (characters.length) showCharacter(characters[0].id);
-  return { start: () => viewer.start(), stop: () => viewer.stop(), showCharacter, setPlayer, refresh };
+  return {
+    start: () => viewer.start(), stop: () => viewer.stop(), showCharacter, setPlayer, refresh,
+    setDm(on) { dm = on; if (characters[index]) render({ keepScroll: true }); },
+  };
 }

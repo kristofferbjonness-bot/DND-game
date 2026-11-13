@@ -95,7 +95,8 @@ The original assets (hand-drawn world map, location art, character art, lore doc
   - AC and the attack list are derived from what is equipped, including Dueling and Archery and
     the off-hand rules (rules.js).
   - Equip rules: two-handed weapons empty the off hand, and an off-hand weapon must be light,
-    with a light weapon in the main hand too.
+    with a light weapon in the main hand too. Shields go in the off hand beside any one-handed
+    weapon (+2 AC). Heavy armour ignores Dex.
   - The Gear tab has a dropdown per slot. Players can change only their own hero; the DM can
     change anyone's.
   - Changes are saved to the database and reach other devices live.
@@ -138,7 +139,7 @@ The original assets (hand-drawn world map, location art, character art, lore doc
   - The encounter itself is not saved online yet, so a reload loses it.
 - **Bestiary** (DM only, `src/bestiary/bestiaryScreen.js`) lists every enemy with its 3D figure
   and stat block. "Generate new" has Claude design one from a text prompt.
-  - Server: `netlify/edge-functions/generate-monster.js` at POST `/api/generate-monster`.
+  - Server: `netlify/edge-functions/generate.js` at POST `/api/generate-monster`.
     - It checks the caller's Supabase token and that their profile is the DM, then calls the
       Claude API (`claude-sonnet-5-5`, streaming) with the system prompt that defines the JSON
       format.
@@ -154,6 +155,22 @@ The original assets (hand-drawn world map, location art, character art, lore doc
     writes, with realtime.
   - At login, everyone loads the table into the MONSTERS registry (`addMonster`) and the recipe
     registry (`registerRecipe`), so players can see generated enemies in fights.
+- **Character creator** (`src/creator/creatorScreen.js`, rules in `src/character/creator.js`):
+  - Opened by players from the hero-pick step ("Create my own hero") and by the DM from Party
+    ("New hero"). Four steps: Hero (name, race, class, level 1–2, alignment, background),
+    Abilities (27-point buy plus race bonus, "Suggested" = standard array in the class order),
+    Skills (class picks, 2 background picks plus race extras, Rogue expertise, fighting style),
+    Look (Design and Backstory boxes).
+  - 12 races and 12 classes with level 1–2 features, starting gear, HP, Unarmoured Defence and
+    attack cantrips (`extraAttacks` in the sheet, used by derive()).
+  - Claude designs the figure: POST `/api/generate-hero` in `netlify/edge-functions/generate.js`
+    (same function and key as monsters). Allowed for the DM, or a player with no hero yet.
+    Returns tagline, colour, goal and a recipe that follows the hero skeleton (parts named legs,
+    body, head, armR, armL). `buildRecipeHero` in model.js adds held weapons, shields, hip
+    swords and the quiver from the gear, so equipping still shows on the figure.
+  - Saving uses the `create_character` RPC (`supabase/creator.sql`): a player's new hero is
+    owned by them at once; the DM's hero is left free to claim.
+  - The DM can delete a hero from the Story tab on Status.
 - **Party** (`src/status/partyScreen.js`) shows a card per hero with HP, AC, initiative and
   passive perception. Tapping a card opens that hero on Status.
 - Map HUD is kept minimal:

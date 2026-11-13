@@ -69,11 +69,28 @@ export async function claimCharacter(id) {
   if (error) throw error;
 }
 
-// Calls back with the new row whenever any character changes, on any device.
+// A hero from the character creator. A player becomes its owner straight away;
+// the Dungeon Master's heroes are left free for a player to claim.
+export async function createCharacter(character) {
+  const { error } = await supabase.rpc('create_character', { sheet: character });
+  if (error) {
+    if (/create_character/.test(error.message)) throw new Error('The database is not ready for new heroes yet: the Dungeon Master must run supabase/creator.sql in Supabase.');
+    throw error;
+  }
+}
+
+export async function deleteCharacter(id) {
+  const { error } = await supabase.from('characters').delete().eq('id', id);
+  if (error) throw error;
+}
+
+// Calls back whenever any character changes, on any device: `onRow(row)` with the
+// new row, or `onRow({ id, deleted: true })` when one is deleted.
 export function watchCharacters(onRow) {
   return supabase
     .channel('characters')
     .on('postgres_changes', { event: '*', schema: 'public', table: 'characters' }, (msg) => {
+      if (msg.eventType === 'DELETE') { if (msg.old?.id) onRow({ id: msg.old.id, deleted: true }); return; }
       if (msg.new?.id) onRow(msg.new);
     })
     .subscribe();
@@ -125,16 +142,19 @@ export function watchMonsters(onChange) {
     .subscribe();
 }
 
-// Asks the server (netlify/edge-functions/generate-monster.js) to have Claude
-// design a monster. Claude's answer streams in; `onProgress(characters)` is
-// called as it grows. Resolves with the parsed monster (stats + figure).
-export async function generateMonster(prompt, onProgress) {
+// Asks the server (netlify/edge-functions/generate.js) to have Claude design a
+// monster or a hero's look. Claude's answer streams in; `onProgress(characters)`
+// is called as it grows. Resolves with the parsed JSON.
+export const generateMonster = (prompt, onProgress) => generate('/api/generate-monster', { prompt }, onProgress);
+export const generateHero = (request, onProgress) => generate('/api/generate-hero', request, onProgress);
+
+async function generate(path, request, onProgress) {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) throw new Error('Please log in again.');
-  const res = await fetch('/api/generate-monster', {
+  const res = await fetch(path, {
     method: 'POST',
     headers: { 'content-type': 'application/json', authorization: `Bearer ${session.access_token}` },
-    body: JSON.stringify({ prompt }),
+    body: JSON.stringify(request),
   });
   if (!res.ok || !res.headers.get('content-type')?.includes('text/event-stream')) {
     let message = `The generator answered ${res.status}.`;
@@ -167,10 +187,10 @@ export async function generateMonster(prompt, onProgress) {
     }
   }
   const start = text.indexOf('{'), end = text.lastIndexOf('}');
-  if (start < 0 || end < start) throw new Error('Claude did not send a monster. Try again.');
+  if (start < 0 || end < start) throw new Error('Claude did not send an answer. Try again.');
   try {
     return JSON.parse(text.slice(start, end + 1));
   } catch {
-    throw new Error('The monster came back garbled. Try again.');
+    throw new Error('The answer came back garbled. Try again.');
   }
 }

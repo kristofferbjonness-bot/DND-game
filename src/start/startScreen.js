@@ -5,8 +5,8 @@ import { signIn, signUp, signOut, myProfile, claimCharacter, explain } from '../
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
 
 // `onLoggedIn()` is called after any successful login or hero pick; the app then
-// loads the party and decides where to go.
-export function createStartScreen(root, { onLoggedIn }) {
+// loads the party and decides where to go. `onCreateHero()` opens the character creator.
+export function createStartScreen(root, { onLoggedIn, onCreateHero }) {
   const playerForm = root.querySelector('.auth[data-side="player"]');
   const nameInput = playerForm.querySelector('.auth__name');
   const submit = playerForm.querySelector('.auth__submit');
@@ -84,6 +84,7 @@ export function createStartScreen(root, { onLoggedIn }) {
       claimError.hidden = false;
     }
   });
+  root.querySelector('.start__create').addEventListener('click', () => onCreateHero?.());
   root.querySelector('[data-action="logout"]').addEventListener('click', async () => {
     await signOut();
     step('login');
@@ -96,6 +97,7 @@ export function createStartScreen(root, { onLoggedIn }) {
     showClaim(rows) {
       root.hidden = false;
       step('claim');
+      root.querySelector('[data-step="claim"] .start__text').textContent = rows.some((r) => !r.owner) ? 'Who are you playing?' : 'Make your hero';
       heroes.innerHTML = rows.length
         ? rows.map(({ data: c, owner }) => `
           <li>
@@ -105,7 +107,7 @@ export function createStartScreen(root, { onLoggedIn }) {
               <span class="hero-pick__go" aria-hidden="true">${owner ? '' : '›'}</span>
             </button>
           </li>`).join('')
-        : '<li class="start__wait">The Dungeon Master has not set up the party yet. Try again soon.</li>';
+        : '<li class="start__wait">No heroes are free yet. Make your own!</li>';
     },
   };
 }

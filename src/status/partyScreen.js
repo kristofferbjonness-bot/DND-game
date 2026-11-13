@@ -1,13 +1,17 @@
 // The Party screen: one card per hero with their key numbers. Tapping a card
-// opens that hero on the Status screen.
+// opens that hero on the Status screen. `onNew` (the Dungeon Master) adds a
+// "New hero" button that opens the character creator.
 import { derive, signed } from '../character/rules.js';
 
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
 
-export function renderParty(root, characters, onOpen) {
+export function renderParty(root, characters, onOpen, { onNew } = {}) {
   root.innerHTML = `
     <div class="party__inner">
-      <h2 class="party__title">The Party</h2>
+      <div class="party__head">
+        <h2 class="party__title">The Party</h2>
+        ${onNew ? '<button type="button" class="party__new">＋ New hero</button>' : ''}
+      </div>
       <ul class="party__list">
         ${characters.map((c) => {
           const d = derive(c);
@@ -32,6 +36,7 @@ export function renderParty(root, characters, onOpen) {
         }).join('')}
       </ul>
     </div>`;
+  root.querySelector('.party__new')?.addEventListener('click', onNew);
   root.querySelector('.party__list').addEventListener('click', (e) => {
     const card = e.target.closest('.party__card');
     if (card) onOpen(card.dataset.id);
