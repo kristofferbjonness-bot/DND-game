@@ -15,10 +15,9 @@ import { createTiltShiftPasses } from './fx/tiltShift.js';
 import { attachTouchGestures } from './fx/touchGestures.js';
 import { createStatusScreen } from './status/statusScreen.js';
 import { renderParty } from './status/partyScreen.js';
-import { CHARACTERS } from './data/characters.js';
-import { restoreEquipment } from './character/equipment.js';
-
-restoreEquipment(CHARACTERS);
+import { CHARACTERS as STARTING_HEROES } from './data/characters.js';
+import { createStartScreen } from './start/startScreen.js';
+import { supabase, myProfile, loadCharacters, seedCharacters, saveCharacter, watchCharacters, signOut, explain } from './net/backend.js';
 import './style.css';
 
 // The app shows one "view" at a time: the world map, or a city map. Each view
@@ -459,6 +458,10 @@ function updateLabels(dist) {
 // (Status has its own small 3D stage for the character figure).
 let screen = 'map';
 let statusScreen = null;
+// The party's characters, loaded from the database after logging in. Updated
+// in place when anyone changes a character, so every screen sees the same objects.
+const party = [];
+const owners = new Map(); // character id -> profile id of the player
 const screens = { status: document.getElementById('status'), party: document.getElementById('party') };
 
 function showScreen(id) {
@@ -468,13 +471,12 @@ function showScreen(id) {
   document.body.dataset.screen = id;
   for (const [key, el] of Object.entries(screens)) el.hidden = key !== id;
   if (id === 'status') {
-    statusScreen ??= createStatusScreen(screens.status, CHARACTERS);
     statusScreen.start();
   } else {
     statusScreen?.stop();
   }
   if (id === 'party') { // re-rendered each time, so AC and HP follow gear changes
-    renderParty(screens.party, CHARACTERS, (characterId) => {
+    renderParty(screens.party, party, (characterId) => {
       showScreen('status');
       statusScreen.showCharacter(characterId);
     });
@@ -487,68 +489,88 @@ document.querySelector('.topnav').addEventListener('click', (e) => {
 });
 document.body.dataset.screen = 'map';
 
-// --- Start: log in as Dungeon Master or as a player's hero ------------------------------------
-// Shown every time the app opens. The choice decides what Status shows: a player
-// gets their own hero, the Dungeon Master can flip through the whole party.
-const start = document.getElementById('start');
+// --- Start: log in, load the party, and go in as the DM or a player ---------------------------
 const roleChip = document.getElementById('role');
-let role = null; // { kind: 'dm' } or { kind: 'player', id }
+const startScreen = createStartScreen(document.getElementById('start'), { onLoggedIn: enter });
+let watching = null;
 
-start.querySelector('.start__heroes').innerHTML = CHARACTERS.map((c) => `
-  <li>
-    <button type="button" class="hero-pick" data-id="${c.id}">
-      <span class="hero-pick__badge" style="background:${c.colour}">${c.name[0]}</span>
-      <span class="hero-pick__who"><b>${c.name}</b><small>Level ${c.level} ${c.class} · ${c.race}</small></span>
-      <span class="hero-pick__go" aria-hidden="true">›</span>
-    </button>
-  </li>`).join('');
+statusScreen = createStatusScreen(screens.status, party, {
+  onChange: (c) => saveCharacter(c).catch((err) => toast(`Could not save: ${explain(err)}`)),
+});
 
-function logIn(next) {
-  role = next;
-  document.body.dataset.role = role.kind;
-  start.hidden = true;
-  const hero = CHARACTERS.find((c) => c.id === role.id);
-  roleChip.textContent = role.kind === 'dm' ? 'Dungeon Master' : hero.name;
-  roleChip.style.setProperty('--badge', hero?.colour ?? '#3b2f22');
-  roleChip.hidden = false;
-  statusScreen ??= createStatusScreen(screens.status, CHARACTERS);
-  statusScreen.setPlayer(role.kind === 'player' ? role.id : null);
-  showScreen(role.kind === 'player' ? 'status' : 'map');
+// Fills `party` from database rows, keeping the starting heroes' order.
+function setParty(rows) {
+  const order = (id) => { const i = STARTING_HEROES.findIndex((h) => h.id === id); return i < 0 ? 999 : i; };
+  rows.sort((a, b) => order(a.id) - order(b.id));
+  party.splice(0, party.length, ...rows.map((r) => r.data));
+  owners.clear();
+  for (const r of rows) owners.set(r.id, r.owner);
 }
 
-// The Dungeon Master needs a code. It keeps players out of the DM view, but it
-// is not real security: anyone reading the app's code could find it. Proper
-// logins come with online accounts.
-const DM_CODE = '160';
-const codeForm = start.querySelector('.start__code');
-const codeInput = start.querySelector('.start__input');
-const codeError = start.querySelector('.start__error');
-codeForm.addEventListener('submit', (e) => {
-  e.preventDefault();
-  if (codeInput.value.trim() === DM_CODE) {
-    codeInput.value = '';
-    codeError.hidden = true;
-    logIn({ kind: 'dm' });
+// A character changed somewhere: update it here and redraw what shows it.
+function applyRow(row) {
+  owners.set(row.id, row.owner);
+  const i = party.findIndex((c) => c.id === row.id);
+  if (i >= 0) party[i] = row.data; else party.push(row.data);
+  statusScreen.refresh(row.id);
+  if (screen === 'party') {
+    renderParty(screens.party, party, (id) => { showScreen('status'); statusScreen.showCharacter(id); });
+  }
+}
+
+// Decides where a logged-in person goes. Called on start-up and after logging in.
+async function enter() {
+  let profile, rows;
+  try {
+    profile = await myProfile();
+    if (!profile) { startScreen.show(); return; }
+    rows = await loadCharacters();
+    if (!rows.length && profile.role === 'dm') {
+      await seedCharacters(STARTING_HEROES); // first time: put the heroes online
+      rows = await loadCharacters();
+    }
+  } catch (err) {
+    toast(explain(err));
+    startScreen.show();
     return;
   }
-  codeError.hidden = false;
-  codeForm.classList.remove('is-wrong');
-  void codeForm.offsetWidth; // restart the shake
-  codeForm.classList.add('is-wrong');
-  codeInput.value = '';
-  codeInput.focus();
-});
-codeInput.addEventListener('input', () => { codeError.hidden = true; });
+  setParty(rows);
 
-start.addEventListener('click', (e) => {
-  const pick = e.target.closest('.hero-pick');
-  if (pick) logIn({ kind: 'player', id: pick.dataset.id });
-});
-roleChip.addEventListener('click', () => {
-  start.hidden = false;
+  const mine = rows.find((r) => r.owner === profile.id);
+  if (profile.role !== 'dm' && !mine) { startScreen.showClaim(rows); return; }
+
+  watching ??= watchCharacters(applyRow);
+  startScreen.hide();
+  const dm = profile.role === 'dm';
+  document.body.dataset.role = dm ? 'dm' : 'player';
+  roleChip.textContent = dm ? 'Dungeon Master' : mine.data.name;
+  roleChip.style.setProperty('--badge', dm ? '#3b2f22' : mine.data.colour);
+  roleChip.hidden = false;
+  statusScreen.setPlayer(dm ? null : mine.id);
+  showScreen(dm ? 'map' : 'status');
+}
+
+roleChip.addEventListener('click', async () => {
+  if (!confirm('Log out?')) return;
+  await signOut();
+  supabase.removeAllChannels();
+  watching = null;
   roleChip.hidden = true;
+  delete document.body.dataset.role;
   showScreen('map');
+  startScreen.show();
 });
+
+// A short message at the bottom of the screen.
+function toast(message) {
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.textContent = message;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 4000);
+}
+
+enter();
 
 // --- Loop ------------------------------------------------------------------------------------------
 const clock = new THREE.Clock();

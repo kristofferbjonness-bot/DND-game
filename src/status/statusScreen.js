@@ -122,7 +122,8 @@ function sheet(c, tab, editable) {
     ${TABS.map((t) => `<section class="tabpanel" data-panel="${t.id}"${t.id === tab ? '' : ' hidden'}>${panels[t.id]}</section>`).join('')}`;
 }
 
-export function createStatusScreen(root, characters) {
+// `onChange(character)` is called after the gear changes, to save it.
+export function createStatusScreen(root, characters, { onChange } = {}) {
   root.innerHTML = `
     <div class="status__sheet"></div>
     <div class="status__stage">
@@ -165,7 +166,16 @@ export function createStatusScreen(root, characters) {
     equip(c, select.dataset.slot, select.value);
     render({ keepScroll: true });
     viewer.show(c);
+    onChange?.(c);
   });
+
+  // Someone (maybe on another device) changed a character: redraw if it is showing.
+  function refresh(id) {
+    const c = characters[index];
+    if (!c || c.id !== id) return;
+    render({ keepScroll: true });
+    viewer.show(c);
+  }
 
   sheetEl.addEventListener('click', (e) => {
     const btn = e.target.closest('.tab');
@@ -185,9 +195,10 @@ export function createStatusScreen(root, characters) {
   function setPlayer(id) {
     player = id;
     root.classList.toggle('is-locked', Boolean(id));
-    showCharacter(id ?? characters[index].id);
+    const show = id ?? characters[index]?.id ?? characters[0]?.id;
+    if (show) showCharacter(show);
   }
 
-  showCharacter(characters[0].id);
-  return { start: () => viewer.start(), stop: () => viewer.stop(), showCharacter, setPlayer };
+  if (characters.length) showCharacter(characters[0].id);
+  return { start: () => viewer.start(), stop: () => viewer.stop(), showCharacter, setPlayer, refresh };
 }

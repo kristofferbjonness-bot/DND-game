@@ -25,25 +25,42 @@
       <button type="button" class="topnav__tab" data-screen="party">Party</button>
     </nav>
 
-    <button id="role" type="button" class="role-chip" hidden title="Change who you are"></button>
+    <button id="role" type="button" class="role-chip" hidden title="Log out"></button>
 
-    <section id="start" class="start" aria-label="Choose how to play">
+    <section id="start" class="start" aria-label="Log in">
       <div class="start__half start__half--dm"><div class="start__inner">
         <p class="start__kicker">Run the world</p>
         <h1 class="start__title">Dungeon Master</h1>
         <p class="start__text">See every hero, the whole map and everything behind the curtain.</p>
-        <form class="start__code" autocomplete="off">
-          <input class="start__input" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="8"
-            placeholder="Code" aria-label="Dungeon Master code" />
+        <form class="auth auth--dark" data-side="dm">
+          <input class="auth__input" name="email" type="email" placeholder="Email" autocomplete="username" required />
+          <input class="auth__input" name="password" type="password" placeholder="Password" autocomplete="current-password" required />
           <button type="submit" class="start__dm">Log in</button>
+          <p class="auth__error" role="alert" hidden></p>
         </form>
-        <p class="start__error" role="alert" hidden>Wrong code. Try again.</p>
       </div></div>
       <div class="start__half start__half--player"><div class="start__inner">
         <p class="start__kicker">Join the party</p>
         <h1 class="start__title">Player</h1>
-        <p class="start__text">Who are you playing?</p>
-        <ul class="start__heroes"></ul>
+
+        <div class="start__step" data-step="login">
+          <p class="start__text">Log in to play your hero.</p>
+          <form class="auth" data-side="player">
+            <input class="auth__input auth__name" name="name" type="text" placeholder="Your name" autocomplete="nickname" hidden />
+            <input class="auth__input" name="email" type="email" placeholder="Email" autocomplete="username" required />
+            <input class="auth__input" name="password" type="password" placeholder="Password" autocomplete="current-password" minlength="6" required />
+            <button type="submit" class="auth__submit">Log in</button>
+            <p class="auth__error" role="alert" hidden></p>
+          </form>
+          <button type="button" class="auth__switch">New here? Create an account</button>
+        </div>
+
+        <div class="start__step" data-step="claim" hidden>
+          <p class="start__text">Who are you playing?</p>
+          <ul class="start__heroes"></ul>
+          <p class="auth__error" role="alert" hidden></p>
+          <button type="button" class="auth__switch" data-action="logout">Log out</button>
+        </div>
       </div></div>
     </section>
 

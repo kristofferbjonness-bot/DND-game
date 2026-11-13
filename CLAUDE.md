@@ -43,16 +43,28 @@ The original assets (hand-drawn world map, location art, character art, lore doc
 
 ## Screens
 
-- **Start screen** (shown every time the app opens): split in two.
-  - Left: "Log in as Dungeon Master". Right: "Player", with a list of heroes to pick.
-  - Players land on Status locked to their own hero (the ‹ › arrows are hidden). The DM lands on
-    the map and can flip through every hero.
-  - The role chip at the top right shows who you are; tapping it returns to the start screen.
-  - The DM side asks for a code (`DM_CODE` in main.js). It only keeps players out casually,
-    because the code is visible in the app's source. Real accounts come with Supabase
-    (roadmap step 3).
-
-- The top nav has three screens: **Map · Status · Party**. The map only renders while it is showing.
+- **Online backend: Supabase.**
+  - Project `dnd-world`, URL https://bmuktbeyfpwovcrqnvsk.supabase.co. The publishable key is in
+    `src/net/backend.js`.
+  - Schema and security rules are in `supabase/schema.sql` (row level security).
+  - Players see the party and revealed things and edit only their own hero. Only the DM sees DM
+    notes and hidden secrets.
+  - Email sign-up is open, and email confirmation is turned off.
+  - The DM is promoted by hand in the SQL editor:
+    `update public.profiles set role = 'dm' where id = (select id from auth.users where email = '...');`
+  - The characters table holds the whole sheet as JSON in `data`.
+    `src/data/characters.js` is only the STARTING data: the first DM login seeds it when the
+    table is empty. After that, the database is the source of truth, and changing
+    characters.js does not change existing heroes.
+  - Live updates: `watchCharacters` (Supabase realtime) refreshes Status and Party on every
+    device.
+- **Start screen** (`src/start/startScreen.js`): split in two halves.
+  - Left: the DM logs in with email and password. Non-DM accounts are refused.
+  - Right: players log in or create an account. On first login they claim a free hero
+    (`claim_character`).
+  - The login session is remembered, so the app skips the start screen next time. The role
+    chip at the top right logs out.
+  - Players land on Status locked to their hero; the DM lands on the map.
 - **Status** (`src/status/statusScreen.js`) has the character sheet on the left and a 3D figure
   on the right, with ‹ › arrows to switch hero.
   - The sheet is a trimmed-down 5e sheet: level, XP, HP, AC, initiative, speed, proficiency and
@@ -80,7 +92,7 @@ The original assets (hand-drawn world map, location art, character art, lore doc
     with a light weapon in the main hand too.
   - The Gear tab has a dropdown per slot. Players can change only their own hero; the DM can
     change anyone's.
-  - Choices are saved in localStorage per device until online saving exists.
+  - Changes are saved to the database and reach other devices live.
   - Figures are dressed from gear (`dress` in model.js):
     - Armour recolours the torso and shoulders.
     - Held weapons appear in the hand (bows in the left hand).
@@ -125,8 +137,9 @@ The original assets (hand-drawn world map, location art, character art, lore doc
      where the non-3D screens never load three.js.
 2. Character creator and character sheet: stats, equipment and inventory. Save to the device
    first (localStorage).
-3. Accounts and online sync with Supabase, so friends log in and the DM can see and edit
-   characters.
+3. DONE: accounts and online sync with Supabase. Next ideas for the DM: fog of war with
+   revealed places, DM notes on places, secrets to reveal, handing out rewards/XP/HP,
+   journal, quests, NPCs, monsters and initiative.
 4. Extras: voxel character models built from the creator choices, an item database for the
    world, dice, a quest journal.
 
