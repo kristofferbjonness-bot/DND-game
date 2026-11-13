@@ -1,4 +1,4 @@
-// The dice tray: the d20 button in the bar (showing the latest roll) opens a
+// The dice tray: a d20 tab on the left edge (under the rulebook, showing the latest roll) opens a
 // small tray. Tap dice to build a roll, or tap a ready-made roll for your hero
 // (initiative, attacks, damage). Every roll goes into a log the whole table
 // sees live. The Dungeon Master can roll hidden and clear the log.
@@ -70,13 +70,12 @@ export function createDiceTray({ button, root, who, save, clear }) {
       </li>`;
   }
 
-  // The bar button shows the table's latest roll.
+  // The tab shows a d20 with the table's latest roll on it.
   let lastButton = '';
   function drawButton() {
     const top = log[0];
     const nat = top?.dice.find((d) => d.kept && d.sides === 20)?.value;
-    const html = `${die(20, top ? top.total : '')}<span class="bar__dice-text">${top
-      ? `<small>${esc(top.who)}</small><b>${esc(top.label || 'Roll')}</b>` : '<small>Dice</small><b>Roll</b>'}</span>`;
+    const html = die(20, top ? top.total : '20');
     if (html !== lastButton) { lastButton = html; button.innerHTML = html; }
     button.classList.toggle('is-nat20', nat === 20);
     button.classList.toggle('is-nat1', nat === 1);

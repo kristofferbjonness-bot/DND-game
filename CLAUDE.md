@@ -229,7 +229,7 @@ The original assets (hand-drawn world map, location art, character art, lore doc
   - "Your weapons" shows the d20 bonus and damage dice from derive() for the player's hero, or
     for the DM the hero last shown on Status (`statusScreen.current()`).
   - The dice are small inline SVGs (`die()`).
-- **Dice tray** (`src/dice/diceTray.js`): a d20 tab under the rulebook tab.
+- **Dice tray** (`src/dice/diceTray.js`): a d20 tab under the rulebook tab (taken off the bar at the owner's request), showing the latest total.
   - Tap dice to build a pool, set a bonus, and choose advantage or disadvantage (single d20
     only). "Quick rolls" offers initiative and each attack's to-hit and damage for the
     player's hero, or the previewed hero for the DM.
@@ -274,7 +274,7 @@ The original assets (hand-drawn world map, location art, character art, lore doc
   - Portraits of heroes and monsters are small renders of their figures (`src/ui/portraits.js`,
     one shared offscreen renderer, cached by gear/look).
 - **The bar** (`#bar` in index.html) is a the painted rolled scroll (`public/art/ui/paper/rolled-scroll.webp` as a 9-slice on `.bar::before`; ink text, a red pencil slash under the open tab; "DM" for the Dungeon Master). It holds the sky dial (time + weather, opens the sky card), the
-  map/places menu (and ‹ back from cities), the screen tabs, the latest dice roll (opens the tray),
+  map/places menu (and ‹ back from cities), the screen tabs,
   the other heroes with HP (wide screens only) and "you" (portrait + HP, opens the view-as/log-out
   menu; `drawBar` in main.js). Top bar on wide screens; a two-row dock at the bottom on upright phones.
   The rulebook stays its own tab on the left edge.

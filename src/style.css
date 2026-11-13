@@ -221,7 +221,7 @@ button, summary, .label { -webkit-tap-highlight-color: transparent; touch-action
   position: fixed; z-index: 6; top: 0; left: 0; right: 0;
   height: calc(var(--bar) + var(--safe-t));
   padding: var(--safe-t) max(52px, calc(var(--safe-r) + 48px)) 0 max(52px, calc(var(--safe-l) + 48px));
-  display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto auto; align-items: center; gap: 18px;
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; align-items: center; gap: 18px;
   color: var(--paper-ink);
 }
 /* The bar is the painted rolled scroll (public/art/ui/paper/rolled-scroll.webp): the paper
@@ -309,21 +309,6 @@ body:not([data-screen="map"]) .topnav__chev { display: none; }
 .topnav__tab--dm, .topnav__tab--dmonly { display: none; }
 body[data-role="dm"] .topnav__tab--dm, body[data-fight="on"] .topnav__tab--dm, body[data-role="dm"] .topnav__tab--dmonly { display: flex; }
 body[data-role="player"][data-fight="on"] .topnav__tab--dm { color: var(--paper-red); }
-
-/* The latest dice roll. */
-.bar__dice { display: flex; align-items: center; gap: 8px; position: relative; max-width: 190px; }
-.bar__dice .die-icon { width: 36px; height: 36px; }
-.bar__dice .die-icon polygon { fill: #fff6dc; stroke: var(--paper-line); stroke-width: 3; }
-.bar__dice .die-icon text { font: 700 13px var(--font-display); fill: var(--paper-ink); }
-.bar__dice.is-nat20 .die-icon polygon { fill: #cfe8b8; }
-.bar__dice.is-nat1 .die-icon polygon { fill: #f2c0b4; }
-.bar__dice-text { display: flex; flex-direction: column; line-height: 1.15; min-width: 0; text-align: left; }
-.bar__dice-text small { font-size: 11px; color: var(--paper-ink-soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.bar__dice-text b { font: 700 13px var(--font-display); color: var(--paper-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.bar__dice.has-news::after {
-  content: ''; position: absolute; top: 0; left: 28px; width: 10px; height: 10px; border-radius: 50%;
-  background: radial-gradient(circle at 40% 35%, #d0503e, #8a2e27); box-shadow: 0 0 0 1.5px #f1e2bf;
-}
 
 /* A portrait in an inked frame with a gilt line. */
 .bar__face {
@@ -1420,11 +1405,22 @@ input.is-bad { box-shadow: inset 0 0 0 2px #e2634e; }
 .rb-turn--next { right: -8px; }
 .rb-turn:disabled { opacity: 0; pointer-events: none; }
 
-/* ---------- Dice tray (opened from the bar) ---------- */
+/* ---------- Dice tray (opened from the d20 tab under the rulebook) ---------- */
+
+.dt-toggle { top: calc(50% + 60px); padding: 6px 6px 6px max(4px, var(--safe-l)); }
+.dt-toggle .die-icon { width: 100%; height: 100%; }
+.dt-toggle .die-icon polygon { fill: #fff6dc; stroke: #4a2c17; stroke-width: 2.6; }
+.dt-toggle .die-icon text { font: 700 12px var(--font-display); fill: #3b2a1b; }
+.dt-toggle.is-nat20 .die-icon polygon { fill: #cfe8b8; }
+.dt-toggle.is-nat1 .die-icon polygon { fill: #f2c0b4; }
+.dt-toggle.has-news::after {
+  content: ''; position: absolute; top: 3px; right: 3px; width: 9px; height: 9px; border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, #d0503e, #8a2e27); box-shadow: 0 0 0 1.5px #2b2330;
+}
 
 .dt {
-  position: fixed; z-index: 10; top: var(--top); right: max(12px, var(--safe-r));
-  width: min(370px, calc(100vw - 24px)); max-height: calc(100% - var(--top) - var(--nav)); display: flex;
+  position: fixed; z-index: 10; top: var(--top); left: calc(max(0px, var(--safe-l)) + 52px);
+  width: min(370px, calc(100vw - 70px)); max-height: calc(100% - var(--top) - var(--nav)); display: flex;
 }
 .dt[hidden] { display: none; }
 .dt-card {
@@ -1489,15 +1485,15 @@ input.is-bad { box-shadow: inset 0 0 0 2px #e2634e; }
 
 /* Someone rolled while the tray was closed: a note under the dice. */
 .roll-pop {
-  position: fixed; z-index: 12; top: var(--top); right: max(12px, var(--safe-r));
-  display: flex; align-items: center; gap: 8px; max-width: calc(100vw - 24px);
+  position: fixed; z-index: 12; top: calc(50% + 62px); left: calc(max(0px, var(--safe-l)) + 52px);
+  display: flex; align-items: center; gap: 8px; max-width: calc(100vw - 70px);
   background: var(--panel); color: var(--bone); border-radius: 4px; padding: 8px 14px; box-shadow: var(--frame);
   font-size: 14px; animation: roll-in 0.3s ease;
 }
 .roll-pop i { width: 9px; height: 9px; transform: rotate(45deg); flex-shrink: 0; }
 .roll-pop span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .roll-pop b { font: 700 18px var(--font-display); color: var(--gold-hi); }
-@keyframes roll-in { from { transform: translateY(-8px); opacity: 0; } }
+@keyframes roll-in { from { transform: translateX(-12px); opacity: 0; } }
 
 /* ---------- Party, Journal and Bestiary: the same painted parchment ---------- */
 
@@ -1625,7 +1621,7 @@ input.is-bad { box-shadow: inset 0 0 0 2px #e2634e; }
 
 /* Narrower windows: the bar keeps the pictures and drops some words. */
 @media (max-width: 1420px) {
-  .bar__party, .bar__dice-text { display: none; }
+  .bar__party { display: none; }
 }
 @media (max-width: 1060px) {
   .bar__sky-text { display: none; }
@@ -1646,7 +1642,6 @@ input.is-bad { box-shadow: inset 0 0 0 2px #e2634e; }
   .bar { gap: 6px; }
   .dial { width: 32px; height: 32px; }
   .bar__face { width: 32px; height: 32px; }
-  .bar__dice .die-icon { width: 30px; height: 30px; }
   .topnav__tab { height: 36px; padding: 0 9px; }
   .topnav__tab span { display: none; }
   .topnav__tab .ic { width: 24px; height: 24px; }
@@ -1744,22 +1739,20 @@ input.is-bad { box-shadow: inset 0 0 0 2px #e2634e; }
   .bar {
     top: auto; bottom: 0; height: auto;
     padding: 8px max(8px, var(--safe-r)) calc(4px + var(--safe-b)) max(8px, var(--safe-l));
-    grid-template-columns: auto minmax(0, 1fr) auto auto; grid-template-areas: "sky . dice me" "tabs tabs tabs tabs";
+    grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "sky . me" "tabs tabs tabs";
     gap: 6px 8px;
     padding-left: max(36px, calc(var(--safe-l) + 32px)); padding-right: max(36px, calc(var(--safe-r) + 32px));
   }
   .bar::before { top: 0; bottom: calc(var(--safe-b) - 2px); left: 2px; right: 2px; border-width: 14px 30px 16px; border-image-width: 14px 30px 16px 30px; }
   .bar__sky { grid-area: sky; }
-  .bar__dice { grid-area: dice; }
   .bar__me { grid-area: me; }
   .topnav { grid-area: tabs; justify-self: stretch; justify-content: space-between; border-top: 1px solid rgba(59, 42, 27, 0.25); padding-top: 4px; }
-  .bar__party, .bar__sky-text, .bar__dice-text { display: none; }
+  .bar__party, .bar__sky-text { display: none; }
   .bar__me-text { display: flex; }
   .bar__me-text small { display: none; }
   .bar__me-text b { font-size: 12px; max-width: 160px; }
   .bar__face { width: 34px; height: 34px; }
   .dial { width: 34px; height: 34px; }
-  .bar__dice .die-icon { width: 34px; height: 34px; }
   .places { max-height: 55vh; }
   .topnav__tab--map span { max-width: 72px; font-size: 11px; }
   .topnav__chev { display: none; }
@@ -1770,7 +1763,7 @@ input.is-bad { box-shadow: inset 0 0 0 2px #e2634e; }
   .topnav__tab .ic { width: 26px; height: 26px; }
   .topnav__tab.is-active::after { bottom: 1px; left: 18%; right: 18%; height: 3px; }
   .role-menu { top: auto; bottom: calc(var(--nav) + 4px); right: 8px; }
-  .sky, .dt, .roll-pop { top: auto; bottom: calc(var(--nav) + 6px); left: 8px; right: 8px; width: auto; }
+  .sky, .dt { top: auto; bottom: calc(var(--nav) + 6px); left: 8px; right: 8px; width: auto; }
   .sky { max-height: calc(100vh - var(--nav) - var(--top) - 10px); }
   .dt { top: var(--top); max-height: none; }
   .toast { bottom: calc(var(--nav) + 10px); }
@@ -1923,6 +1916,8 @@ input.is-bad { box-shadow: inset 0 0 0 2px #e2634e; }
 
   /* Rulebook */
   .rb-toggle { top: auto; bottom: calc(var(--nav) + 70px); transform: none; width: 30px; height: 42px; padding: 5px 5px 5px 3px; }
+  .dt-toggle { bottom: calc(var(--nav) + 120px); }
+  .roll-pop { top: auto; bottom: calc(var(--nav) + 120px); left: 40px; right: 8px; }
   .rb-turn--prev { left: 2px; }
   .rb-turn--next { right: 2px; }
   .rb { padding: var(--top) 8px calc(var(--nav) + 8px); }
