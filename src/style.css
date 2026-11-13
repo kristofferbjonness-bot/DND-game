@@ -407,6 +407,19 @@ body:not([data-screen="map"]) .labels { display: none; }
 .list__side small { font-size: 12px; color: var(--ink-soft); white-space: nowrap; }
 .list__tag { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-soft); white-space: nowrap; }
 .list__qty { font-weight: 700; color: var(--ink-soft); }
+.list__tag--on { color: var(--accent); font-weight: 700; }
+
+/* Equipment slots: a label and a dropdown per slot. */
+.slots { display: grid; gap: 8px; margin-top: 6px; }
+.slot { display: grid; grid-template-columns: 92px 1fr; align-items: center; gap: 12px; }
+.slot__label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-soft); }
+.slot__select {
+  -webkit-appearance: none; appearance: none; width: 100%;
+  font: 700 15px var(--font-body); color: var(--ink);
+  background: #fffaf0 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%236d5c48' stroke-width='2'/%3E%3C/svg%3E") no-repeat right 12px center;
+  border: 1px solid rgba(217, 199, 160, 0.9); border-radius: 10px; padding: 8px 34px 8px 12px; cursor: pointer;
+}
+.slot__select:disabled { color: var(--ink-soft); font-weight: 500; cursor: default; opacity: 0.8; }
 
 .saves { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; margin-top: 6px; }
 .save {

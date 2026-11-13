@@ -16,6 +16,9 @@ import { attachTouchGestures } from './fx/touchGestures.js';
 import { createStatusScreen } from './status/statusScreen.js';
 import { renderParty } from './status/partyScreen.js';
 import { CHARACTERS } from './data/characters.js';
+import { restoreEquipment } from './character/equipment.js';
+
+restoreEquipment(CHARACTERS);
 import './style.css';
 
 // The app shows one "view" at a time: the world map, or a city map. Each view
@@ -470,7 +473,7 @@ function showScreen(id) {
   } else {
     statusScreen?.stop();
   }
-  if (id === 'party' && !screens.party.innerHTML) {
+  if (id === 'party') { // re-rendered each time, so AC and HP follow gear changes
     renderParty(screens.party, CHARACTERS, (characterId) => {
       showScreen('status');
       statusScreen.showCharacter(characterId);

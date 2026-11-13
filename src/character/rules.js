@@ -1,3 +1,5 @@
+import { ITEMS, has } from '../data/items.js';
+
 // D&D 5e rules needed for a character sheet. Characters only store the basics
 // (scores, level, proficiencies); everything else is worked out here.
 
@@ -48,13 +50,41 @@ export function derive(c) {
     // Expertise doubles the proficiency bonus.
     return mod(s.ability) + (c.skills.includes(id) ? prof : 0) + (c.expertise?.includes(id) ? prof : 0);
   };
-  const attack = (a) => {
-    const m = a.finesse ? Math.max(mod('str'), mod('dex')) : mod(a.ability);
+  const main = ITEMS[c.equipped?.mainHand] ?? null;
+  const off = ITEMS[c.equipped?.offHand] ?? null;
+  const armour = ITEMS[c.equipped?.armour] ?? null;
+
+  // AC: worn armour plus Dex (capped for medium armour); 10 + Dex without armour.
+  const ac = armour
+    ? armour.ac + Math.min(mod('dex'), armour.dexCap ?? Infinity)
+    : 10 + mod('dex');
+
+  // One attack per weapon in hand.
+  const plus = (n) => (n ? ` ${n > 0 ? '+' : '−'} ${Math.abs(n)}` : '');
+  const attack = (w, hand) => {
+    const ranged = has(w, 'ranged');
+    const m = ranged ? mod('dex') : has(w, 'finesse') ? Math.max(mod('str'), mod('dex')) : mod('str');
+    const archery = c.style === 'archery' && ranged ? 2 : 0;
+    const dueling = c.style === 'dueling' && !ranged && hand === 'main' && !off && !has(w, 'two-handed') ? 2 : 0;
+    // The off-hand attack only adds the modifier when it is negative.
+    const dmg = (hand === 'off' ? Math.min(m, 0) : m) + dueling;
+    const twoHands = hand === 'main' && !off && w.versatile;
+    const notes = [
+      archery && 'Archery +2', dueling && 'Dueling +2', hand === 'off' && 'Off hand · bonus action',
+      w.range && `Range ${w.range}`, twoHands && `Two hands: ${w.versatile}${plus(m)}`,
+    ].filter(Boolean);
     return {
-      toHit: m + prof + (a.toHitBonus ?? 0),
-      damage: `${a.dice}${m + (a.damageBonus ?? 0) ? ` ${signed(m + (a.damageBonus ?? 0)).replace(/^([+−])/, '$1 ')}` : ''}`,
+      name: w.name, type: w.type,
+      toHit: m + prof + archery,
+      damage: `${w.dice}${plus(dmg)}`,
+      note: notes.join(' · '),
     };
   };
+  const attacks = [main && attack(main, 'main'), off && attack(off, 'off')].filter(Boolean);
+  if (!attacks.length) {
+    attacks.push({ name: 'Unarmed strike', type: 'bludgeoning', toHit: mod('str') + prof, damage: `${Math.max(1, 1 + mod('str'))}`, note: 'No weapon in hand' });
+  }
+
   const next = XP_FOR_LEVEL[c.level] ?? null;
   const prev = XP_FOR_LEVEL[c.level - 1];
   return {
@@ -62,7 +92,8 @@ export function derive(c) {
     mod,
     save: (ability) => mod(ability) + (c.saves.includes(ability) ? prof : 0),
     skill,
-    attack,
+    ac,
+    attacks,
     initiative: mod('dex'),
     passivePerception: 10 + skill('perception'),
     xp: { current: c.xp, next, progress: next ? (c.xp - prev) / (next - prev) : 1 },

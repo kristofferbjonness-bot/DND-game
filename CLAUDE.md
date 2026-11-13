@@ -69,6 +69,21 @@ The original assets (hand-drawn world map, location art, character art, lore doc
   - Varg the wolf stands beside Edbart.
   - The stage (`src/status/viewer.js`) has its own small renderer, a round plinth sized per
     figure, and drag to turn.
+- Gear (`src/data/items.js`, `src/character/equipment.js`):
+  - Every item lives in one catalogue with its 5e stats. A character lists the item ids they own
+    and their `equipped` slots: mainHand, offHand and armour.
+  - AC and the attack list are derived from what is equipped, including Dueling and Archery and
+    the off-hand rules (rules.js).
+  - Equip rules: two-handed weapons empty the off hand, and an off-hand weapon must be light,
+    with a light weapon in the main hand too.
+  - The Gear tab has a dropdown per slot. Players can change only their own hero; the DM can
+    change anyone's.
+  - Choices are saved in localStorage per device until online saving exists.
+  - Figures are dressed from gear (`dress` in model.js):
+    - Armour recolours the torso and shoulders.
+    - Held weapons appear in the hand (bows in the left hand).
+    - Swords not in hand hang at the left hip, with an empty scabbard when drawn.
+    - Axes hang at the right hip, and bows go on the back next to the quiver.
 - **Party** (`src/status/partyScreen.js`) shows a card per hero with HP, AC, initiative and
   passive perception. Tapping a card opens that hero on Status.
 - Map HUD is kept minimal:

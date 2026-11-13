@@ -23,7 +23,7 @@ export function renderParty(root, characters, onOpen) {
                 <small>${c.hp.current} / ${c.hp.max} HP</small>
               </span>
               <span class="party__stats">
-                <span><b>${c.ac}</b>AC</span>
+                <span><b>${d.ac}</b>AC</span>
                 <span><b>${signed(d.initiative)}</b>Init</span>
                 <span><b>${d.passivePerception}</b>Perc</span>
               </span>

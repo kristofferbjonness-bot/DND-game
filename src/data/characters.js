@@ -1,5 +1,7 @@
 // Player characters. Only the basics are stored here; modifiers, attack bonuses,
-// skill totals and so on are worked out by src/character/rules.js.
+// AC, skill totals and so on are worked out by src/character/rules.js.
+// `items` are ids from src/data/items.js; `equipped` says what is held and worn.
+// `style` is a fighting style the rules apply (dueling, archery).
 //
 // Lore comes from the campaign notes. Numbers marked PLACEHOLDER are sensible
 // level-2 values chosen until the real character sheets are filled in.
@@ -26,27 +28,14 @@ export const CHARACTERS = [
 
     hp: { current: 20, max: 20, temp: 0 },
     hitDice: { die: 'd10', total: 2, used: 0 },
-    ac: 16,
     speed: 30,
+    style: 'dueling',
 
-    attacks: [
-      { name: 'Rune-marked katana', ability: 'str', dice: '1d8', damageBonus: 2, type: 'slashing', note: 'Dueling +2 · Versatile 1d10' },
-      { name: 'Tantō', ability: 'str', finesse: true, dice: '1d4', type: 'piercing', note: 'Light · Thrown 20/60 ft' },
+    items: [
+      { id: 'rune-katana' }, { id: 'tanto' }, { id: 'lamellar' },
+      { id: 'health-potion', qty: 1 }, { id: 'rations', qty: 5 }, { id: 'whetstone' }, { id: 'bedroll' }, { id: 'waterskin' },
     ],
-
-    equipped: [
-      { slot: 'Main hand', name: 'Rune-marked katana', note: 'Northern runes and Hrimnir markings on the blade' },
-      { slot: 'Belt', name: 'Tantō' },
-      { slot: 'Armour', name: 'Lamellar armour', note: 'AC 14 + Dex (max 2)' },
-      { slot: 'Cloak', name: 'Fur mantle of the northern isles' },
-    ],
-    inventory: [
-      { name: 'Health potion', qty: 1, note: 'Regain 2d4 + 2 HP' },
-      { name: 'Rations', qty: 5 },
-      { name: 'Whetstone', qty: 1 },
-      { name: 'Bedroll', qty: 1 },
-      { name: 'Waterskin', qty: 1 },
-    ],
+    equipped: { mainHand: 'rune-katana', offHand: null, armour: 'lamellar' },
     coins: { pp: 0, gp: 12, sp: 4, cp: 0 },
 
     features: [
@@ -83,27 +72,13 @@ export const CHARACTERS = [
 
     hp: { current: 15, max: 15, temp: 0 },
     hitDice: { die: 'd8', total: 2, used: 0 },
-    ac: 14,
     speed: 35,
 
-    attacks: [
-      { name: 'Shortbow, flame arrows', ability: 'dex', dice: '1d6', type: 'piercing + fire', note: 'Range 80/320 ft' },
-      { name: 'Throwing knives', ability: 'dex', finesse: true, dice: '1d4', type: 'piercing', note: 'Thrown 20/60 ft' },
-      { name: 'Bane of Fredrikstad', ability: 'str', dice: '1d8', type: 'slashing', note: 'Longsword · Versatile 1d10 · gift of the Man Who Makes Himself Known' },
+    items: [
+      { id: 'bane-of-fredrikstad' }, { id: 'flame-shortbow' }, { id: 'throwing-knives' }, { id: 'leather' },
+      { id: 'health-potion', qty: 1, note: 'Looted from a Hooknose' }, { id: 'hooknose-map' }, { id: 'magnum-condoms', qty: 2 }, { id: 'thieves-tools' },
     ],
-
-    equipped: [
-      { slot: 'Main hand', name: 'Bane of Fredrikstad', note: 'Longsword with a red gem in the pommel' },
-      { slot: 'Back', name: 'Shortbow and quiver of flame arrows' },
-      { slot: 'Chest', name: 'Bandolier of throwing knives' },
-      { slot: 'Armour', name: 'Leather armour', note: 'AC 11 + Dex' },
-    ],
-    inventory: [
-      { name: 'Health potion', qty: 1, note: 'Looted from a Hooknose · Regain 2d4 + 2 HP' },
-      { name: 'Map', qty: 1, note: 'Taken from a dead Hooknose' },
-      { name: 'Magnum condoms', qty: 2, note: 'From the corpse of the Toucher of Girls' },
-      { name: "Thieves' tools", qty: 1 },
-    ],
+    equipped: { mainHand: 'flame-shortbow', offHand: null, armour: 'leather' },
     coins: { pp: 0, gp: 9, sp: 6, cp: 0 },
 
     features: [
@@ -141,26 +116,14 @@ export const CHARACTERS = [
 
     hp: { current: 20, max: 20, temp: 0 },
     hitDice: { die: 'd10', total: 2, used: 0 },
-    ac: 14,
     speed: 30,
+    style: 'archery',
 
-    attacks: [
-      { name: 'Longbow', ability: 'dex', dice: '1d8', toHitBonus: 2, type: 'piercing', note: 'Archery +2 · Range 150/600 ft' },
-      { name: 'Hand axe', ability: 'str', dice: '1d6', type: 'slashing', note: 'Light · Thrown 20/60 ft' },
+    items: [
+      { id: 'longbow' }, { id: 'handaxe' }, { id: 'hide' },
+      { id: 'arrows', qty: 20 }, { id: 'hunting-trap' }, { id: 'rope' }, { id: 'rations', qty: 4 },
     ],
-
-    equipped: [
-      { slot: 'Main hand', name: 'Longbow' },
-      { slot: 'Belt', name: 'Hand axe' },
-      { slot: 'Armour', name: 'Hide armour', note: 'AC 12 + Dex (max 2)' },
-      { slot: 'Cloak', name: 'Wolf-pelt hood and cloak' },
-    ],
-    inventory: [
-      { name: 'Arrows', qty: 20 },
-      { name: 'Hunting trap', qty: 1 },
-      { name: 'Rope, 50 ft', qty: 1 },
-      { name: 'Rations', qty: 4 },
-    ],
+    equipped: { mainHand: 'longbow', offHand: null, armour: 'hide' },
     coins: { pp: 0, gp: 7, sp: 3, cp: 5 },
 
     features: [

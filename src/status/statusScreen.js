@@ -2,6 +2,8 @@
 // Arrows beside the figure switch between the party's characters.
 import { ABILITIES, SKILLS, derive, signed } from '../character/rules.js';
 import { createCharacterViewer } from './viewer.js';
+import { ITEMS } from '../data/items.js';
+import { SLOTS, optionsFor, equip } from '../character/equipment.js';
 
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
 
@@ -19,16 +21,13 @@ const item = (main, sub, side = '') => `
     ${side}
   </li>`;
 
-function sheet(c, tab) {
+function sheet(c, tab, editable) {
   const d = derive(c);
   const hpPct = Math.round((c.hp.current / c.hp.max) * 100);
 
   const combat = `
     <h3 class="sheet__h">Attacks</h3>
-    ${list(c.attacks.map((a) => {
-      const r = d.attack(a);
-      return item(esc(a.name), esc(a.note), `<span class="list__side"><b>${signed(r.toHit)}</b><small>${esc(r.damage)} ${esc(a.type)}</small></span>`);
-    }))}
+    ${list(d.attacks.map((a) => item(esc(a.name), esc(a.note), `<span class="list__side"><b>${signed(a.toHit)}</b><small>${esc(a.damage)} ${esc(a.type)}</small></span>`)))}
     <h3 class="sheet__h">Features</h3>
     ${list(c.features.map((f) => item(esc(f.name), esc(f.text), f.uses
       ? `<span class="uses" title="Uses per ${esc(f.uses.per)}">${Array.from({ length: f.uses.max }, (_, i) => `<i class="${i < f.uses.max - f.uses.used ? 'is-on' : ''}"></i>`).join('')}</span>`
@@ -48,11 +47,33 @@ function sheet(c, tab) {
     </ul>
     <p class="sheet__note">Passive Perception <b>${d.passivePerception}</b> · Hit dice <b>${c.hitDice.total - c.hitDice.used}${esc(c.hitDice.die)}</b></p>`;
 
+  const equippedIds = new Set(Object.values(c.equipped));
+  const describe = (it) => it.kind === 'armour'
+    ? `${it.category} armour · AC ${it.ac}${it.dexCap === null ? ' + Dex' : ` + Dex (max ${it.dexCap})`}`
+    : it.kind === 'weapon' ? `${it.dice} ${it.type}${it.props.length ? ` · ${it.props.join(', ')}` : ''}` : '';
   const gear = `
     <h3 class="sheet__h">Equipped</h3>
-    ${list(c.equipped.map((e) => item(esc(e.name), esc(e.note), `<span class="list__tag">${esc(e.slot)}</span>`)))}
+    <div class="slots">
+      ${SLOTS.map((slot) => {
+        const { ids, reason } = optionsFor(c, slot.id);
+        const current = c.equipped[slot.id];
+        return `
+        <label class="slot">
+          <span class="slot__label">${slot.label}</span>
+          <select class="slot__select" data-slot="${slot.id}"${!editable || (!ids.length && !current) ? ' disabled' : ''}>
+            <option value="">${reason && !current ? esc(reason) : 'Nothing'}</option>
+            ${ids.map((id) => `<option value="${id}"${id === current ? ' selected' : ''}>${esc(ITEMS[id].name)}</option>`).join('')}
+          </select>
+        </label>`;
+      }).join('')}
+    </div>
     <h3 class="sheet__h">Inventory</h3>
-    ${list(c.inventory.map((i) => item(esc(i.name), esc(i.note), `<span class="list__qty">×${i.qty ?? 1}</span>`)))}
+    ${list(c.items.map((i) => {
+      const it = ITEMS[i.id];
+      const note = [describe(it), i.note ?? it.note].filter(Boolean).join(' · ');
+      const side = equippedIds.has(i.id) ? '<span class="list__tag list__tag--on">Equipped</span>' : `<span class="list__qty">×${i.qty ?? 1}</span>`;
+      return item(esc(it.name), esc(note), side);
+    }))}
     <div class="coins">
       ${['pp', 'gp', 'sp', 'cp'].map((k) => `<span class="coin coin--${k}"><i></i>${c.coins[k] ?? 0} <small>${k.toUpperCase()}</small></span>`).join('')}
     </div>`;
@@ -84,7 +105,7 @@ function sheet(c, tab) {
         <div class="hp-block__top"><span>Hit points</span><b>${c.hp.current}<small> / ${c.hp.max}</small></b></div>
         <div class="hp"><span style="width:${hpPct}%"></span></div>
       </div>
-      <div class="stat"><b>${c.ac}</b><span>AC</span></div>
+      <div class="stat"><b>${d.ac}</b><span>AC</span></div>
       <div class="stat"><b>${signed(d.initiative)}</b><span>Init</span></div>
       <div class="stat"><b>${c.speed}</b><span>Speed</span></div>
       <div class="stat"><b>${signed(d.prof)}</b><span>Prof</span></div>
@@ -116,17 +137,35 @@ export function createStatusScreen(root, characters) {
   const pickerName = root.querySelector('.picker__name b');
   const pickerLine = root.querySelector('.picker__name small');
   const viewer = createCharacterViewer(root.querySelector('.status__canvas'));
-  let index = 0, tab = 'combat';
+  let index = 0, tab = 'combat', player = null;
+
+  // Players may change their own hero's gear; the Dungeon Master may change anyone's.
+  const editable = (c) => !player || player === c.id;
+
+  function render({ keepScroll = false } = {}) {
+    const c = characters[index];
+    const scroll = sheetEl.scrollTop;
+    sheetEl.innerHTML = sheet(c, tab, editable(c));
+    sheetEl.scrollTop = keepScroll ? scroll : 0;
+  }
 
   function showCharacter(id) {
     index = Math.max(0, characters.findIndex((c) => c.id === id));
     const c = characters[index];
-    sheetEl.innerHTML = sheet(c, tab);
-    sheetEl.scrollTop = 0;
+    render();
     pickerName.textContent = c.name;
     pickerLine.textContent = c.tagline ?? '';
-    viewer.show(c.model);
+    viewer.show(c);
   }
+
+  sheetEl.addEventListener('change', (e) => {
+    const select = e.target.closest('.slot__select');
+    if (!select) return;
+    const c = characters[index];
+    equip(c, select.dataset.slot, select.value);
+    render({ keepScroll: true });
+    viewer.show(c);
+  });
 
   sheetEl.addEventListener('click', (e) => {
     const btn = e.target.closest('.tab');
@@ -144,6 +183,7 @@ export function createStatusScreen(root, characters) {
 
   // A player only sees their own hero here; the Dungeon Master can flip through everyone.
   function setPlayer(id) {
+    player = id;
     root.classList.toggle('is-locked', Boolean(id));
     showCharacter(id ?? characters[index].id);
   }
