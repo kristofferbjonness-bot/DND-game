@@ -15,6 +15,7 @@ import { createTiltShiftPasses } from './fx/tiltShift.js';
 import { attachTouchGestures } from './fx/touchGestures.js';
 import { createStatusScreen } from './status/statusScreen.js';
 import { renderParty } from './status/partyScreen.js';
+import { createCombatScreen } from './combat/combatScreen.js';
 import { CHARACTERS as STARTING_HEROES } from './data/characters.js';
 import { createStartScreen } from './start/startScreen.js';
 import { supabase, myProfile, loadCharacters, seedCharacters, saveCharacter, watchCharacters, signOut, explain } from './net/backend.js';
@@ -462,7 +463,8 @@ let statusScreen = null;
 // in place when anyone changes a character, so every screen sees the same objects.
 const party = [];
 const owners = new Map(); // character id -> profile id of the player
-const screens = { status: document.getElementById('status'), party: document.getElementById('party') };
+const screens = { status: document.getElementById('status'), party: document.getElementById('party'), combat: document.getElementById('combat') };
+let combatScreen = null;
 
 function showScreen(id) {
   if (id === screen) return;
@@ -481,6 +483,7 @@ function showScreen(id) {
       statusScreen.showCharacter(characterId);
     });
   }
+  if (id === 'combat') combatScreen.start(); else combatScreen?.stop();
   if (id === 'map') clock.getDelta(); // no time jump after being away
 }
 document.querySelector('.topnav').addEventListener('click', (e) => {
@@ -494,9 +497,9 @@ const roleChip = document.getElementById('role');
 const startScreen = createStartScreen(document.getElementById('start'), { onLoggedIn: enter });
 let watching = null;
 
-statusScreen = createStatusScreen(screens.status, party, {
-  onChange: (c) => saveCharacter(c).catch((err) => toast(`Could not save: ${explain(err)}`)),
-});
+const saveHero = (c) => saveCharacter(c).catch((err) => toast(`Could not save: ${explain(err)}`));
+statusScreen = createStatusScreen(screens.status, party, { onChange: saveHero });
+combatScreen = createCombatScreen(screens.combat, { party, onHeroChange: saveHero });
 
 // Fills `party` from database rows, keeping the starting heroes' order.
 function setParty(rows) {
@@ -513,6 +516,7 @@ function applyRow(row) {
   const i = party.findIndex((c) => c.id === row.id);
   if (i >= 0) party[i] = row.data; else party.push(row.data);
   statusScreen.refresh(row.id);
+  combatScreen.refresh();
   if (screen === 'party') {
     renderParty(screens.party, party, (id) => { showScreen('status'); statusScreen.showCharacter(id); });
   }

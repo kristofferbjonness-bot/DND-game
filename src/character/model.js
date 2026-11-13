@@ -455,3 +455,79 @@ export function buildFigure(character) {
   figure.group.position.x = look.offsetX ?? 0;
   return { ...figure, stage: look.stage, zoom: look.zoom };
 }
+
+// --- Enemies ------------------------------------------------------------------------------------
+
+// A Hooknose cutthroat of Razz of Mataz: short and hunched, wrapped in dark
+// indigo cloth with only the hooked nose showing, and a knife curved like it.
+function buildHooknose() {
+  const C = {
+    cloth: '#2f3157', clothDark: '#262848', wrap: '#3b3d66', feet: '#1e1b24',
+    skin: '#c08a6a', eye: '#ffd27a', blade: STEEL, grip: '#5e3d27',
+  };
+  const root = new THREE.Group();
+
+  const legs = new Part();
+  for (const x of [-1, 1]) {
+    legs.set(x, 0, 0, C.feet).set(x, 0, 1, C.feet);
+    for (let y = 1; y <= 3; y++) legs.set(x, y, 0, y === 2 ? C.wrap : C.clothDark);
+  }
+  root.add(legs.build());
+
+  // Hunched body: the robe, with a hump of cloth on the back.
+  const body = new Part([0, 4, 0]);
+  body.box(-1, 4, -1, 1, 9, 1, (x, y, z) => (y === 4 || z === -1 ? C.clothDark : C.cloth));
+  body.box(-1, 8, -2, 1, 10, -2, C.clothDark);
+  body.set(0, 4, 2, C.clothDark).set(0, 5, 2, C.cloth); // hanging fold
+  const bodyMesh = body.build();
+  root.add(bodyMesh);
+
+  // Head pushed forward by the hunch: wrapped cloth, glinting eyes, the hooked nose.
+  const head = new Part([0, 10, 1]);
+  head.box(-1, 10, 0, 1, 12, 2, C.cloth);
+  head.set(0, 13, 1, C.clothDark).set(0, 13, 0, C.clothDark);
+  head.set(-1, 11, 2, '#14121c').set(1, 11, 2, '#14121c');
+  head.set(-1, 11, 3, C.eye, true).set(1, 11, 3, C.eye, true);
+  head.set(0, 11, 3, C.skin).set(0, 11, 4, C.skin).set(0, 10, 4, C.skin);
+  const headMesh = head.build();
+  root.add(headMesh);
+
+  // Arms; the right hand holds the curved knife.
+  const arms = [-1, 1].map((side) => {
+    const x = side * 2;
+    const a = new Part([x, 9, 0]);
+    a.box(x, 5, 0, x, 9, 0, C.cloth);
+    a.set(x, 4, 0, C.skin);
+    const mesh = a.build();
+    if (side === -1) {
+      const knife = new Part();
+      knife.set(0, 0, 0, C.grip).set(0, 0, 1, C.blade).set(0, 1, 2, C.blade).set(0, 2, 2, C.blade).set(0, 3, 1, C.blade);
+      const k = knife.build();
+      k.position.set(0, -5, 0.5);
+      mesh.add(k);
+    }
+    root.add(mesh);
+    return mesh;
+  });
+
+  return {
+    group: root,
+    // A twitchy crouch: bobbing, peering about, knife at the ready.
+    update(t) {
+      const bob = Math.abs(Math.sin(t * 2.6)) * 0.25;
+      bodyMesh.position.y = 4 + bob;
+      headMesh.position.y = 10 + bob;
+      headMesh.rotation.y = Math.sin(t * 0.8) * 0.4;
+      arms.forEach((a, i) => {
+        a.position.y = 9 + bob;
+        a.rotation.x = (i ? 0 : -0.5) + Math.sin(t * 2.6 + i) * 0.08;
+      });
+    },
+    stage: 5, zoom: 0.8,
+  };
+}
+
+const MONSTER_LOOKS = { hooknose: buildHooknose };
+
+// Builds the figure for an enemy type (see data/monsters.js).
+export const buildMonsterFigure = (model) => MONSTER_LOOKS[model]?.() ?? null;

@@ -104,6 +104,16 @@ The original assets (hand-drawn world map, location art, character art, lore doc
     - Held weapons appear in the hand (bows in the left hand).
     - Swords not in hand hang at the left hip, with an empty scabbard when drawn.
     - Axes hang at the right hip, and bows go on the back next to the quiver.
+- **Combat** (`src/combat/`, DM only; the tab is hidden unless `body[data-role=dm]`):
+  - Setup: pick the heroes and the number of each enemy (max 6). Enemy types are in
+    `src/data/monsters.js` (only the Hooknose cutthroat for now; its figure is
+    `buildMonsterFigure` in model.js).
+  - Battle: a Pokémon-style 3D field (`battleScene.js`) with heroes on the left and enemies
+    on the right, each on a pad.
+  - Health boxes have −/+ buttons. Hero HP is saved to the character (players see it live),
+    while enemy HP only lives in the encounter.
+  - At 0 HP a fighter falls over.
+  - The encounter itself is not saved online yet, so a reload loses it.
 - **Party** (`src/status/partyScreen.js`) shows a card per hero with HP, AC, initiative and
   passive perception. Tapping a card opens that hero on Status.
 - Map HUD is kept minimal:
