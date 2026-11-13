@@ -1,5 +1,5 @@
-// The Bestiary (Dungeon Master only): a framed window with the creature's
-// figure and a strip of portraits to pick from; its stats as cards beside it;
+// The Bestiary (Dungeon Master only): one sheet with the creature's figure and a
+// strip of portraits to pick from on the left, and its stats on the right;
 // and a generator where Claude designs a new one from a description.
 import { MONSTERS, addMonster, removeMonster } from '../data/monsters.js';
 import { registerRecipe, sanitizeRecipe } from '../character/model.js';
@@ -40,6 +40,7 @@ export function cleanMonster(raw, prompt) {
 // `onAdded()` lets the rest of the app know the list changed.
 export function createBestiaryScreen(root, { onChanged } = {}) {
   root.innerHTML = `
+    <div class="bst">
     <section class="bestiary__window">
       <div class="bestiary__stage"></div>
       <p class="bestiary__name"></p>
@@ -71,7 +72,8 @@ export function createBestiaryScreen(root, { onChanged } = {}) {
         </div>
       </form>
       <div class="bestiary__stats"></div>
-    </section>`;
+    </section>
+    </div>`;
 
   const $ = (sel) => root.querySelector(sel);
   const listView = $('.bestiary__list-view'), gen = $('.bestiary__gen');
