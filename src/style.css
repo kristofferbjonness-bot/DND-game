@@ -39,8 +39,9 @@
 
   /* Old paper: a fine grain and a few faint stains over warm parchment. */
   --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.42 0 0 0 0 0.28 0 0 0 0 0.12 0 0 0 0.22 0'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23n)'/%3E%3C/svg%3E");
-  --stains: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='300'%3E%3Cfilter id='s'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.012' numOctaves='2' seed='4'/%3E%3CfeColorMatrix values='0 0 0 0 0.55 0 0 0 0 0.36 0 0 0 0 0.15 0 0 0 0.55 -0.2'/%3E%3C/filter%3E%3Crect width='600' height='300' filter='url(%23s)'/%3E%3C/svg%3E");
-  --paper: var(--grain), var(--stains), linear-gradient(180deg, #f1e2bf, #e6d1a4);
+  --stains: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='300'%3E%3Cfilter id='s'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.012' numOctaves='2' seed='4'/%3E%3CfeColorMatrix values='0 0 0 0 0.5 0 0 0 0 0.3 0 0 0 0 0.1 0 0 0 0.9 -0.32'/%3E%3C/filter%3E%3Crect width='600' height='300' filter='url(%23s)'/%3E%3C/svg%3E");
+  --paper: var(--grain), var(--stains), linear-gradient(180deg, #f5dfa6, #e8c983);
+  --paper-line: #4a2c17;
   --paper-ink: #3b2a1b;
   --paper-ink-soft: #7a6146;
   --paper-red: #9c2f22;
@@ -219,20 +220,34 @@ button, summary, .label { -webkit-tap-highlight-color: transparent; touch-action
 .bar {
   position: fixed; z-index: 6; top: 0; left: 0; right: 0;
   height: calc(var(--bar) + var(--safe-t));
-  padding: var(--safe-t) max(14px, var(--safe-r)) 0 max(14px, var(--safe-l));
+  padding: var(--safe-t) max(40px, calc(var(--safe-r) + 30px)) 0 max(40px, calc(var(--safe-l) + 30px));
   display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto auto; align-items: center; gap: 10px;
   color: var(--paper-ink);
+}
+/* The sheet, stretched between the two rollers: thick cartoon outline, burnt edges. */
+.bar::before {
+  content: ''; position: absolute; z-index: -1; pointer-events: none;
+  top: calc(var(--safe-t) + 3px); bottom: 3px; left: max(16px, calc(var(--safe-l) + 8px)); right: max(16px, calc(var(--safe-r) + 8px));
   background: var(--paper);
-  /* Darkened, aged edges of the sheet. */
-  box-shadow: inset 0 -10px 18px -10px rgba(110, 70, 25, 0.45), inset 0 10px 14px -12px rgba(110, 70, 25, 0.35), 0 10px 18px rgba(20, 10, 0, 0.35);
+  border: 2.5px solid var(--paper-line); border-left: 0; border-right: 0;
+  box-shadow: inset 0 0 0 2px rgba(255, 244, 210, 0.35), inset 0 0 26px 4px rgba(150, 85, 25, 0.5), 0 6px 0 -1px rgba(40, 20, 5, 0.25), 0 10px 22px rgba(20, 10, 0, 0.35);
 }
-/* The rolled-up edge of the scroll along the bottom. */
-.bar::after {
-  content: ''; position: absolute; left: 0; right: 0; bottom: -9px; height: 12px; pointer-events: none;
-  border-radius: 6px;
-  background: var(--grain), linear-gradient(180deg, #8f6a3c 0%, #d9bf8c 22%, #f6e8c6 45%, #d3b47e 72%, #7d5a30 100%);
-  box-shadow: 0 3px 6px rgba(20, 10, 0, 0.4);
+/* Wooden rollers at both ends, with knobs, so the scroll unrolls sideways. */
+.bar__roll {
+  position: absolute; z-index: 1; pointer-events: none; width: 24px;
+  top: calc(var(--safe-t) - 1px); bottom: -1px;
+  border: 2.5px solid var(--paper-line); border-radius: 10px;
+  background: var(--grain), linear-gradient(90deg, #a57a3f 0%, #e9cd8f 30%, #fff1c9 45%, #e2bf7c 65%, #8e6631 100%);
+  box-shadow: inset -3px 0 0 rgba(90, 50, 15, 0.35), 2px 4px 6px rgba(20, 10, 0, 0.35);
 }
+.bar__roll--left { left: max(6px, var(--safe-l)); }
+.bar__roll--right { right: max(6px, var(--safe-r)); }
+.bar__roll::before, .bar__roll::after {
+  content: ''; position: absolute; left: 50%; width: 14px; height: 9px; transform: translateX(-50%);
+  background: linear-gradient(90deg, #5a3417, #9a6436 45%, #4a2a12); border: 2px solid var(--paper-line); border-radius: 5px;
+}
+.bar__roll::before { top: -8px; }
+.bar__roll::after { bottom: -8px; }
 .bar[hidden] { display: none; }
 .bar > button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; padding: 0; }
 
@@ -241,7 +256,7 @@ button, summary, .label { -webkit-tap-highlight-color: transparent; touch-action
 .dial {
   position: relative; width: 38px; height: 38px; border-radius: 50%; overflow: hidden; flex-shrink: 0;
   background: linear-gradient(180deg, var(--sky-a), var(--sky-b));
-  box-shadow: 0 0 0 1.5px var(--paper-ink), 0 0 0 3.5px #c9a466, 0 0 0 4.5px var(--paper-ink), inset 0 0 0 100px rgba(80, 80, 90, calc(var(--grey) * 0.9));
+  box-shadow: 0 0 0 2.5px var(--paper-line), 0 0 0 4.5px #d9a94f, 0 0 0 6.5px var(--paper-line), inset 0 0 0 100px rgba(80, 80, 90, calc(var(--grey) * 0.9));
 }
 .dial__body { position: absolute; width: 18px; height: 18px; transform: translate(-50%, -50%); }
 .dial__body .ic { width: 18px; height: 18px; }
@@ -261,8 +276,8 @@ button, summary, .label { -webkit-tap-highlight-color: transparent; touch-action
 
 /* Drop-downs from the bar are little sheets of the same paper. */
 .places, .role-menu {
-  color: var(--paper-ink); background: var(--paper); border-radius: 3px;
-  box-shadow: 0 0 0 1px rgba(59, 42, 27, 0.55), inset 0 0 22px rgba(110, 70, 25, 0.3), 0 12px 26px rgba(20, 10, 0, 0.45);
+  color: var(--paper-ink); background: var(--paper); border-radius: 6px; border: 2.5px solid var(--paper-line);
+  box-shadow: inset 0 0 22px 2px rgba(150, 85, 25, 0.45), 4px 6px 0 rgba(40, 20, 5, 0.25), 0 14px 26px rgba(20, 10, 0, 0.4);
 }
 
 /* The places list, opened from the Map tab. */
@@ -294,11 +309,10 @@ button, summary, .label { -webkit-tap-highlight-color: transparent; touch-action
 .topnav__tab:hover .ic { transform: translateY(-1px); }
 .topnav__tab.is-active { color: var(--paper-ink); }
 .topnav__tab.is-active .ic { opacity: 1; }
-/* The open screen gets a stroke of red ink underneath, like it was underlined by hand. */
+/* The open screen gets a quick slash of red pencil underneath. */
 .topnav__tab.is-active::after {
-  content: ''; position: absolute; left: 10px; right: 10px; bottom: 3px; height: 4px; border-radius: 3px 1px 4px 1px;
-  background: linear-gradient(90deg, rgba(156, 47, 34, 0.25), var(--paper-red) 15%, var(--paper-red) 80%, rgba(156, 47, 34, 0.4));
-  transform: rotate(-0.8deg);
+  content: ''; position: absolute; left: 2px; right: -2px; bottom: 0; height: 13px; pointer-events: none; transform: rotate(-2deg);
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 14' preserveAspectRatio='none'%3E%3Cfilter id='r'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9 0.4' numOctaves='2' seed='3'/%3E%3CfeDisplacementMap in='SourceGraphic' scale='2.2'/%3E%3C/filter%3E%3Cg filter='url(%23r)'%3E%3Cpath d='M1 12.5C24 10.5 56 6.2 99 1L98.6 6.4C62 9.8 30 12.8 3 14.5Z' fill='%23c4312a'/%3E%3Cpath d='M8 11.4C36 8.8 64 5.6 95 2.6' stroke='%23ec6a52' stroke-width='1.4' fill='none' opacity='0.8'/%3E%3Cpath d='M5 13.6C34 11.6 62 8.6 92 5.8' stroke='%237e1a14' stroke-width='1.1' fill='none' opacity='0.7'/%3E%3Cpath d='M70 7.5L99 3.5' stroke='%23c4312a' stroke-width='1' fill='none' opacity='0.6'/%3E%3C/g%3E%3C/svg%3E") center / 100% 100% no-repeat;
 }
 .topnav__tab--map span { max-width: 190px; overflow: hidden; text-overflow: ellipsis; font-family: var(--font-title); font-size: 16px; letter-spacing: 0.02em; text-transform: none; }
 .topnav__chev {
@@ -314,7 +328,7 @@ body[data-role="player"][data-fight="on"] .topnav__tab--dm { color: var(--paper-
 /* The latest dice roll. */
 .bar__dice { display: flex; align-items: center; gap: 8px; position: relative; max-width: 190px; }
 .bar__dice .die-icon { width: 36px; height: 36px; }
-.bar__dice .die-icon polygon { fill: #fffaf0; stroke: var(--paper-ink); stroke-width: 2.4; }
+.bar__dice .die-icon polygon { fill: #fff6dc; stroke: var(--paper-line); stroke-width: 3; }
 .bar__dice .die-icon text { font: 700 13px var(--font-display); fill: var(--paper-ink); }
 .bar__dice.is-nat20 .die-icon polygon { fill: #cfe8b8; }
 .bar__dice.is-nat1 .die-icon polygon { fill: #f2c0b4; }
@@ -330,7 +344,7 @@ body[data-role="player"][data-fight="on"] .topnav__tab--dm { color: var(--paper-
 .bar__face {
   display: block; width: 38px; height: 38px; flex-shrink: 0; overflow: hidden; border-radius: 50% 50% 6px 6px;
   background: radial-gradient(circle at 50% 35%, color-mix(in srgb, var(--hero, #8a7a6a) 45%, #f4e6c6), #c9b089);
-  box-shadow: 0 0 0 1.5px var(--paper-ink), 0 0 0 3.5px #c9a466, 0 0 0 4.5px var(--paper-ink);
+  box-shadow: 0 0 0 2.5px var(--paper-line), 0 0 0 4.5px #d9a94f, 0 0 0 6.5px var(--paper-line);
 }
 .bar__face--dm { display: grid; place-items: center; background: radial-gradient(circle at 50% 35%, #fbf0d4, #d6bd8f); }
 .bar__face--dm .ic { width: 26px; height: 26px; }
@@ -1490,9 +1504,12 @@ input.is-bad { box-shadow: inset 0 0 0 2px #e2634e; }
     padding: 8px max(8px, var(--safe-r)) calc(4px + var(--safe-b)) max(8px, var(--safe-l));
     grid-template-columns: auto minmax(0, 1fr) auto auto; grid-template-areas: "sky . dice me" "tabs tabs tabs tabs";
     gap: 6px 8px;
-    box-shadow: inset 0 10px 18px -10px rgba(110, 70, 25, 0.45), inset 0 -8px 14px -12px rgba(110, 70, 25, 0.35), 0 -10px 18px rgba(20, 10, 0, 0.35);
+    padding-left: max(34px, calc(var(--safe-l) + 30px)); padding-right: max(34px, calc(var(--safe-r) + 30px));
   }
-  .bar::after { top: -9px; bottom: auto; box-shadow: 0 -3px 6px rgba(20, 10, 0, 0.35); }
+  .bar::before { top: 3px; bottom: calc(var(--safe-b) + 3px); left: 14px; right: 14px; }
+  .bar__roll { top: -1px; bottom: calc(var(--safe-b) - 1px); width: 22px; }
+  .bar__roll--left { left: 4px; }
+  .bar__roll--right { right: 4px; }
   .bar__sky { grid-area: sky; }
   .bar__dice { grid-area: dice; }
   .bar__me { grid-area: me; }

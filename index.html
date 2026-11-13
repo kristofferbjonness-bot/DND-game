@@ -22,6 +22,8 @@
     <!-- The bar: sky and time, where you are, the screens, the last dice roll, the party and you.
          Along the top on wide screens; a dock along the bottom on upright phones. -->
     <header id="bar" class="bar" hidden>
+      <span class="bar__roll bar__roll--left" aria-hidden="true"></span>
+      <span class="bar__roll bar__roll--right" aria-hidden="true"></span>
       <button id="sky-toggle" type="button" class="bar__sky" aria-label="Weather and time"></button>
       <nav class="topnav" aria-label="Game">
         <button id="back" type="button" class="bar__back" hidden aria-label="Back to the world map">‹</button>
