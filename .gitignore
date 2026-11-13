@@ -5,3 +5,5 @@ tools/out/
 tools/*.tmp.mjs
 .netlify/
 hero-sheet-design-pack/
+DND Lore/
+*.local.js

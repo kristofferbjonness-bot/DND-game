@@ -1552,6 +1552,21 @@ input.is-bad { box-shadow: inset 0 0 0 2px #e2634e; }
 .jr-face--friendly { background: #5f8a45; }
 .jr-face--hostile { background: var(--pp-accent); }
 .jr-face--neutral { background: #a07a3a; }
+.jr-group small { font: 600 11px var(--font-body); letter-spacing: 0; color: #8a7458; margin-left: 2px; }
+.jr-item.is-child { padding-left: 26px; }
+.jr-item.is-child .jr-mark { width: 22px; height: 22px; }
+.jr-item.is-child .jr-mark .ic { width: 18px; height: 18px; }
+/* Sort People by town or by name. */
+.jr-sort { display: flex; align-items: center; gap: 4px; margin: 8px 0 2px; font-size: 13px; color: var(--pp-soft); }
+.jr-sort button { font: 600 12px var(--font-display); color: var(--pp-soft); background: none; border: 1px solid transparent; border-radius: 12px; padding: 2px 9px; cursor: pointer; }
+.jr-sort button.is-on { color: var(--pp-accent); border-color: rgba(138, 46, 31, 0.5); background: rgba(255, 252, 240, 0.6); }
+/* The DM's secrets: a dashed red box only the DM ever sees. */
+.jr-secret { margin: 4px 0 12px; padding: 10px 14px; border: 1.5px dashed rgba(138, 46, 31, 0.6); border-radius: 6px; background: rgba(138, 46, 31, 0.06); max-width: 62ch; }
+.jr-secret h4 { margin: 0 0 4px; display: flex; align-items: center; gap: 4px; font: 700 11px var(--font-display); letter-spacing: 0.14em; text-transform: uppercase; color: var(--pp-accent); }
+.jr-secret p { margin: 0; font-size: 15.5px; line-height: 1.5; color: var(--pp-ink); }
+.jr-secret-field > span { color: var(--pp-accent) !important; display: flex; align-items: center; gap: 4px; }
+.jr-secret-field textarea { border-style: dashed !important; border-color: rgba(138, 46, 31, 0.6) !important; }
+.jr__import[hidden] { display: none; }
 .jr-empty, .jr-hint { color: var(--pp-soft); font-style: italic; font-size: 15px; margin: 18px 4px; }
 
 .jr__page { min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 8px 6px 14px 22px; border-left: 1.5px solid var(--pp-line); }

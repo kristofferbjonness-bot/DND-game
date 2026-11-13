@@ -8,8 +8,14 @@
 //   npc        { title (name), role, place, attitude, status, body, shown }
 //   place      { title, place (the map place it is in, or ''), body, shown }    places the DM adds
 //   placenote  { place (a map place id), body, shown }                           notes on a map place
-// Players see entries marked shown (RLS) and only map places they have discovered.
+//   secret     { about (an entry id, or 'map:<place id>'), body, shown: false }   DM-only notes
+// Players see entries marked shown (RLS) and only map places they have discovered. Secrets are
+// never shown, so the database never sends them to players.
 import { icon } from '../ui/icons.js';
+
+// On the dev server only: the owner's lore, ready for a one-time import (src/data/lore-import.local.js,
+// kept out of git and out of the built app because it holds DM secrets).
+const LORE_FILES = import.meta.env.DEV ? import.meta.glob('../data/lore-import.local.js') : {};
 
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
 const lines = (s) => esc(s).replace(/\n/g, '<br />');
@@ -35,6 +41,7 @@ export function createJournalScreen(root, { entries, canEdit, mapPlaces, onSave,
       <header class="jr__head">
         <h2 class="jr__title">Journal</h2>
         <label class="jr__search">${icon('wis', 'inline')}<input type="search" placeholder="Search people, places and quests" aria-label="Search the journal" /></label>
+        <button type="button" class="btn jr__import" hidden></button>
         <button type="button" class="btn btn--gold jr__new" hidden>${icon('plus')}<span></span></button>
       </header>
       <nav class="jr__tabs" role="tablist"></nav>
@@ -45,12 +52,13 @@ export function createJournalScreen(root, { entries, canEdit, mapPlaces, onSave,
     </div>`;
   const $ = (sel) => root.querySelector(sel);
   const sheet = $('.jr'), tabsEl = $('.jr__tabs'), listEl = $('.jr__list'), pageEl = $('.jr__page');
-  const searchEl = $('.jr__search input'), newBtn = $('.jr__new');
+  const searchEl = $('.jr__search input'), newBtn = $('.jr__new'), importBtn = $('.jr__import');
 
   let section = 'quests';
   let open = null;      // what the page shows: { type: 'quest' | 'npc' | 'place' | 'map', id }
   let editing = null;   // a draft { id?, data } being written (DM)
   let query = '';
+  let peopleSort = 'town'; // People: grouped by town, or 'name' for A–Z
 
   // --- Looking things up -------------------------------------------------------------------------
   const visible = (e) => canEdit() || e.data.shown !== false;
@@ -58,6 +66,15 @@ export function createJournalScreen(root, { entries, canEdit, mapPlaces, onSave,
   const byId = (id) => entries.find((e) => e.id === id);
   const mapPlace = (id) => mapPlaces().find((p) => p.id === id) ?? null;
   const noteFor = (id) => entries.find((e) => kindOf(e) === 'placenote' && e.data.place === id && visible(e));
+  // The DM's secret note about an entry (or 'map:<id>' for a map place); never for players.
+  const secretFor = (about) => (canEdit() ? entries.find((e) => kindOf(e) === 'secret' && e.data.about === about) : null);
+  // The town on the map something belongs to: a map place, or the town a smaller place is in.
+  function townOf(id, depth = 0) {
+    if (!id || depth > 6) return null;
+    if (mapPlace(id)) return id;
+    const e = byId(id);
+    return e && kindOf(e) === 'place' ? townOf(e.data.place, depth + 1) : null;
+  }
 
   // A place reference (a map place id or a place entry id) → { type, id, name }.
   function placeRef(id) {
@@ -115,39 +132,50 @@ export function createJournalScreen(root, { entries, canEdit, mapPlaces, onSave,
     const ps = all('npc')
       .filter((n) => matches(n.data.title, n.data.role, n.data.body, placeRef(n.data.place)?.name))
       .sort((a, b) => a.data.title.localeCompare(b.data.title));
-    return ps.length ? `<ul>${ps.map((n) => item('npc', n.id, {
+    if (!ps.length) return '';
+    const one = (n, showTown) => item('npc', n.id, {
       title: n.data.title,
-      sub: [esc(n.data.role), esc(placeRef(n.data.place)?.name ?? ''), n.data.shown === false ? '🔒 hidden' : ''].filter(Boolean).join(' · '),
+      sub: [esc(n.data.role), showTown ? esc(placeRef(n.data.place)?.name ?? '') : esc(placeRef(n.data.place)?.type === 'place' ? placeRef(n.data.place).name : ''), n.data.shown === false ? '🔒 hidden' : ''].filter(Boolean).join(' · '),
       mark: `<span class="jr-face jr-face--${n.data.attitude ?? 'unknown'}" title="${ATTITUDE[n.data.attitude] ?? 'Unknown'}">${esc(n.data.title[0] ?? '?')}</span>`,
       cls: `${n.data.status === 'dead' ? ' is-dead' : ''}${n.data.shown === false ? ' is-hidden' : ''}`,
-    })).join('')}</ul>` : '';
+    });
+    const sortBar = `<div class="jr-sort">Sort by <button type="button" data-sort="town"${peopleSort === 'town' ? ' class="is-on"' : ''}>Town</button><button type="button" data-sort="name"${peopleSort === 'name' ? ' class="is-on"' : ''}>A–Z</button></div>`;
+    if (peopleSort === 'name' || query) return `${query ? '' : sortBar}<ul>${ps.map((n) => one(n, true)).join('')}</ul>`;
+    // Grouped under the town they belong to, in map order; people with no town last.
+    const towns = [...mapPlaces().map((m) => m.id), ''];
+    const groups = towns
+      .map((t) => [t, ps.filter((n) => (townOf(n.data.place) ?? '') === t)])
+      .filter(([, list]) => list.length);
+    return sortBar + groups.map(([t, list]) => `
+      <p class="jr-group">${t ? `${icon('map', 'inline')} ${esc(mapPlace(t).name)}` : 'No town'} <small>${list.length}</small></p>
+      <ul>${list.map((n) => one(n, false)).join('')}</ul>`).join('');
   }
 
+  // Places: each town on the map, with the smaller places inside it right under it.
   function placeItems() {
-    const known = mapPlaces()
-      .filter((p) => matches(p.name, p.subtitle, p.text, noteFor(p.id)?.data.body))
-      .map((p) => {
-        const here = atPlace(p.id);
-        const count = here.people.length ? `${here.people.length} ${here.people.length === 1 ? 'person' : 'people'}` : '';
-        return item('map', p.id, {
-          title: p.name,
-          sub: [TIER_NAME[p.tier] ?? 'Place', count, p.secret ? '🔒 not discovered' : ''].filter(Boolean).join(' · '),
-          mark: `<span class="jr-mark">${icon('map')}</span>`,
-          cls: p.secret ? ' is-hidden' : '',
-        });
-      });
-    const own = all('place')
-      .filter((p) => matches(p.data.title, p.data.body, placeRef(p.data.place)?.name))
-      .sort((a, b) => a.data.title.localeCompare(b.data.title))
-      .map((p) => item('place', p.id, {
-        title: p.data.title,
-        sub: [placeRef(p.data.place) ? `In ${esc(placeRef(p.data.place).name)}` : '', p.data.shown === false ? '🔒 hidden' : ''].filter(Boolean).join(' · '),
-        mark: `<span class="jr-mark">${icon('pin')}</span>`,
-        cls: p.data.shown === false ? ' is-hidden' : '',
-      }));
+    const own = all('place').sort((a, b) => a.data.title.localeCompare(b.data.title));
+    const ownMatch = (p) => matches(p.data.title, p.data.body);
+    const ownItem = (p) => item('place', p.id, {
+      title: p.data.title,
+      sub: [p.data.shown === false ? '🔒 hidden' : ''].filter(Boolean).join(' · '),
+      mark: `<span class="jr-mark">${icon('pin')}</span>`,
+      cls: ` is-child${p.data.shown === false ? ' is-hidden' : ''}`,
+    });
+    const towns = mapPlaces().map((m) => {
+      const inside = own.filter((p) => townOf(p.data.place) === m.id && ownMatch(p));
+      if (!matches(m.name, m.subtitle, m.text, noteFor(m.id)?.data.body) && !inside.length) return '';
+      const people = all('npc').filter((n) => townOf(n.data.place) === m.id).length;
+      return item('map', m.id, {
+        title: m.name,
+        sub: [TIER_NAME[m.tier] ?? 'Place', people ? `${people} ${people === 1 ? 'person' : 'people'}` : '', m.secret ? '🔒 not discovered' : ''].filter(Boolean).join(' · '),
+        mark: `<span class="jr-mark">${icon('map')}</span>`,
+        cls: m.secret ? ' is-hidden' : '',
+      }) + inside.map(ownItem).join('');
+    }).join('');
+    const elsewhere = own.filter((p) => !townOf(p.data.place) && ownMatch(p));
     return [
-      own.length ? `<p class="jr-group">Places we found</p><ul>${own.join('')}</ul>` : '',
-      known.length ? `<p class="jr-group">On the map</p><ul>${known.join('')}</ul>` : '',
+      towns ? `<ul>${towns}</ul>` : '',
+      elsewhere.length ? `<p class="jr-group">Elsewhere</p><ul>${elsewhere.map(ownItem).join('')}</ul>` : '',
     ].join('');
   }
 
@@ -180,6 +208,8 @@ export function createJournalScreen(root, { entries, canEdit, mapPlaces, onSave,
     const s = SECTIONS.find((x) => x.id === section);
     newBtn.hidden = !canEdit();
     newBtn.querySelector('span').textContent = s.newLabel;
+    drawImport();
+    if (canEdit() && !lore) loadLore();
   }
 
   // --- The page ------------------------------------------------------------------------------------
@@ -191,6 +221,10 @@ export function createJournalScreen(root, { entries, canEdit, mapPlaces, onSave,
       <button type="button" data-do="edit">${icon('pen')}Edit</button>
       <button type="button" data-do="delete" class="jr-tools__delete">Delete</button>
     </div>` : '');
+  const secretBox = (about) => {
+    const sec = secretFor(about);
+    return sec?.data.body ? `<div class="jr-secret"><h4>${icon('lock', 'inline')} DM only</h4><p>${lines(sec.data.body)}</p></div>` : '';
+  };
   const related = (label, list, type, line) => (list.length ? `
     <h4 class="jr-h">${label}</h4>
     <ul class="jr-links">${list.map((e) => `<li><button type="button" class="jr-link" data-open="${type}:${esc(e.id)}">${line(e)}</button></li>`).join('')}</ul>` : '');
@@ -208,6 +242,7 @@ export function createJournalScreen(root, { entries, canEdit, mapPlaces, onSave,
             ${edit ? `<button type="button" class="jr-tick" data-step="${i}" aria-label="Mark as ${s.done ? 'not done' : 'done'}">${s.done ? icon('check') : ''}</button>` : `<span class="jr-tick">${s.done ? icon('check') : ''}</span>`}
             <span>${esc(s.text)}</span></li>`).join('')}
         </ul>` : ''}
+      ${secretBox(q.id)}
       ${tools(q, (d.status ?? 'active') === 'active'
         ? `<button type="button" data-do="done">${icon('check')}Completed</button>`
         : `<button type="button" data-do="active">${icon('scroll')}Make active again</button>`)}`;
@@ -225,6 +260,7 @@ export function createJournalScreen(root, { entries, canEdit, mapPlaces, onSave,
       </p>
       ${d.place ? `<p class="jr-meta">${placeLink(d.place, 'Met at ')}</p>` : ''}
       ${d.body ? `<p class="jr-text">${lines(d.body)}</p>` : '<p class="jr-text is-empty">Nothing written about them yet.</p>'}
+      ${secretBox(n.id)}
       ${related(`Also met at ${esc(placeRef(d.place)?.name ?? '')}`, others, 'npc', (x) => `${esc(x.data.title)}${x.data.role ? ` <small>${esc(x.data.role)}</small>` : ''}`)}
       ${tools(n)}`;
   }
@@ -246,6 +282,7 @@ export function createJournalScreen(root, { entries, canEdit, mapPlaces, onSave,
       <h3 class="jr-name">${esc(d.title)}</h3>
       ${d.place ? `<p class="jr-meta">${placeLink(d.place, 'In ')}</p>` : ''}
       ${d.body ? `<p class="jr-text">${lines(d.body)}</p>` : '<p class="jr-text is-empty">Nothing written about it yet.</p>'}
+      ${secretBox(p.id)}
       ${hereLists(p.id)}
       ${tools(p)}`;
   }
@@ -259,8 +296,12 @@ export function createJournalScreen(root, { entries, canEdit, mapPlaces, onSave,
       <p class="jr-meta"><button type="button" class="jr-link" data-map="${esc(m.id)}">${icon('map', 'inline')}Show on the map</button></p>
       ${m.text ? `<p class="jr-text">${esc(m.text)}</p>` : ''}
       ${note ? `<h4 class="jr-h">What we learned${note.data.shown === false ? ' <small>🔒 hidden</small>' : ''}</h4><p class="jr-text">${lines(note.data.body)}</p>` : ''}
+      ${secretBox(`map:${m.id}`)}
       ${hereLists(m.id)}
-      ${edit ? `<div class="jr-tools"><button type="button" data-do="note">${icon('pen')}${note ? 'Edit notes' : 'Write notes'}</button></div>` : ''}`;
+      ${edit ? `<div class="jr-tools">
+        <button type="button" data-do="note">${icon('pen')}${note ? 'Edit notes' : 'Write notes'}</button>
+        ${note ? `<button type="button" data-do="noteshown">${icon(note.data.shown === false ? 'wis' : 'lock')}${note.data.shown === false ? 'Show notes to players' : 'Hide notes from players'}</button>` : ''}
+      </div>` : ''}`;
   }
 
   // --- Writing (DM) --------------------------------------------------------------------------------
@@ -270,6 +311,8 @@ export function createJournalScreen(root, { entries, canEdit, mapPlaces, onSave,
     <optgroup label="On the map">${mapPlaces().map((p) => `<option value="${esc(p.id)}"${p.id === current ? ' selected' : ''}>${esc(p.name)}</option>`).join('')}</optgroup>
     ${all('place').length ? `<optgroup label="Places we found">${all('place').filter((p) => p.id !== editing?.id).map((p) => `<option value="${esc(p.id)}"${p.id === current ? ' selected' : ''}>${esc(p.data.title)}</option>`).join('')}</optgroup>` : ''}`;
   const shownBox = (d, label = 'Players can see this') => `<label class="toggle"><input type="checkbox" name="shown"${d.shown !== false ? ' checked' : ''} /> ${label}</label>`;
+  const secretField = (about) => `
+    <label class="field jr-secret-field"><span>${icon('lock', 'inline')} DM only: secrets, stats, plans (never shown to players)</span><textarea class="field__input" name="secret" rows="3" maxlength="3000">${esc(secretFor(about)?.data.body ?? '')}</textarea></label>`;
   const formEnd = `
     <p class="jr-error" role="alert"></p>
     <div class="jr-form__actions">
@@ -289,7 +332,7 @@ export function createJournalScreen(root, { entries, canEdit, mapPlaces, onSave,
           <label class="field"><span>Leads to</span><select class="field__input" name="place">${placeOptions(d.place, 'Nowhere in particular')}</select></label>
           <label class="field"><span>Status</span><select class="field__input" name="status">${Object.entries(QUEST_STATUS).map(([k, v]) => `<option value="${k}"${k === (d.status ?? 'active') ? ' selected' : ''}>${v}</option>`).join('')}</select></label>
         </div>
-        ${shownBox(d)}${formEnd}
+        ${secretField(editing.id)}${shownBox(d)}${formEnd}
       </form>`;
     if (kind === 'npc') return `
       <form class="jr-form" data-kind="npc">
@@ -304,7 +347,7 @@ export function createJournalScreen(root, { entries, canEdit, mapPlaces, onSave,
           <label class="field"><span>Alive?</span><select class="field__input" name="status">${Object.entries(ALIVE).map(([k, v]) => `<option value="${k}"${k === (d.status ?? 'alive') ? ' selected' : ''}>${v}</option>`).join('')}</select></label>
         </div>
         <label class="field"><span>What the party knows about them</span><textarea class="field__input" name="body" rows="5" maxlength="2000">${esc(d.body)}</textarea></label>
-        ${shownBox(d)}${formEnd}
+        ${secretField(editing.id)}${shownBox(d)}${formEnd}
       </form>`;
     if (kind === 'place') return `
       <form class="jr-form" data-kind="place">
@@ -312,13 +355,13 @@ export function createJournalScreen(root, { entries, canEdit, mapPlaces, onSave,
         <label class="field"><span>Name</span><input class="field__input" name="title" maxlength="60" required value="${esc(d.title)}" placeholder="e.g. The Rusty Anchor" /></label>
         <label class="field"><span>Where it is</span><select class="field__input" name="place">${placeOptions(d.place, 'Not on the map')}</select></label>
         <label class="field"><span>What the party knows about it</span><textarea class="field__input" name="body" rows="5" maxlength="2000">${esc(d.body)}</textarea></label>
-        ${shownBox(d)}${formEnd}
+        ${secretField(editing.id)}${shownBox(d)}${formEnd}
       </form>`;
     return `
       <form class="jr-form" data-kind="placenote">
         <h3 class="jr-name">Notes on ${esc(mapPlace(d.place)?.name ?? 'this place')}</h3>
         <label class="field"><span>What the party learned here</span><textarea class="field__input" name="body" rows="7" maxlength="3000">${esc(d.body)}</textarea></label>
-        ${shownBox(d)}${formEnd}
+        ${secretField(`map:${d.place}`)}${shownBox(d)}${formEnd}
       </form>`;
   }
 
@@ -353,11 +396,24 @@ export function createJournalScreen(root, { entries, canEdit, mapPlaces, onSave,
   }
 
   // --- Saving --------------------------------------------------------------------------------------
-  async function save(entry) {
+  // Saves one row and keeps the local list in step.
+  async function put(entry) {
+    const row = await onSave(entry);
+    const i = entries.findIndex((e) => e.id === row.id);
+    if (i >= 0) entries[i] = row; else entries.push(row);
+    return row;
+  }
+  // The DM's secret about something: saved as its own hidden row, removed when emptied.
+  async function putSecret(about, text) {
+    const old = entries.find((e) => kindOf(e) === 'secret' && e.data.about === about);
+    if (text) await put({ id: old?.id, data: { kind: 'secret', about, body: text, shown: false } });
+    else if (old) { await onDelete(old.id); entries.splice(entries.indexOf(old), 1); }
+  }
+
+  async function save(entry, secret) {
     try {
-      const row = await onSave(entry);
-      const i = entries.findIndex((e) => e.id === row.id);
-      if (i >= 0) entries[i] = row; else entries.push(row);
+      const row = await put(entry);
+      if (secret !== undefined) await putSecret(kindOf(row) === 'placenote' ? `map:${row.data.place}` : row.id, secret);
       editing = null;
       const kind = kindOf(row);
       if (kind === 'placenote') open = { type: 'map', id: row.data.place };
@@ -381,6 +437,66 @@ export function createJournalScreen(root, { entries, canEdit, mapPlaces, onSave,
     render();
   });
   searchEl.addEventListener('input', () => { query = searchEl.value.trim().toLowerCase(); renderList(); });
+  listEl.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-sort]');
+    if (b) { peopleSort = b.dataset.sort; renderList(); }
+  });
+
+  // --- Importing the owner's lore file (dev server only) --------------------------------------------
+  let lore = null, importing = false;
+  async function loadLore() {
+    const loader = Object.values(LORE_FILES)[0];
+    if (!loader || lore) return;
+    lore = (await loader()).LORE;
+    renderList();
+  }
+  const has = (kind, title) => entries.some((e) => kindOf(e) === kind && e.data.title === title);
+  const missingLore = () => (lore ? [
+    ...lore.places.filter((p) => !has('place', p.title)),
+    ...lore.notes.filter((n) => !entries.some((e) => kindOf(e) === 'placenote' && e.data.place === n.place)),
+    ...lore.people.filter((p) => !has('npc', p.title)),
+  ].length : 0);
+  function drawImport() {
+    const n = canEdit() ? missingLore() : 0;
+    importBtn.hidden = !n && !importing;
+    if (!importing) importBtn.textContent = `Import lore (${n})`;
+  }
+  importBtn.addEventListener('click', async () => {
+    if (importing || !confirm(`Add ${missingLore()} people, places and notes from your lore file to the journal? They start hidden from the players.`)) return;
+    importing = true;
+    let done = 0;
+    const step = () => { done++; importBtn.textContent = `Importing… ${done}`; };
+    try {
+      const ids = {};
+      const resolve = (ref) => ids[ref] ?? ref;
+      for (const p of lore.places) {
+        const old = entries.find((e) => kindOf(e) === 'place' && e.data.title === p.title);
+        if (old) { ids[p.key] = old.id; continue; }
+        const row = await put({ data: { kind: 'place', title: p.title, place: resolve(p.place), body: p.body, shown: false } });
+        ids[p.key] = row.id;
+        if (p.secret) await putSecret(row.id, p.secret);
+        step();
+      }
+      for (const n of lore.notes) {
+        if (entries.some((e) => kindOf(e) === 'placenote' && e.data.place === n.place)) continue;
+        await put({ data: { kind: 'placenote', place: n.place, body: n.body, shown: false } });
+        if (n.secret) await putSecret(`map:${n.place}`, n.secret);
+        step();
+      }
+      for (const p of lore.people) {
+        if (has('npc', p.title)) continue;
+        const row = await put({ data: { kind: 'npc', title: p.title, role: p.role, place: resolve(p.place), attitude: p.attitude, status: p.status, body: p.body, shown: false } });
+        if (p.secret) await putSecret(row.id, p.secret);
+        step();
+      }
+      alert(`Imported ${done} entries. They are hidden from the players until you press "Show to players".`);
+    } catch (err) {
+      alert(`The import stopped after ${done} entries: ${err.message}. Press Import lore again to add the rest.`);
+    } finally {
+      importing = false;
+      render();
+    }
+  });
 
   newBtn.addEventListener('click', () => {
     const kind = SECTIONS.find((s) => s.id === section).kind;
@@ -402,6 +518,11 @@ export function createJournalScreen(root, { entries, canEdit, mapPlaces, onSave,
     if (!b || !pageEl.contains(b)) return;
     if (b.dataset.do === 'back') { if (editing) editing = null; else open = null; render(); return; }
     if (b.dataset.do === 'cancel') { editing = null; renderPage(); return; }
+    if (b.dataset.do === 'noteshown') {
+      const note = entries.find((x) => kindOf(x) === 'placenote' && x.data.place === open.id);
+      if (note) save({ id: note.id, data: { ...note.data, shown: note.data.shown === false } });
+      return;
+    }
     if (b.dataset.do === 'note') {
       const note = entries.find((x) => kindOf(x) === 'placenote' && x.data.place === open.id);
       editing = note ? { id: note.id, data: structuredClone(note.data) } : { data: { kind: 'placenote', place: open.id, body: '', shown: true } };
@@ -422,7 +543,7 @@ export function createJournalScreen(root, { entries, canEdit, mapPlaces, onSave,
       case 'edit': editing = { id: entry.id, data: structuredClone(entry.data) }; renderPage(); break;
       case 'delete':
         if (!confirm(`Delete "${entry.data.title}" from the journal?`)) return;
-        onDelete(entry.id).then(() => {
+        onDelete(entry.id).then(() => putSecret(entry.id, '')).then(() => {
           entries.splice(entries.indexOf(entry), 1);
           open = null;
           render();
@@ -448,7 +569,7 @@ export function createJournalScreen(root, { entries, canEdit, mapPlaces, onSave,
     } else {
       data = { kind, place: d.place, body: f.body.value.trim(), shown };
     }
-    save({ id: editing.id, data });
+    save({ id: editing.id, data }, f.secret ? f.secret.value.trim() : undefined);
   });
 
   return {

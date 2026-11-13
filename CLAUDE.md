@@ -8,6 +8,11 @@ things in plain words, and work in small, testable steps.
 The original assets (hand-drawn world map, location art, character art, lore document) are in
 `~/Desktop/DND`, outside this repo. The source map was copied to `assets/source/world-map.png`.
 
+## Privacy
+
+- **The GitHub repo is PUBLIC.** Never commit DM secrets or the lore files: `DND Lore/` and `*.local.js` are
+  in .gitignore. Secret lore belongs in the Journal (Supabase, hidden rows), not in the code.
+
 ## Run / build
 
 - `npm run dev`: dev server with hot reload. "Open World Map.command" does the same with a double-click.
@@ -255,6 +260,15 @@ The original assets (hand-drawn world map, location art, character art, lore doc
   - Places = the world-map places this viewer knows (with their lore from locations.js) plus the DM's
     places. A place page lists the people met there, places inside it and its quests; people link to
     where they were met. Map place cards have "Read about it in the journal" (`openPlace`).
+  - DM secrets: `secret` rows `{ about: entry id or 'map:<place id>', body, shown: false }`, shown in a
+    dashed red "DM only" box and edited in every form. Never shown, so RLS never sends them to players.
+  - People are grouped by the town they belong to (`townOf`: a map place, or the town a smaller place is
+    in), with an A–Z option; Places list each town with its smaller places under it.
+  - The owner's lore (`DND Lore/`: DND world.docx, the slides and the campaign summary) was turned into
+    `src/data/lore-import.local.js` (people, places, town notes and secrets). It is NOT in git and is only
+    loaded on the dev server (`import.meta.env.DEV` + `import.meta.glob`), so DM secrets never reach the
+    public repo or the built app. The DM runs it once with "Import lore (N)" in the Journal; it skips
+    anything already there and adds everything hidden.
   - Players see entries with `shown` (RLS) and only discovered map places. The DM writes, edits, ticks
     steps, completes, hides and deletes. Players get a toast for new entries.
   - Places of active visible quests get a 📜 on their map label (`questFor`, quests only).
