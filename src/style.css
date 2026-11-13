@@ -742,6 +742,31 @@ body.is-placing .hud-stack { opacity: 0.4; }
 .status .tile, .status .sheet-card { filter: drop-shadow(0 5px 8px rgba(20, 10, 0, 0.35)); }
 .status__hero { padding: 14px; }
 
+/* The hero card is the framed sheet (an inked border line), the four small cards wide sheets. */
+.status__hero {
+  position: relative; border-width: 22px; padding: 10px 12px;
+  border-image: url('/art/ui/paper/framed-sheet.webp') 44 fill / 40px / 0 stretch;
+}
+.status .tile { border-width: 12px; border-image: url('/art/ui/paper/wide-sheet.webp') 26 fill / 20px / 0 stretch; }
+.status .sheet-card { position: relative; }
+
+/* Bronze corners on the big cards (the four directions are separate files). */
+.status__hero::after, .status .sheet-card--big::after {
+  content: ''; position: absolute; inset: -14px; pointer-events: none; z-index: 2;
+  background:
+    url('/art/ui/corner-tl.webp') top left / 58px auto no-repeat,
+    url('/art/ui/corner-tr.webp') top right / 58px auto no-repeat,
+    url('/art/ui/corner-bl.webp') bottom left / 58px auto no-repeat,
+    url('/art/ui/corner-br.webp') bottom right / 58px auto no-repeat;
+}
+.status__hero::after { inset: -22px; }
+
+/* The level number on a red wax seal, next to the name. */
+.status .lvl { width: 58px; height: 58px; margin: -6px 2px -6px -4px; }
+.status .lvl::before { inset: 0; transform: none; border: 0; box-shadow: none; background: url('/art/ui/wax-seal.webp') center / contain no-repeat; filter: drop-shadow(0 2px 2px rgba(40, 10, 5, 0.35)); }
+.status .lvl b { margin-top: 9px; font: 700 21px/1 var(--font-body); color: #f8eedb; text-shadow: 0 1px 1px rgba(60, 10, 5, 0.6); }
+.status .lvl::after { content: 'LVL'; position: absolute; top: 15px; left: 0; right: 0; text-align: center; font: 700 8px var(--font-display); letter-spacing: 0.12em; color: #f3d9c4; }
+
 /* The hero card. */
 .status .sheet__name { font: 700 28px/1.1 var(--font-display); color: var(--pp-ink); text-shadow: none; }
 .status .sheet__kicker { font: 400 15px var(--font-body); letter-spacing: 0; text-transform: none; color: var(--pp-soft); }
@@ -1827,6 +1852,7 @@ input.is-bad { box-shadow: inset 0 0 0 2px #e2634e; }
   .status .tile b { font-size: 24px; }
   .status .tile span { font-size: 10px; }
   .status .sheet-card { margin-top: 12px; padding: 8px 8px 6px; }
+  .status__hero::after, .status .sheet-card--big::after { background-size: 40px auto; }
   .status .sheet-card__head small { font-size: 13px; }
   .status .abils { gap: 8px; }
   .status .abil { padding: 8px 8px 0; gap: 2px 4px; }
