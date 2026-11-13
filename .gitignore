@@ -3,3 +3,4 @@ tools/out/
 .DS_Store
 .Rhistory
 tools/*.tmp.mjs
+.netlify/
