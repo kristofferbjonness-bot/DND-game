@@ -220,34 +220,19 @@ button, summary, .label { -webkit-tap-highlight-color: transparent; touch-action
 .bar {
   position: fixed; z-index: 6; top: 0; left: 0; right: 0;
   height: calc(var(--bar) + var(--safe-t));
-  padding: var(--safe-t) max(40px, calc(var(--safe-r) + 30px)) 0 max(40px, calc(var(--safe-l) + 30px));
-  display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto auto; align-items: center; gap: 10px;
+  padding: var(--safe-t) max(52px, calc(var(--safe-r) + 48px)) 0 max(52px, calc(var(--safe-l) + 48px));
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto auto; align-items: center; gap: 18px;
   color: var(--paper-ink);
 }
-/* The sheet, stretched between the two rollers: thick cartoon outline, burnt edges. */
+/* The bar is the painted rolled scroll (public/art/ui/paper/rolled-scroll.webp): the paper
+   rolls at both ends stay as they are, the sheet between them stretches. */
 .bar::before {
   content: ''; position: absolute; z-index: -1; pointer-events: none;
-  top: calc(var(--safe-t) + 3px); bottom: 3px; left: max(16px, calc(var(--safe-l) + 8px)); right: max(16px, calc(var(--safe-r) + 8px));
-  background: var(--paper);
-  border: 2.5px solid var(--paper-line); border-left: 0; border-right: 0;
-  box-shadow: inset 0 0 0 2px rgba(255, 244, 210, 0.35), inset 0 0 26px 4px rgba(150, 85, 25, 0.5), 0 6px 0 -1px rgba(40, 20, 5, 0.25), 0 10px 22px rgba(20, 10, 0, 0.35);
+  top: calc(var(--safe-t) + 1px); bottom: -2px; left: max(4px, var(--safe-l)); right: max(4px, var(--safe-r));
+  border: solid transparent; border-width: 12px 40px 14px;
+  border-image: url('/art/ui/paper/rolled-scroll.webp') 30 46 34 46 fill / 12px 40px 14px 40px / 0 stretch;
+  filter: drop-shadow(0 6px 8px rgba(20, 10, 0, 0.35));
 }
-/* Wooden rollers at both ends, with knobs, so the scroll unrolls sideways. */
-.bar__roll {
-  position: absolute; z-index: 1; pointer-events: none; width: 24px;
-  top: calc(var(--safe-t) - 1px); bottom: -1px;
-  border: 2.5px solid var(--paper-line); border-radius: 10px;
-  background: var(--grain), linear-gradient(90deg, #a57a3f 0%, #e9cd8f 30%, #fff1c9 45%, #e2bf7c 65%, #8e6631 100%);
-  box-shadow: inset -3px 0 0 rgba(90, 50, 15, 0.35), 2px 4px 6px rgba(20, 10, 0, 0.35);
-}
-.bar__roll--left { left: max(6px, var(--safe-l)); }
-.bar__roll--right { right: max(6px, var(--safe-r)); }
-.bar__roll::before, .bar__roll::after {
-  content: ''; position: absolute; left: 50%; width: 14px; height: 9px; transform: translateX(-50%);
-  background: linear-gradient(90deg, #5a3417, #9a6436 45%, #4a2a12); border: 2px solid var(--paper-line); border-radius: 5px;
-}
-.bar__roll::before { top: -8px; }
-.bar__roll::after { bottom: -8px; }
 .bar[hidden] { display: none; }
 .bar > button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; padding: 0; }
 
@@ -1761,12 +1746,9 @@ input.is-bad { box-shadow: inset 0 0 0 2px #e2634e; }
     padding: 8px max(8px, var(--safe-r)) calc(4px + var(--safe-b)) max(8px, var(--safe-l));
     grid-template-columns: auto minmax(0, 1fr) auto auto; grid-template-areas: "sky . dice me" "tabs tabs tabs tabs";
     gap: 6px 8px;
-    padding-left: max(34px, calc(var(--safe-l) + 30px)); padding-right: max(34px, calc(var(--safe-r) + 30px));
+    padding-left: max(36px, calc(var(--safe-l) + 32px)); padding-right: max(36px, calc(var(--safe-r) + 32px));
   }
-  .bar::before { top: 3px; bottom: calc(var(--safe-b) + 3px); left: 14px; right: 14px; }
-  .bar__roll { top: -1px; bottom: calc(var(--safe-b) - 1px); width: 22px; }
-  .bar__roll--left { left: 4px; }
-  .bar__roll--right { right: 4px; }
+  .bar::before { top: 0; bottom: calc(var(--safe-b) - 2px); left: 2px; right: 2px; border-width: 14px 30px 16px; border-image-width: 14px 30px 16px 30px; }
   .bar__sky { grid-area: sky; }
   .bar__dice { grid-area: dice; }
   .bar__me { grid-area: me; }
@@ -1774,7 +1756,7 @@ input.is-bad { box-shadow: inset 0 0 0 2px #e2634e; }
   .bar__party, .bar__sky-text, .bar__dice-text { display: none; }
   .bar__me-text { display: flex; }
   .bar__me-text small { display: none; }
-  .bar__me-text b { font-size: 12px; }
+  .bar__me-text b { font-size: 12px; max-width: 160px; }
   .bar__face { width: 34px; height: 34px; }
   .dial { width: 34px; height: 34px; }
   .bar__dice .die-icon { width: 34px; height: 34px; }
@@ -1782,8 +1764,7 @@ input.is-bad { box-shadow: inset 0 0 0 2px #e2634e; }
   .topnav__tab--map span { max-width: 72px; font-size: 11px; }
   .topnav__chev { display: none; }
   .bar__back { width: 24px; height: 50px; }
-  .bar__me-text b { max-width: 120px; }
-  .bar__hp { width: 120px; }
+  .bar__hp { width: 140px; }
   .topnav__tab { flex: 1; flex-direction: column; justify-content: center; gap: 2px; height: 50px; padding: 0 2px; font-size: 9.5px; letter-spacing: 0.06em; }
   .topnav__tab span { display: block; }
   .topnav__tab .ic { width: 26px; height: 26px; }

@@ -273,7 +273,7 @@ The original assets (hand-drawn world map, location art, character art, lore doc
     photographed once); `icon(name)` in `src/ui/icons.js`, with flat SVGs as a no-3D fallback.
   - Portraits of heroes and monsters are small renders of their figures (`src/ui/portraits.js`,
     one shared offscreen renderer, cached by gear/look).
-- **The bar** (`#bar` in index.html) is a cartoony old scroll that unrolls sideways (`--paper` in style.css: grain + stains, thick brown outlines, wooden rollers `.bar__roll` at both ends, ink text, a red pencil slash under the open tab; its drop-downs are paper too). It holds the sky dial (time + weather, opens the sky card), the
+- **The bar** (`#bar` in index.html) is a the painted rolled scroll (`public/art/ui/paper/rolled-scroll.webp` as a 9-slice on `.bar::before`; ink text, a red pencil slash under the open tab; "DM" for the Dungeon Master). It holds the sky dial (time + weather, opens the sky card), the
   map/places menu (and ‹ back from cities), the screen tabs, the latest dice roll (opens the tray),
   the other heroes with HP (wide screens only) and "you" (portrait + HP, opens the view-as/log-out
   menu; `drawBar` in main.js). Top bar on wide screens; a two-row dock at the bottom on upright phones.

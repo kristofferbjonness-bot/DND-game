@@ -744,7 +744,7 @@ function drawBar() {
       <b>${escHtml(hero.name)}</b>
       <span class="bar__hp${hpTone(hero)}"><i style="width:${Math.round(Math.max(0, hero.hp.current / hero.hp.max) * 100)}%"></i><em>${hero.hp.current}/${hero.hp.max}</em></span>
     </span>`
-    : `<span class="bar__face bar__face--dm">${icon('crown')}</span><span class="bar__me-text"><small>You are the</small><b>Dungeon Master</b></span>`;
+    : `<span class="bar__face bar__face--dm">${icon('crown')}</span><span class="bar__me-text"><b title="Dungeon Master">DM</b></span>`;
   barParty.innerHTML = party.filter((c) => c.id !== heroId).map((c) => `
     <button type="button" class="bar__mate${hpTone(c)}" data-hero="${escHtml(c.id)}" title="${escHtml(c.name)}: ${c.hp.current} of ${c.hp.max} HP" style="--hero:${escHtml(c.colour)}">
       <span class="bar__face">${portraitImg(heroPortrait(c), { name: c.name, colour: c.colour })}</span>
