@@ -96,6 +96,34 @@ export function watchCharacters(onRow) {
     .subscribe();
 }
 
+// --- Revealed places -------------------------------------------------------------------------
+// Which places on the world map the players know (ids from src/world/locations.js).
+// Everyone can read them; only the Dungeon Master can reveal or hide.
+
+export async function loadRevealed() {
+  const { data, error } = await supabase.from('revealed_places').select('place_id');
+  if (error) throw error;
+  return data.map((r) => r.place_id);
+}
+
+export async function setRevealed(ids, on) {
+  const { error } = on
+    ? await supabase.from('revealed_places').upsert(ids.map((place_id) => ({ place_id })))
+    : await supabase.from('revealed_places').delete().in('place_id', ids);
+  if (error) throw error;
+}
+
+// Calls back with (placeId, revealed) whenever the Dungeon Master reveals or hides a place.
+export function watchRevealed(onChange) {
+  return supabase
+    .channel('revealed_places')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'revealed_places' }, (msg) => {
+      if (msg.eventType === 'DELETE') { if (msg.old?.place_id) onChange(msg.old.place_id, false); }
+      else if (msg.new?.place_id) onChange(msg.new.place_id, true);
+    })
+    .subscribe();
+}
+
 // --- Live encounter ------------------------------------------------------------------------
 // The Dungeon Master broadcasts what players may see of a fight; players who join
 // late say hello and the DM answers with the current state. Nothing is stored.

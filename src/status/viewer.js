@@ -91,9 +91,7 @@ export function createCharacterViewer(container) {
 
   const clock = new THREE.Clock();
   let running = false;
-  const portraitPhone = window.matchMedia('(orientation: portrait) and (pointer: coarse) and (max-width: 640px)');
   function frame() {
-    if (portraitPhone.matches) return; // hidden behind the "turn sideways" screen
     const dt = Math.min(clock.getDelta(), 0.05);
     if (!dragging) swayT += dt;
     turntable.rotation.y = base + Math.sin(swayT * 0.35) * 0.3;

@@ -25,6 +25,7 @@ import { createStartScreen } from './start/startScreen.js';
 import { createCreatorScreen } from './creator/creatorScreen.js';
 import { createHeroManager } from './status/heroManager.js';
 import { shortRest, longRest, readyToLevel } from './character/progress.js';
+import { loadRevealed, setRevealed, watchRevealed } from './net/backend.js';
 import { supabase, myProfile, loadCharacters, seedCharacters, saveCharacter, deleteCharacter, watchCharacters, signOut, explain, encounterChannel, loadMonsters, watchMonsters } from './net/backend.js';
 import './style.css';
 
@@ -136,7 +137,7 @@ function buildWorldView() {
     id: 'world',
     title: 'World Map',
     scene, camera, places,
-    controls: makeControls(camera, { min: 18, max: 240 }),
+    controls: makeControls(camera, { min: 18, max: 420 }),
     start: { target: new THREE.Vector3(0, 0, 8), offset: new THREE.Vector3(0, 175, 120) },
     bounds: [grid.cols / 2, grid.rows / 2],
     focusDistance: (p) => ({ continent: 200, region: 70, water: 60 }[p.tier] ?? 38),
@@ -184,7 +185,7 @@ function buildCityView(id) {
     id,
     title: def.name,
     scene, camera, places,
-    controls: makeControls(camera, { min: 14, max: 240 }),
+    controls: makeControls(camera, { min: 14, max: 360 }),
     start: { target: new THREE.Vector3(4, 6, 4), offset: new THREE.Vector3(70, 105, 95) },
     bounds: [half, half],
     focusDistance: (p) => (p.tier === 'district' ? 60 : 46),
@@ -227,10 +228,12 @@ function show(next, { at } = {}) {
   view.visited = true;
 }
 
-// Tall phone screens see less from side to side, so a city's opening view
-// steps back a little further to keep the whole city in frame.
+// Tall phone screens see less from side to side, so the opening view steps
+// back further to keep the whole map in frame.
 function fitScale(v) {
-  return v.id === 'world' ? 1 : THREE.MathUtils.clamp(1 / v.camera.aspect, 1, 1.5);
+  return v.id === 'world'
+    ? THREE.MathUtils.clamp(0.8 / v.camera.aspect, 1, 1.9)
+    : THREE.MathUtils.clamp(1 / v.camera.aspect, 1, 1.8);
 }
 function startOffset(v) {
   return v.start.offset.clone().multiplyScalar(fitScale(v));
@@ -331,22 +334,83 @@ const panelImg = panel.querySelector('.panel__image');
 const panelAction = panel.querySelector('.panel__action');
 panel.querySelector('.panel__close').addEventListener('click', () => select(null));
 
+const panelReveal = panel.querySelector('.panel__reveal');
+
 let selected = null;
-function select(p) {
+function select(p, { fly = true } = {}) {
   if (selected) selected.label.classList.remove('is-selected');
   selected = p;
   if (!p) { panel.hidden = true; return; }
   p.label.classList.add('is-selected');
-  panelTitle.textContent = p.tier === 'unnamed' ? 'Unnamed place' : p.name;
-  panelSub.textContent = p.subtitle || 'Marked on your world map';
-  panelText.textContent = p.text || 'No lore written yet.';
-  panelText.classList.toggle('is-empty', !p.text);
-  if (p.image) { panelImg.src = p.image; panelImg.alt = p.name; panelImg.hidden = false; }
+  const known = knows(p);
+  panelTitle.textContent = !known ? 'Unknown place' : p.tier === 'unnamed' ? 'Unnamed place' : p.name;
+  panelSub.textContent = !known ? 'Not discovered yet' : p.subtitle || 'Marked on your world map';
+  panelText.textContent = !known ? 'Nobody in the party knows what lies here yet.' : p.text || 'No lore written yet.';
+  panelText.classList.toggle('is-empty', !known || !p.text);
+  if (known && p.image) { panelImg.src = p.image; panelImg.alt = p.name; panelImg.hidden = false; }
   else panelImg.hidden = true;
-  panelAction.hidden = !p.cityMap;
+  panelAction.hidden = !known || !p.cityMap;
   panelAction.onclick = p.cityMap ? () => openCity(p.cityMap) : null;
+  // The Dungeon Master reveals places to the players, or hides them again.
+  const hideable = seesAll() && isSecretable(p);
+  panelReveal.hidden = !hideable;
+  if (hideable) panelReveal.textContent = revealed.has(p.id) ? 'Hide from players' : 'Reveal to players';
   panel.hidden = false;
-  flyTo(new THREE.Vector3(p.x, p.ground, p.z), view.focusDistance(p) * fitScale(view));
+  if (fly) flyTo(new THREE.Vector3(p.x, p.ground, p.z), view.focusDistance(p) * fitScale(view));
+}
+
+// --- What the players know of the world map ---------------------------------------------------
+// Places the players have not discovered show as "?" and are left out of the
+// places list. The Dungeon Master sees every name; hidden ones are marked
+// faintly. Previewing as a player shows exactly what that player sees.
+// City maps (Razz) are not hidden: a city's map only opens once it is known.
+const FIRST_KNOWN = ['razz', 'tine', 'bartedalen'];
+const revealed = new Set();
+const seesAll = () => document.body.dataset.role === 'dm';
+const isSecretable = (p) => views.world.places.includes(p) && p.tier !== 'unnamed';
+const knows = (p) => !isSecretable(p) || seesAll() || revealed.has(p.id);
+
+function applyFog() {
+  for (const p of views.world.places) {
+    if (!isSecretable(p)) continue;
+    const known = knows(p);
+    p.label.textContent = known ? p.name : '?';
+    p.label.classList.toggle('is-unknown', !known);
+    p.label.classList.toggle('is-secret', seesAll() && !revealed.has(p.id));
+    p.label.title = known ? '' : 'Not discovered yet';
+  }
+  buildPlacesList();
+  if (selected) select(selected, { fly: false });
+}
+
+panelReveal.addEventListener('click', async () => {
+  const p = selected;
+  if (!p) return;
+  const on = !revealed.has(p.id);
+  try {
+    await setRevealed([p.id], on);
+    if (on) revealed.add(p.id); else revealed.delete(p.id);
+    applyFog();
+    toast(on ? `The players now know ${p.name}.` : `${p.name} is hidden from the players.`);
+  } catch (err) { toast(`Could not change it: ${explain(err)}`); }
+});
+
+let watchingPlaces = null;
+async function loadFog(dm) {
+  try {
+    const ids = await loadRevealed();
+    // The very first time, the party knows the places they started with.
+    if (!ids.length && dm) { await setRevealed(FIRST_KNOWN, true); ids.push(...FIRST_KNOWN); }
+    revealed.clear();
+    ids.forEach((id) => revealed.add(id));
+  } catch (err) {
+    console.warn('Revealed places not available:', err.message);
+  }
+  watchingPlaces ??= watchRevealed((id, on) => {
+    if (on) revealed.add(id); else revealed.delete(id);
+    applyFog();
+  });
+  applyFog();
 }
 
 // --- HUD ---------------------------------------------------------------------------------------
@@ -359,10 +423,12 @@ function buildPlacesList() {
   list.replaceChildren();
   for (const tier of view.listTiers) {
     for (const p of view.places.filter((q) => q.tier === tier)) {
+      if (!knows(p)) continue;
       const li = document.createElement('li');
       const b = document.createElement('button');
       b.type = 'button';
       b.textContent = p.name;
+      if (seesAll() && isSecretable(p) && !revealed.has(p.id)) b.classList.add('is-secret');
       b.className = `places__item places__item--${tier}`;
       b.addEventListener('click', () => { placesMenu.open = false; select(p); });
       li.appendChild(b);
@@ -433,6 +499,7 @@ function resize() {
 window.addEventListener('resize', resize);
 
 show(views.world);
+applyFog(); // nothing is known until someone logs in
 
 // --- Labels: show by zoom, shrink with distance, hide ones that overlap -------------------------
 // Earlier tiers win when two names collide; the selected place always shows.
@@ -686,6 +753,7 @@ async function enter() {
   me = { dm: profile.role === 'dm', heroId: mine?.id ?? null };
   viewAs = null;
   applyView();
+  await loadFog(me.dm);
   openFightChannel();
   showScreen(me.dm ? 'map' : combatView.active ? 'fight' : 'status');
 }
@@ -708,6 +776,7 @@ function applyView() {
   roleChip.hidden = false;
   statusScreen.setDm(me.dm);
   statusScreen.setPlayer(heroId);
+  applyFog();
   if (screen === 'party') drawParty();
 }
 
@@ -740,12 +809,15 @@ roleMenu.addEventListener('click', async (e) => {
   watching = null;
   fightChannel = null;
   watchingMonsters = null;
+  watchingPlaces = null;
   combatView.show({ active: false });
   document.body.dataset.fight = '';
   me = null;
   viewAs = null;
   roleChip.hidden = true;
   delete document.body.dataset.role;
+  revealed.clear();
+  applyFog();
   showScreen('map');
   startScreen.show();
 });
@@ -767,12 +839,10 @@ enter();
 // --- Loop ------------------------------------------------------------------------------------------
 const clock = new THREE.Clock();
 let frame = 0;
-// Phones held upright show the "turn sideways" screen; nothing is drawn meanwhile.
-const portraitPhone = window.matchMedia('(orientation: portrait) and (pointer: coarse) and (max-width: 640px)');
 
 renderer.setAnimationLoop(() => {
   const dt = Math.min(clock.getDelta(), 0.05);
-  if (portraitPhone.matches || screen !== 'map') return;
+  if (screen !== 'map') return;
   applyKeys(dt);
   updateFlight(dt);
   updateSpin(dt);

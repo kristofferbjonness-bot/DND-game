@@ -177,6 +177,15 @@ The original assets (hand-drawn world map, location art, character art, lore doc
   - Saving uses the `create_character` RPC (`supabase/creator.sql`): a player's new hero is
     owned by them at once; the DM's hero is left free to claim.
   - The DM can delete a hero from the Story tab on Status.
+- **Revealed places (fog of names)** in main.js:
+  - World-map places the players haven't discovered show as "?" and are left out of their
+    places list. The info card says "Unknown place". Unnamed dots and city maps aren't hidden.
+  - The DM sees every name; hidden ones are dashed and italic. The place card has a
+    "Reveal to players" / "Hide from players" button.
+  - Stored in the Supabase table `revealed_places` (realtime). The first DM login, with the
+    table empty, reveals razz, tine and bartedalen (`FIRST_KNOWN`).
+  - "View as" a hero shows the player's version.
+  - The lore text is still inside the app's code, so a curious player could find it.
 - **Party** (`src/status/partyScreen.js`) shows a card per hero with HP, AC, initiative and
   passive perception. Tapping a card opens that hero on Status.
   - DM tools (hidden while previewing as a player):
@@ -209,8 +218,14 @@ The original assets (hand-drawn world map, location art, character art, lore doc
   - Two fingers: twist rotates the map with the fingers (after a dead zone of about 10°),
     pinch zooms, and sliding up or down tilts.
   - The compass button (bottom right) shows north and returns the view to north-up when tapped.
-- Phones are landscape-only: held upright, they show a "turn your phone sideways" screen and stop
-  rendering. iOS can't lock the orientation of a home-screen app.
+- Phones work both ways round. Held upright (`(orientation: portrait) and (max-width: 600px)`,
+  at the end of style.css):
+  - The tabs become a bar along the bottom (`--nav`), with the name badge top right.
+  - Side-by-side screens stack: Status, Creator and Bestiary put the figure on top.
+  - The battle camera looks from behind the heroes, so enemies are at the top. It resets when
+    the phone turns (battleScene.js).
+  - The world view's opening shot steps back to fit (`fitScale`).
+  - Landscape phones use the `(max-height: 500px) and (orientation: landscape)` rules.
 - Performance:
   - Voxels use `src/fx/bevelBox.js`, a 44-triangle bevelled box. The earlier RoundedBoxGeometry
     took 300 triangles per voxel, and there are about 65k instances.

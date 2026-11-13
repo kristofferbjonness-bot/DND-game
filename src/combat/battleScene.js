@@ -1,5 +1,7 @@
 // The 3D battlefield, seen from a little way off like a Pokémon battle: the
 // heroes stand on the left, the enemies on the right, each on a round pad.
+// On a phone held upright the camera looks from behind the heroes instead, so
+// the heroes are at the bottom of the screen and the enemies at the top.
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { bevelBox } from '../fx/bevelBox.js';
@@ -157,10 +159,18 @@ export function createBattleScene(container) {
   controls.maxPolarAngle = 1.35;
   controls.touches = { ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_PAN };
 
+  let upright = false;
   function resetView() {
-    const fit = Math.max(1, 2 / (camera.aspect || 1));
+    upright = camera.aspect < 0.8;
     controls.target.set(2, 2, -2);
-    camera.position.set(-6 * fit, 62 * fit, 128 * fit);
+    if (upright) {
+      // Along the line from the heroes to the enemies, from behind the heroes.
+      const d = 150 * Math.max(1, 0.6 / camera.aspect);
+      camera.position.set(2 - 0.86 * d, 0.62 * d, -2 + 0.5 * d);
+    } else {
+      const fit = Math.max(1, 2 / (camera.aspect || 1));
+      camera.position.set(-6 * fit, 62 * fit, 128 * fit);
+    }
     controls.update();
   }
 
@@ -171,7 +181,8 @@ export function createBattleScene(container) {
     renderer.setSize(w, h);
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
-    if (first) { camera.userData.sized = true; resetView(); }
+    // Turning the phone resets the view for the new shape.
+    if (first || upright !== camera.aspect < 0.8) { camera.userData.sized = true; resetView(); }
   }
   new ResizeObserver(resize).observe(container);
 
