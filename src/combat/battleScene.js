@@ -1,6 +1,7 @@
 // The 3D battlefield, seen from a little way off like a Pokémon battle: the
 // heroes stand on the left, the enemies on the right, each on a round pad.
 import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { bevelBox } from '../fx/bevelBox.js';
 import { hash } from '../city/vox.js';
 import { buildFigure, buildMonsterFigure } from '../character/model.js';
@@ -98,6 +99,7 @@ export function createBattleScene(container) {
   function setFighters(heroes, enemies) {
     fighters.clear();
     actors = [];
+    if (camera.userData.sized) resetView();
     const heroCentre = { x: -25, z: 12 }, enemyCentre = { x: 28, z: -16 };
     heroes.forEach((c, i) => {
       const figure = buildFigure(c);
@@ -119,21 +121,39 @@ export function createBattleScene(container) {
     if (a) a.shake = 0.35;
   }
 
+  // Look around: drag (one finger) to turn, pinch or scroll to zoom,
+  // right-drag (two fingers) to move. The view resets for each new encounter.
+  const controls = new OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.08;
+  controls.minDistance = 40;
+  controls.maxDistance = 260;
+  controls.minPolarAngle = 0.25;
+  controls.maxPolarAngle = 1.35;
+  controls.touches = { ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_PAN };
+
+  function resetView() {
+    const fit = Math.max(1, 2 / (camera.aspect || 1));
+    controls.target.set(2, 2, -2);
+    camera.position.set(-6 * fit, 62 * fit, 128 * fit);
+    controls.update();
+  }
+
   function resize() {
     const w = container.clientWidth, h = container.clientHeight;
     if (!w || !h) return;
+    const first = !camera.userData.sized;
     renderer.setSize(w, h);
     camera.aspect = w / h;
-    const fit = Math.max(1, 2 / camera.aspect);
-    camera.position.set(-6 * fit, 62 * fit, 128 * fit);
-    camera.lookAt(2, 2, -2);
     camera.updateProjectionMatrix();
+    if (first) { camera.userData.sized = true; resetView(); }
   }
   new ResizeObserver(resize).observe(container);
 
   const clock = new THREE.Clock();
   function frame() {
     const dt = Math.min(clock.getDelta(), 0.05);
+    controls.update();
     const t = clock.elapsedTime;
     for (const a of actors) {
       if (!a.isDown) a.figure.update(t);

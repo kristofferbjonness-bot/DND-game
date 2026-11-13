@@ -101,28 +101,25 @@ export function createCombatScreen(root, { party, onHeroChange }) {
   // --- Battle --------------------------------------------------------------------------
   const heroesInFight = () => encounter.heroes.map((id) => party.find((c) => c.id === id)).filter(Boolean);
 
-  function box({ key, name, line, hp, max, ac }) {
+  function box({ key, name, hp, max, ac }) {
     const pct = Math.max(0, Math.round((hp / max) * 100));
     const tone = pct > 50 ? 'ok' : pct > 20 ? 'low' : 'crit';
     return `
       <div class="hpbox${hp <= 0 ? ' is-down' : ''}" data-key="${esc(key)}">
-        <div class="hpbox__top"><b>${esc(name)}</b><small>${esc(line)}</small></div>
-        <div class="hpbox__bar"><span class="hpbox__label">HP</span><span class="hpbox__track"><span class="is-${tone}" style="width:${pct}%"></span></span></div>
-        <div class="hpbox__bottom">
-          <span class="stepper">
-            <button type="button" data-key="${esc(key)}" data-step="-1" aria-label="Damage">−</button>
-            <button type="button" data-key="${esc(key)}" data-step="1" aria-label="Heal">+</button>
-          </span>
-          <small>AC ${ac}</small>
-          <span class="hpbox__nums">${Math.max(0, hp)} / ${max}</span>
+        <div class="hpbox__top"><b>${esc(name)}</b><small>AC ${ac}</small></div>
+        <div class="hpbox__row">
+          <button type="button" class="hpbox__btn" data-key="${esc(key)}" data-step="-1" aria-label="Damage">−</button>
+          <span class="hpbox__track"><span class="is-${tone}" style="width:${pct}%"></span></span>
+          <button type="button" class="hpbox__btn" data-key="${esc(key)}" data-step="1" aria-label="Heal">+</button>
+          <span class="hpbox__nums">${Math.max(0, hp)}/${max}</span>
         </div>
       </div>`;
   }
 
   function renderBoxes() {
-    enemyBoxes.innerHTML = encounter.enemies.map((e) => box({ key: `enemy:${e.uid}`, name: e.name, line: MONSTERS[e.type].kind, hp: e.hp, max: e.max, ac: e.ac })).join('');
+    enemyBoxes.innerHTML = encounter.enemies.map((e) => box({ key: `enemy:${e.uid}`, name: e.name, hp: e.hp, max: e.max, ac: e.ac })).join('');
     heroBoxes.innerHTML = heroesInFight().map((c) => box({
-      key: `hero:${c.id}`, name: c.name, line: `Lv ${c.level} ${c.class}`, hp: c.hp.current, max: c.hp.max, ac: derive(c).ac,
+      key: `hero:${c.id}`, name: c.name, hp: c.hp.current, max: c.hp.max, ac: derive(c).ac,
     })).join('');
     for (const e of encounter.enemies) scene.setDown(`enemy:${e.uid}`, e.hp <= 0);
     for (const c of heroesInFight()) scene.setDown(`hero:${c.id}`, c.hp.current <= 0);

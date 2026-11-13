@@ -113,6 +113,9 @@ The original assets (hand-drawn world map, location art, character art, lore doc
   - Health boxes have −/+ buttons. Hero HP is saved to the character (players see it live),
     while enemy HP only lives in the encounter.
   - At 0 HP a fighter falls over.
+  - The arena camera uses OrbitControls: one finger turns, two fingers pinch-zoom and pan. The
+    view resets for each new encounter.
+  - The health-box columns scroll when they don't fit, and the boxes are kept compact.
   - The encounter itself is not saved online yet, so a reload loses it.
 - **Party** (`src/status/partyScreen.js`) shows a card per hero with HP, AC, initiative and
   passive perception. Tapping a card opens that hero on Status.

@@ -708,9 +708,14 @@ body[data-role="dm"] .topnav__tab--dm { display: block; }
 .combat__battle[hidden] { display: none; }
 .combat__stage { position: absolute; inset: 0; }
 .combat__stage canvas { display: block; }
-.combat__boxes { position: absolute; display: grid; gap: 8px; }
-.combat__boxes--enemies { top: calc(max(16px, var(--safe-t)) + 60px); right: max(16px, var(--safe-r)); }
-.combat__boxes--heroes { bottom: max(16px, var(--safe-b)); left: max(16px, var(--safe-l)); }
+.combat__boxes {
+  position: absolute; display: grid; gap: 6px; align-content: start;
+  overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch;
+  padding: 2px; scrollbar-width: thin;
+}
+/* Long lists scroll; each side keeps to its own corner. */
+.combat__boxes--enemies { top: calc(max(16px, var(--safe-t)) + 60px); right: max(16px, var(--safe-r)); max-height: calc(55% - 60px); }
+.combat__boxes--heroes { bottom: max(16px, var(--safe-b)); left: max(16px, var(--safe-l)); max-height: 42%; }
 .combat__end {
   position: absolute; right: max(16px, var(--safe-r)); bottom: max(16px, var(--safe-b));
   font: 700 14px var(--font-display); color: var(--ink); background: rgba(251, 247, 238, 0.92);
@@ -718,25 +723,25 @@ body[data-role="dm"] .topnav__tab--dm { display: block; }
 }
 
 .hpbox {
-  width: 230px; padding: 8px 12px 8px;
-  background: rgba(251, 247, 238, 0.95); border: 2px solid var(--ink); border-radius: 14px 4px 14px 4px;
-  box-shadow: 0 6px 18px rgba(40, 30, 15, 0.18);
+  width: 196px; padding: 5px 9px 6px;
+  background: rgba(251, 247, 238, 0.94); border: 1.5px solid var(--ink); border-radius: 12px 3px 12px 3px;
+  box-shadow: 0 4px 12px rgba(40, 30, 15, 0.16);
 }
-.hpbox.is-down { opacity: 0.6; }
+.hpbox.is-down { opacity: 0.55; }
 .hpbox__top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
-.hpbox__top b { font: 700 14px var(--font-display); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hpbox__top b { font: 700 13px var(--font-display); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .hpbox__top small { font-size: 11px; color: var(--ink-soft); white-space: nowrap; }
-.hpbox__bar { display: flex; align-items: center; gap: 6px; margin: 5px 0 4px; }
-.hpbox__label { font: 700 10px var(--font-display); color: #e8c77a; background: var(--ink); border-radius: 4px; padding: 1px 5px; }
-.hpbox__track { flex: 1; height: 8px; border-radius: 6px; background: rgba(59, 47, 34, 0.15); overflow: hidden; }
+.hpbox__row { display: flex; align-items: center; gap: 5px; margin-top: 3px; }
+.hpbox__track { flex: 1; height: 7px; border-radius: 6px; background: rgba(59, 47, 34, 0.15); overflow: hidden; }
 .hpbox__track span { display: block; height: 100%; border-radius: 6px; transition: width 0.4s ease; }
 .hpbox__track .is-ok { background: #5fae5a; }
 .hpbox__track .is-low { background: #e0b440; }
 .hpbox__track .is-crit { background: #d0533e; }
-.hpbox__bottom { display: flex; align-items: center; gap: 10px; }
-.hpbox__bottom small { color: var(--ink-soft); font-size: 12px; }
-.hpbox__nums { margin-left: auto; font: 700 15px var(--font-display); }
-.hpbox .stepper button { width: 26px; height: 26px; font-size: 16px; }
+.hpbox__btn {
+  width: 22px; height: 22px; flex-shrink: 0; border-radius: 50%; border: 1px solid var(--parchment-edge);
+  background: #fffaf0; font: 700 14px/1 var(--font-body); color: var(--ink); cursor: pointer; padding: 0;
+}
+.hpbox__nums { min-width: 38px; text-align: right; font: 700 13px var(--font-display); }
 
 @media (max-height: 500px) and (orientation: landscape) {
   .combat__setup { gap: 8px 16px; }
@@ -746,12 +751,13 @@ body[data-role="dm"] .topnav__tab--dm { display: block; }
   .pick__who b { font-size: 14px; }
   .pick__who small { font-size: 12px; }
   .combat__start { padding: 9px 22px; font-size: 14px; }
-  .combat__boxes { gap: 5px; }
-  .combat__boxes--enemies { top: 52px; right: max(10px, var(--safe-r)); }
-  .combat__boxes--heroes { bottom: max(8px, var(--safe-b)); left: max(10px, var(--safe-l)); }
-  .combat__end { right: max(10px, var(--safe-r)); bottom: max(8px, var(--safe-b)); padding: 8px 14px; font-size: 12px; }
-  .hpbox { width: 190px; padding: 5px 9px; }
-  .hpbox__top b { font-size: 12px; }
-  .hpbox__bar { margin: 3px 0 2px; }
-  .hpbox .stepper button { width: 24px; height: 24px; }
+  .combat__boxes { gap: 4px; }
+  .combat__boxes--enemies { top: 50px; right: max(10px, var(--safe-r)); max-height: calc(100% - 110px); }
+  .combat__boxes--heroes { bottom: max(8px, var(--safe-b)); left: max(10px, var(--safe-l)); max-height: calc(100% - 70px); }
+  .combat__end { right: max(10px, var(--safe-r)); bottom: max(8px, var(--safe-b)); padding: 7px 12px; font-size: 12px; }
+  .hpbox { width: 158px; padding: 4px 7px 5px; }
+  .hpbox__top b { font-size: 11px; }
+  .hpbox__top small { font-size: 10px; }
+  .hpbox__btn { width: 20px; height: 20px; font-size: 13px; }
+  .hpbox__nums { font-size: 11px; min-width: 32px; }
 }
