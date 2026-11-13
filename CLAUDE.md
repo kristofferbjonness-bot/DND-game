@@ -65,8 +65,10 @@ The original assets (hand-drawn world map, location art, character art, lore doc
   - The login session is remembered, so the app skips the start screen next time. The role
     chip at the top right logs out.
   - Players land on Status locked to their hero; the DM lands on the map.
-  - The name badge opens a menu. The DM can "See the app as" any hero, a preview that sets
-    `body[data-role=player]` and locks Status to that hero, with a banner to return. Every
+  - The name badge opens a menu, and is the DM's only view switcher (no banner, by request).
+    - "View the app as": Dungeon Master, or any hero.
+    - Previewing a hero sets `body[data-role=player]` and locks Status to that hero.
+    - While previewing, the badge turns dark and reads "Viewing as …". Every
     player-only filtering added later (fog of war, secrets) must follow the previewed hero, so
     the DM sees exactly what that player sees.
 - **Status** (`src/status/statusScreen.js`) has the character sheet on the left and a 3D figure

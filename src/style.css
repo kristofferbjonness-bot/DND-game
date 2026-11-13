@@ -620,21 +620,8 @@ body[data-screen="map"] .panel { top: 70px; }
 .role-menu i { width: 14px; height: 14px; border-radius: 4px; flex-shrink: 0; }
 .role-menu hr { border: 0; border-top: 1px solid var(--parchment-edge); margin: 6px 4px; }
 
-/* Shown while the Dungeon Master previews the app as a player. */
-.preview-bar {
-  position: fixed; z-index: 6; left: 50%; transform: translateX(-50%);
-  top: calc(max(16px, var(--safe-t)) + 52px);
-  display: flex; align-items: center; gap: 10px; white-space: nowrap;
-  font-size: 14px; color: #f3e9d6; background: rgba(42, 34, 40, 0.92);
-  border-radius: 999px; padding: 6px 6px 6px 16px; box-shadow: var(--shadow);
-}
-.preview-bar[hidden] { display: none; }
-.preview-bar b { font-family: var(--font-display); }
-.preview-bar button {
-  font: 700 13px var(--font-display); color: #2a2228; background: #e8c77a;
-  border: 0; border-radius: 999px; padding: 6px 12px; cursor: pointer;
-}
-body:has(.preview-bar:not([hidden])) .screen { padding-top: calc(max(16px, var(--safe-t)) + 100px); }
+/* While the DM previews a player's view, the badge stands out a little. */
+.role-chip.is-previewing { background: #2a2228; color: #f3e9d6; border-color: #2a2228; }
 
 /* A player sees only their own hero on Status. */
 .status.is-locked .picker__arrow { visibility: hidden; }
@@ -660,7 +647,4 @@ body:has(.preview-bar:not([hidden])) .screen { padding-top: calc(max(16px, var(-
   .role-chip { top: 8px; right: max(10px, var(--safe-r)); padding: 6px 12px 6px 6px; font-size: 12px; }
   body[data-screen="map"] .panel { top: 54px; }
   .role-menu { top: 50px; right: max(10px, var(--safe-r)); }
-  .preview-bar { top: 50px; padding: 4px 4px 4px 12px; font-size: 13px; }
-  .preview-bar button { padding: 5px 10px; }
-  body:has(.preview-bar:not([hidden])) .screen { padding-top: 88px; }
 }
