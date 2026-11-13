@@ -86,22 +86,30 @@ export function createBattleScene(container) {
   let actors = []; // { key, group, figure, down, flash }
 
   function place(figure, [x, z], facing, padColour, key) {
+    // holder (the spot and its pad) > mover (dashes and dodges) > body (faces
+    // the enemy, falls over) > lean (leans into a swing) > the figure.
     const holder = new THREE.Group();
     holder.position.set(x, 0, z);
     holder.add(pad(4, padColour));
+    const mover = new THREE.Group();
     const body = new THREE.Group();
-    body.add(figure.group);
+    const lean = new THREE.Group();
+    lean.add(figure.group);
+    body.add(lean);
     body.rotation.y = Math.atan2(facing.x - x, facing.z - z);
-    holder.add(body);
+    mover.add(body);
+    holder.add(mover);
     fighters.add(holder);
     const height = new THREE.Box3().setFromObject(figure.group).max.y;
-    actors.push({ key, holder, body, figure, height, down: 0, isDown: false, shake: 0 });
+    actors.push({ key, holder, mover, body, lean, figure, height, down: 0, isDown: false, shake: 0, incoming: 0, downAfter: null });
   }
 
   // heroes: character objects; enemies: [{ uid, type }].
   function setFighters(heroes, enemies) {
     fighters.clear();
     actors = [];
+    effects.length = 0;
+    fx.clear();
     setActive(null);
     if (camera.userData.sized) resetView();
     const heroCentre = { x: -25, z: 12 }, enemyCentre = { x: 28, z: -16 };
@@ -115,10 +123,12 @@ export function createBattleScene(container) {
     });
   }
 
-  // Knocked out (0 HP) fighters fall over; a hit makes them shake.
+  // Knocked out (0 HP) fighters fall over; a hit makes them shake. While an
+  // attack is still on its way, falling waits until it lands.
   function setDown(key, isDown) {
     const a = actors.find((x) => x.key === key);
-    if (a) a.isDown = isDown;
+    if (!a) return;
+    if (a.incoming > 0) a.downAfter = isDown; else a.isDown = isDown;
   }
   // A gold diamond bobbing above whoever's turn it is.
   const marker = new THREE.Group();
@@ -146,6 +156,145 @@ export function createBattleScene(container) {
   function hit(key) {
     const a = actors.find((x) => x.key === key);
     if (a) a.shake = 0.35;
+  }
+
+  // --- Attack animations ------------------------------------------------------------------------
+  // attack({ from, to, style: 'melee' | 'arrow' | 'thrown' | 'magic', hit, crit, colour })
+  const effects = []; // { age, dur, step(t 0–1, dt), end() }
+  const fx = new THREE.Group();
+  scene.add(fx);
+  const glow = (colour, opacity = 1) => new THREE.MeshBasicMaterial({ color: colour, transparent: true, opacity, toneMapped: false, depthWrite: false });
+  const ease = (t) => t * t * (3 - 2 * t);
+  const worldPos = (a, up = 0.55) => a.holder.position.clone().add(a.mover.position).setY(a.height * up);
+
+  function play(dur, step, end) { effects.push({ age: 0, dur, step, end }); }
+
+  // What happens to the target when the blow lands (or misses).
+  function impact(target, { hit: hits, crit, colour }, at) {
+    target.incoming = Math.max(0, target.incoming - 1);
+    if (target.downAfter !== null && target.incoming === 0) { target.isDown = target.downAfter; target.downAfter = null; }
+    if (!hits) { // a quick sidestep
+      const side = new THREE.Vector3(Math.random() < 0.5 ? -1 : 1, 0, 0.4).normalize().multiplyScalar(3);
+      play(0.45, (t) => target.mover.position.copy(side).multiplyScalar(Math.sin(Math.PI * t)));
+      return;
+    }
+    target.shake = crit ? 0.6 : 0.35;
+    const burst = new THREE.Mesh(new THREE.IcosahedronGeometry(1, 1), glow(colour ?? '#fff3c4', 0.85));
+    burst.position.copy(at);
+    fx.add(burst);
+    const size = crit ? 9 : 5;
+    play(crit ? 0.5 : 0.35, (t) => { burst.scale.setScalar(1 + size * ease(t)); burst.material.opacity = 0.85 * (1 - t); },
+      () => { fx.remove(burst); burst.geometry.dispose(); });
+  }
+
+  function slash(attacker, dir, crit) {
+    const arc = new THREE.Mesh(new THREE.RingGeometry(2.6, 5.6, 28, 1, 0, Math.PI * 0.9), glow('#fffbea', 0.95));
+    arc.material.side = THREE.DoubleSide;
+    const holder = new THREE.Group();
+    holder.position.copy(worldPos(attacker, 0.5)).addScaledVector(dir, 2.5);
+    holder.rotation.y = Math.atan2(dir.x, dir.z);
+    arc.rotation.set(-Math.PI / 2 + 0.5, 0, 0);
+    holder.add(arc);
+    if (crit) holder.scale.setScalar(1.5);
+    fx.add(holder);
+    play(0.36, (t) => { arc.rotation.z = -1.6 + 2.6 * ease(t); arc.material.opacity = 0.95 * (1 - t * t); },
+      () => { fx.remove(holder); arc.geometry.dispose(); });
+  }
+
+  function projectile(style, colour) {
+    const g = new THREE.Group();
+    if (style === 'arrow') {
+      const shaft = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.25, 3.4), new THREE.MeshStandardMaterial({ color: '#8a5a34' }));
+      const tip = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.45, 0.7), new THREE.MeshStandardMaterial({ color: '#dfe6ee' }));
+      tip.position.z = 1.9;
+      const fletch = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.1, 0.6), new THREE.MeshStandardMaterial({ color: '#f1ece2' }));
+      fletch.position.z = -1.5;
+      g.add(shaft, tip, fletch);
+      g.scale.setScalar(1.5);
+    } else if (style === 'thrown') {
+      const spin = new THREE.Group();
+      const blade = new THREE.Mesh(new THREE.BoxGeometry(0.3, 2, 0.5), new THREE.MeshStandardMaterial({ color: '#dfe6ee', roughness: 0.4 }));
+      blade.position.y = 0.6;
+      const grip = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.9, 0.45), new THREE.MeshStandardMaterial({ color: '#3a2a20' }));
+      grip.position.y = -0.8;
+      spin.add(blade, grip);
+      g.add(spin);
+      g.userData.spin = spin;
+      g.scale.setScalar(1.8);
+    } else {
+      g.add(new THREE.Mesh(new THREE.IcosahedronGeometry(1.4, 1), glow('#ffffff')));
+      const halo = new THREE.Mesh(new THREE.IcosahedronGeometry(2.6, 1), glow(colour ?? '#b98cff', 0.6));
+      g.add(halo);
+      g.userData.halo = halo;
+    }
+    return g;
+  }
+
+  function attack(evt) {
+    const from = actors.find((x) => x.key === evt.from), to = actors.find((x) => x.key === evt.to);
+    if (!to) return;
+    if (!from || from === to) { hit(to.key); return; }
+    to.incoming += 1;
+    const start = worldPos(from), target = worldPos(to, 0.5);
+    const dir = target.clone().sub(start).setY(0).normalize();
+
+    if (evt.style === 'melee') {
+      // Dash in, swing, and step back.
+      const reach = to.holder.position.clone().sub(from.holder.position).setY(0);
+      const stop = reach.clone().multiplyScalar(Math.max(0, (reach.length() - 7) / reach.length()));
+      let struck = false;
+      play(1.05, (t) => {
+        const go = t < 0.35 ? ease(t / 0.35) : t < 0.62 ? 1 : 1 - ease((t - 0.62) / 0.38);
+        from.mover.position.copy(stop).multiplyScalar(go);
+        from.mover.position.y = Math.sin(Math.PI * Math.min(1, t / 0.35)) * 1.2 * (t < 0.35 ? 1 : 0);
+        from.lean.rotation.x = t < 0.33 ? 0.15 : t < 0.6 ? 0.15 + 0.45 * Math.sin(Math.PI * (t - 0.33) / 0.27) : 0;
+        if (!struck && t >= 0.42) { struck = true; slash(from, dir, evt.crit); impact(to, evt, target); }
+      }, () => { from.mover.position.set(0, 0, 0); from.lean.rotation.x = 0; });
+      return;
+    }
+
+    // Shoot, throw or cast: a little wind-up, then the missile flies in an arc.
+    play(0.3, (t) => { from.lean.rotation.x = -0.25 * Math.sin(Math.PI * t); }, () => { from.lean.rotation.x = 0; });
+    const end = evt.hit ? target : target.clone()
+      .add(new THREE.Vector3(-dir.z, 0, dir.x).multiplyScalar(Math.random() < 0.5 ? -5 : 5))
+      .addScaledVector(dir, 12).setY(1);
+    const speed = { arrow: 75, thrown: 50, magic: 42 }[evt.style] ?? 60;
+    const lift = { arrow: 7, thrown: 4, magic: 2.5 }[evt.style] ?? 4;
+    const m = projectile(evt.style, evt.colour);
+    m.visible = false;
+    fx.add(m);
+    const trail = [];
+    let landed = false;
+    const point = (t) => start.clone().lerp(end, t).setY(start.y + (end.y - start.y) * t + Math.sin(Math.PI * t) * lift);
+    setTimeout(() => {
+      m.visible = true;
+      play(start.distanceTo(end) / speed, (t) => {
+        const p = point(t);
+        m.position.copy(p);
+        m.lookAt(point(Math.min(1, t + 0.02)));
+        if (m.userData.spin) m.userData.spin.rotation.x = t * 22;
+        if (m.userData.halo) {
+          m.userData.halo.scale.setScalar(1 + Math.sin(t * 40) * 0.15);
+          if (Math.random() < 0.7) { // sparkling trail
+            const s = new THREE.Mesh(new THREE.IcosahedronGeometry(0.5, 0), glow(evt.colour ?? '#b98cff', 0.8));
+            s.position.copy(p);
+            fx.add(s);
+            trail.push({ s, life: 1 });
+          }
+        }
+        if (!landed && evt.hit && t >= 1) { landed = true; impact(to, evt, target); }
+      }, () => {
+        fx.remove(m);
+        if (!landed) impact(to, evt, target);
+      });
+    }, 180);
+    play(3, (t, dt) => { // fade the trail
+      for (const p of trail) {
+        p.life -= dt * 2.5;
+        p.s.scale.setScalar(Math.max(0.01, p.life));
+        p.s.material.opacity = Math.max(0, p.life) * 0.8;
+      }
+    }, () => { for (const p of trail) fx.remove(p.s); });
   }
 
   // Look around: drag (one finger) to turn, pinch or scroll to zoom,
@@ -191,6 +340,13 @@ export function createBattleScene(container) {
     const dt = Math.min(clock.getDelta(), 0.05);
     controls.update();
     const t = clock.elapsedTime;
+    for (let i = effects.length - 1; i >= 0; i--) {
+      const e = effects[i];
+      e.age += dt;
+      const k = Math.min(1, e.age / e.dur);
+      e.step(k, dt);
+      if (k >= 1) { effects.splice(i, 1); e.end?.(); }
+    }
     for (const a of actors) {
       if (!a.isDown) a.figure.update(t);
       a.down += ((a.isDown ? 1 : 0) - a.down) * Math.min(1, dt * 6);
@@ -198,6 +354,7 @@ export function createBattleScene(container) {
       a.body.position.y = a.down * 1.5;
       a.shake = Math.max(0, a.shake - dt);
       a.body.position.x = Math.sin(t * 60) * a.shake * 1.5;
+      a.body.position.z = 0;
     }
     if (active) {
       marker.position.set(active.holder.position.x, active.height + 5 + Math.sin(t * 3) * 0.8, active.holder.position.z);
@@ -207,7 +364,7 @@ export function createBattleScene(container) {
   }
 
   return {
-    setFighters, setDown, hit, setActive,
+    setFighters, setDown, hit, attack, setActive,
     start() { clock.getDelta(); resize(); renderer.setAnimationLoop(frame); },
     stop() { renderer.setAnimationLoop(null); },
   };

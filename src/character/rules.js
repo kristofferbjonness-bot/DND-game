@@ -85,6 +85,10 @@ export function derive(c) {
       dice: w.dice, bonus: dmg, // for the combat damage calculator
       sneakable: has(w, 'finesse') || ranged,
       note: notes.join(' · '),
+      // For the combat animation: a swing, an arrow, or (if thrown) a spinning blade.
+      style: ranged ? 'arrow' : 'melee',
+      canThrow: has(w, 'thrown') && !ranged,
+      throwFirst: /throw/i.test(w.name),
     };
   };
   const attacks = [main && attack(main, 'main'), offWeapon && attack(offWeapon, 'off')].filter(Boolean);
@@ -95,6 +99,7 @@ export function derive(c) {
     attacks.push({
       name: a.name, type: a.type, toHit: mod(a.ability) + prof,
       damage: `${a.dice}${plus(bonus)}`, dice: a.dice, bonus, sneakable: false, note: a.note ?? '',
+      style: a.style ?? (/cantrip|spell/i.test(a.note ?? '') ? 'magic' : 'melee'),
     });
   }
   if (!attacks.length) {

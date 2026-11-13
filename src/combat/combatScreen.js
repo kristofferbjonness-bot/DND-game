@@ -96,8 +96,27 @@ export function createCombatScreen(root, { party, onHeroChange, onPublic }) {
     return {
       key, side, name: e.name, short: e.name, colour: '#2f3157',
       hp: e.hp, max: e.max, ac: e.ac, initBonus: m.initiative ?? 0,
-      attacks: m.attacks.map((a) => ({ ...a, damage: `${a.dice}${plus(a.bonus)}` })), sneak: 0, enemy: e,
+      attacks: m.attacks.map((a) => ({ ...a, damage: `${a.dice}${plus(a.bonus)}`, style: monsterStyle(a) })), sneak: 0, enemy: e,
     };
+  }
+
+  // How a monster's attack looks, guessed from its name and damage type.
+  function monsterStyle(a) {
+    const words = `${a.name} ${a.type}`.toLowerCase();
+    if (/bow|arrow|crossbow|sling|dart|spine|quill/.test(words)) return 'arrow';
+    if (/throw|javelin|hurl|rock|boulder|spit/.test(words)) return 'thrown';
+    if (/bolt|blast|ray|beam|spell|breath|orb|curse|fire|cold|lightning|force|radiant|necrotic|psychic|thunder|acid/.test(a.name.toLowerCase())) return 'magic';
+    return 'melee';
+  }
+  // Magic glows in the colour of its damage.
+  const MAGIC = { fire: '#ff8a3c', cold: '#8fd8ff', lightning: '#fff27a', thunder: '#cfe0ff', force: '#b98cff', radiant: '#ffe08a', necrotic: '#86e39b', poison: '#a4e36b', acid: '#c4f05a', psychic: '#ff8ad8' };
+  const magicColour = (type) => Object.entries(MAGIC).find(([k]) => String(type).toLowerCase().includes(k))?.[1] ?? '#b98cff';
+
+  // The animation for the open attack, for this screen and the players'.
+  function attackAnimation(o) {
+    const a = fighter(atk.attacker).attacks[atk.attack];
+    const style = a.canThrow && atk.thrown ? 'thrown' : a.style ?? 'melee';
+    return { from: atk.attacker, to: atk.target, style, hit: Boolean(o?.hit), crit: Boolean(o?.crit), colour: style === 'magic' ? magicColour(a.type) : null, id: Date.now() };
   }
 
   const allKeys = () => [...encounter.heroes.map((id) => `hero:${id}`), ...encounter.enemies.map((e) => `enemy:${e.uid}`)];
@@ -257,7 +276,7 @@ export function createCombatScreen(root, { party, onHeroChange, onPublic }) {
 
   // What players may see: names, turn order and who is down, but no rolls, no
   // stats, and enemy health only if the DM allowed it.
-  function publicState(hit = null) {
+  function publicState(hit = null, anim = null) {
     if (!encounter?.order.length) return { active: false };
     return {
       active: true,
@@ -265,6 +284,7 @@ export function createCombatScreen(root, { party, onHeroChange, onPublic }) {
       turn: encounter.turn,
       heroes: encounter.heroes,
       hit,
+      anim,
       fighters: encounter.order.map(fighter).filter(Boolean).map((f) => ({
         key: f.key, side: f.side, name: f.name, colour: f.colour, down: f.hp <= 0,
         chip: f.side === 'enemy' ? `${f.short[0]}${f.short.match(/\d+$/)?.[0] ?? ''}` : f.short[0],
@@ -273,7 +293,7 @@ export function createCombatScreen(root, { party, onHeroChange, onPublic }) {
       })),
     };
   }
-  const publish = (hit) => onPublic?.(publicState(hit));
+  const publish = (hit, anim) => onPublic?.(publicState(hit, anim));
 
   // Fighters at 0 HP are skipped. Returns false when nobody can act.
   function skipDowned() {
@@ -322,6 +342,7 @@ export function createCombatScreen(root, { party, onHeroChange, onPublic }) {
     const now = current();
     if (!now) return;
     atk = { attacker: now.key, attack: 0, target: null, roll: null, sneak: false };
+    atk.thrown = Boolean(now.attacks[0]?.throwFirst);
     const foes = targets();
     if (foes.length === 1) atk.target = foes[0].key;
     renderAttack();
@@ -378,6 +399,7 @@ export function createCombatScreen(root, { party, onHeroChange, onPublic }) {
           <span>${signed(a.toHit)}</span>
           <span class="attack__result"></span>
         </div>
+        ${a.canThrow ? `<label class="attack__sneak"><input type="checkbox" class="attack__thrown"${atk.thrown ? ' checked' : ''} /> Thrown${a.note.includes('Range') ? ` (${esc(a.note.match(/Range [^·]+/)[0].trim())})` : ''}</label>` : ''}
         ${canSneak ? `<label class="attack__sneak"><input type="checkbox"${atk.sneak ? ' checked' : ''} /> Sneak Attack (+${f.sneak}d6): advantage, or an ally next to the target</label>` : ''}
         <div class="attack__damage"></div>` : ''}`;
     renderResult();
@@ -430,21 +452,26 @@ export function createCombatScreen(root, { party, onHeroChange, onPublic }) {
     if (e.target.closest('.attack__close')) { attackEl.hidden = true; return; }
     const opt = e.target.closest('[data-attack], [data-target]');
     if (opt) {
-      if (opt.dataset.attack) { atk.attack = Number(opt.dataset.attack); atk.sneak = false; }
+      if (opt.dataset.attack) {
+        atk.attack = Number(opt.dataset.attack);
+        atk.sneak = false;
+        atk.thrown = Boolean(fighter(atk.attacker).attacks[atk.attack].throwFirst);
+      }
       if (opt.dataset.target) atk.target = opt.dataset.target;
       renderAttack();
       return;
     }
     const apply = e.target.closest('.attack__apply');
     if (!apply) return;
+    const anim = attackAnimation(outcome());
     if (apply.dataset.action === 'apply') {
       const target = fighter(atk.target);
       setHp(target, target.hp - Number(apply.dataset.amount));
-      scene.hit(target.key);
     }
+    scene.attack(anim); // before the redraw, so a knocked-out target falls when the blow lands
     attackEl.hidden = true;
     renderBattle();
-    if (apply.dataset.action === 'apply') publish(atk.target);
+    publish(anim.to, anim);
   });
 
   attackCard.addEventListener('input', (e) => {
@@ -458,6 +485,7 @@ export function createCombatScreen(root, { party, onHeroChange, onPublic }) {
     }
   });
   attackCard.addEventListener('change', (e) => {
+    if (e.target.matches('.attack__thrown')) { atk.thrown = e.target.checked; return; }
     if (e.target.matches('.attack__sneak input')) { atk.sneak = e.target.checked; renderResult(); }
   });
 

@@ -139,6 +139,19 @@ The original assets (hand-drawn world map, location art, character art, lore doc
     - The DM's "view as" preview is fed locally with the same state.
     - Caveat: broadcast isn't locked down, so any logged-in user could send fake state. That's
       fine among friends; use a table with RLS if needed.
+  - Attack animations (`attack()` in battleScene.js) play when the DM applies a hit or a miss,
+    and players get the same animation through `anim` in the public state.
+    - Styles:
+      - `melee`: a dash, a lean and a white slash arc.
+      - `arrow`: bows and crossbows.
+      - `thrown`: a spinning blade. The "Thrown" tick box in the attack card is shown for
+        thrown-capable weapons and is on by default for "Throwing …" items.
+      - `magic`: a glowing orb with a trail, coloured by damage type (`MAGIC`).
+    - Hero styles come from derive() (`style`, `canThrow`, `throwFirst`). Monster styles are
+      guessed from the attack's name and type (`monsterStyle`).
+    - A hit shakes the target and shows a burst (bigger on a crit); a miss makes it sidestep.
+      Falling to 0 HP waits until the blow lands (`incoming` / `downAfter`).
+    - Scene layers: holder (pad) > mover (dash/dodge) > body (facing, falling) > lean > figure.
   - The arena camera uses OrbitControls: one finger turns, two fingers pinch-zoom and pan. The
     view resets for each new encounter.
   - The health-box columns scroll when they don't fit, and the boxes are kept compact.

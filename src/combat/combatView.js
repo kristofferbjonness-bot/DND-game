@@ -71,10 +71,11 @@ export function createCombatView(root, { party }) {
 
   return {
     show(next) {
-      const hit = next?.hit;
+      const { hit, anim } = next ?? {};
       state = next;
+      if (anim) scene.attack(anim); // before drawing, so a knocked-out fighter falls when hit
       render();
-      if (hit) scene.hit(hit);
+      if (hit && !anim) scene.hit(hit);
     },
     refresh() { if (state?.active) render(); },
     get active() { return Boolean(state?.active); },
