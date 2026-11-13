@@ -39,7 +39,8 @@ drop policy if exists "rolls: the DM clears the log" on public.rolls;
 create policy "rolls: the DM clears the log" on public.rolls
   for delete to authenticated using (public.is_dm());
 
--- The journal: quests. Players see the ones marked shown; the DM sees and edits all.
+-- The journal: quests, people (NPCs) and places, told apart by data.kind (see journalScreen.js).
+-- Players see the ones marked shown; the DM sees and edits all.
 create table if not exists public.quests (
   id uuid primary key default gen_random_uuid(),
   data jsonb not null,          -- { title, body, status, place, steps: [{ text, done }], shown }

@@ -239,16 +239,22 @@ The original assets (hand-drawn world map, location art, character art, lore doc
   - The DM can make hidden rolls (RLS lets only the DM read them) and clear the log.
   - Others' rolls pop up next to the tab while the tray is closed (`rollPop`).
   - Roll values come from the roller's own app, so trust among friends is assumed.
-- **Journal** (`src/journal/journalScreen.js`, a top tab for everyone) holds the party's quests.
-  - Stored in the Supabase table `quests` (`{ id, data: { title, body, status, place, steps,
-    shown }, shown }`) in session.sql. `session.sql` seeds the first quest, "Reach Bartedalen".
-  - Players see quests with `shown` (RLS). The DM creates, edits, ticks steps, completes, hides
-    and deletes quests.
-  - A quest's `place` (a world-map id) gives "Show on map". Places of active visible quests
-    get a 📜 before their label (`.label.is-quest`, `questFor` in main.js), plus a line on the
-    place card.
-  - Players get a toast for new quests. Caveat: when the DM hides a shown quest, players keep
-    seeing it until they reload, because RLS stops the realtime update from reaching them.
+- **Journal** (`src/journal/journalScreen.js`, a tab for everyone): one sheet of ledger paper with three
+  bookmarks (Quests, People, Places), a search box across all three, the list on the left and the open
+  entry on the right (on phones they take turns, with ‹ Back).
+  - Everything is stored in the Supabase table `quests` (session.sql), told apart by `data.kind`:
+    quests (no kind) `{ title, body, status, place, steps, shown }`; `npc` `{ title, role, place,
+    attitude, status (alive/dead/missing), body, shown }`; `place` (places the DM adds, e.g. a tavern)
+    `{ title, place (where it is), body, shown }`; `placenote` (the DM's notes on a map place) `{ place, body, shown }`.
+    No new SQL was needed.
+  - Places = the world-map places this viewer knows (with their lore from locations.js) plus the DM's
+    places. A place page lists the people met there, places inside it and its quests; people link to
+    where they were met. Map place cards have "Read about it in the journal" (`openPlace`).
+  - Players see entries with `shown` (RLS) and only discovered map places. The DM writes, edits, ticks
+    steps, completes, hides and deletes. Players get a toast for new entries.
+  - Places of active visible quests get a 📜 on their map label (`questFor`, quests only).
+  - Caveat: when the DM hides a shown entry, players keep seeing it until they reload (RLS stops the
+    realtime update from reaching them).
 - The SQL files (`world.sql`, `session.sql`) are safe to run again: `drop policy if exists`,
   and the publication changes are guarded.
 - **Party** (`src/status/partyScreen.js`) shows a card per hero with HP, AC, initiative and

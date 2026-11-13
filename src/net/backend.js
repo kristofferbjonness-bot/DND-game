@@ -192,8 +192,9 @@ export function watchRolls(onChange) {
     .subscribe();
 }
 
-// --- Journal: quests (supabase/session.sql) ------------------------------------------------------
-// A row is { id, data: { title, body, status, place, steps, shown }, shown }.
+// --- Journal: quests, people and places (supabase/session.sql) ------------------------------------
+// A row is { id, data, shown }; data.kind is missing for quests, or 'npc', 'place' or 'placenote'
+// (see journalScreen.js).
 
 export async function loadQuests() {
   const { data, error } = await supabase.from('quests').select('id, data, created_at').order('created_at');

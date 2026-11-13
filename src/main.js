@@ -357,6 +357,13 @@ panel.querySelector('.panel__close').addEventListener('click', () => select(null
 
 const panelReveal = panel.querySelector('.panel__reveal');
 const panelParty = panel.querySelector('.panel__party');
+const panelJournal = panel.querySelector('.panel__journal');
+panelJournal.addEventListener('click', () => {
+  const p = selected;
+  if (!p) return;
+  showScreen('journal');
+  journalScreen.openPlace(p.id);
+});
 
 let selected = null;
 function select(p, { fly = true } = {}) {
@@ -379,6 +386,7 @@ function select(p, { fly = true } = {}) {
   panelReveal.hidden = !hideable;
   if (hideable) panelReveal.textContent = revealed.has(p.id) ? 'Hide from players' : 'Reveal to players';
   panelParty.hidden = !(seesAll() && views.world.places.includes(p));
+  panelJournal.hidden = !(known && views.world.places.includes(p) && p.tier !== 'unnamed');
   panel.hidden = false;
   if (fly) flyTo(new THREE.Vector3(p.x, p.ground, p.z), view.focusDistance(p) * fitScale(view));
 }
@@ -389,14 +397,14 @@ function select(p, { fly = true } = {}) {
 // faintly. Previewing as a player shows exactly what that player sees.
 // City maps (Razz) are not hidden: a city's map only opens once it is known.
 const FIRST_KNOWN = ['razz', 'tine', 'bartedalen'];
-const quests = []; // the journal's quests ({ id, data }), loaded after logging in
+const quests = []; // the journal's entries ({ id, data }: quests, people, places), loaded after logging in
 const revealed = new Set();
 const seesAll = () => document.body.dataset.role === 'dm';
 const isSecretable = (p) => views.world.places.includes(p) && p.tier !== 'unnamed';
 const knows = (p) => !isSecretable(p) || seesAll() || revealed.has(p.id);
 
 // Places an active quest leads to (that this viewer can see) get a scroll on the map.
-const questFor = (p) => quests.find((q) => q.data.place === p.id && (q.data.status ?? 'active') === 'active' && (seesAll() || q.data.shown !== false));
+const questFor = (p) => quests.find((q) => (q.data.kind ?? 'quest') === 'quest' && q.data.place === p.id && (q.data.status ?? 'active') === 'active' && (seesAll() || q.data.shown !== false));
 
 function applyFog() {
   labelKey = ''; // names changed: re-check which ones overlap
@@ -529,6 +537,7 @@ async function loadFog(dm) {
   watchingPlaces ??= watchRevealed((id, on) => {
     if (on) revealed.add(id); else revealed.delete(id);
     applyFog();
+    journalScreen.refresh();
   });
   applyFog();
 }
@@ -1041,13 +1050,12 @@ document.addEventListener('click', (e) => {
 
 // --- Journal ----------------------------------------------------------------------------------------
 const journalScreen = createJournalScreen(screens.journal, {
-  quests,
+  entries: quests,
   canEdit: () => seesAll(),
-  places: () => views.world.places.filter((p) => p.tier !== 'unnamed').map((p) => ({ id: p.id, name: p.name })),
-  placeName(id) {
-    const p = views.world.places.find((x) => x.id === id);
-    return p ? (knows(p) ? p.name : 'An unknown place') : null;
-  },
+  // The world-map places this viewer may read about (the DM sees all, hidden ones marked).
+  mapPlaces: () => views.world.places
+    .filter((p) => p.tier !== 'unnamed' && knows(p))
+    .map((p) => ({ id: p.id, name: p.name, subtitle: p.subtitle, text: p.text, tier: p.tier, secret: seesAll() && isSecretable(p) && !revealed.has(p.id) })),
   onSave: (q) => saveQuest(q).catch((err) => {
     throw new Error(/quests/.test(err.message) ? 'Run supabase/session.sql in Supabase first.' : explain(err));
   }).finally(() => applyFog()),
@@ -1068,7 +1076,10 @@ async function loadJournal() {
   watchingQuests ??= watchQuests((event, row) => {
     const i = quests.findIndex((q) => q.id === row.id);
     if (event === 'DELETE') { if (i >= 0) quests.splice(i, 1); } else if (i >= 0) quests[i] = row; else quests.push(row);
-    if (event === 'INSERT' && me && !seesAll() && row.data.shown !== false) toast(`📜 New quest: ${row.data.title}`);
+    if (event === 'INSERT' && me && !seesAll() && row.data.shown !== false) {
+      const what = { npc: 'Someone new in your journal', place: 'A new place in your journal', placenote: 'New notes in your journal' }[row.data.kind] ?? '📜 New quest';
+      toast(row.data.title ? `${what}: ${row.data.title}` : what);
+    }
     journalScreen.refresh();
     applyFog();
   });

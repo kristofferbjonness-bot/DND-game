@@ -461,19 +461,19 @@ body.is-placing .hud-stack { opacity: 0.4; }
 .panel__title { margin: 0 0 10px; font: 400 26px/1.15 var(--font-title); color: var(--bone); }
 .panel__text { margin: 0; font-size: 17px; line-height: 1.5; color: var(--bone); }
 .panel__text.is-empty { font-style: italic; color: var(--bone-soft); }
-.panel__action, .panel__party, .panel__reveal { margin-top: 12px; width: 100%; }
+.panel__action, .panel__party, .panel__reveal, .panel__journal { margin-top: 12px; width: 100%; }
 .panel__action {
   font: 700 15px var(--font-display); letter-spacing: 0.05em; color: #2a1f16;
   background: linear-gradient(180deg, var(--gold-hi), var(--gold)); border: 1px solid #4a3618; border-radius: 7px;
   padding: 11px 14px; cursor: pointer; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
 }
-.panel__party, .panel__reveal {
+.panel__party, .panel__reveal, .panel__journal {
   font: 600 13px var(--font-display); letter-spacing: 0.05em; color: var(--bone); cursor: pointer;
   background: linear-gradient(180deg, #43384a, #2f2735); border: 1px solid #0c090e; border-radius: 7px; padding: 9px 14px;
   box-shadow: inset 0 0 0 1px rgba(201, 164, 92, 0.2);
 }
 .panel__reveal { border-style: dashed; }
-.panel__action[hidden], .panel__party[hidden], .panel__reveal[hidden] { display: none; }
+.panel__action[hidden], .panel__party[hidden], .panel__reveal[hidden], .panel__journal[hidden] { display: none; }
 .panel__close {
   position: absolute; top: 12px; right: 12px; z-index: 1; width: 32px; height: 32px; border-radius: 50%;
   border: 1px solid #0c090e; background: rgba(36, 29, 41, 0.92); box-shadow: inset 0 0 0 1px rgba(201, 164, 92, 0.5);
@@ -868,81 +868,6 @@ body.is-placing .hud-stack { opacity: 0.4; }
 .party__stats b { font: 700 17px var(--font-display); }
 .party__manage { flex-shrink: 0; flex-direction: column; gap: 4px; padding: 0 14px; }
 .party__manage .ic { width: 22px; height: 22px; margin: 0; }
-
-/* ---------- Journal ---------- */
-
-.journal { overflow-y: auto; }
-.journal__inner { max-width: 1040px; margin: 0 auto; }
-.journal__empty { color: var(--bone-soft); font-size: 16px; font-style: italic; }
-.quests { display: grid; gap: 22px 18px; }
-.quests--active { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); padding-top: 16px; }
-.quests--past { grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); padding-top: 16px; }
-.journal__past { margin-top: 26px; }
-
-/* A quest: a parchment card with a wax seal on top. */
-.quest {
-  position: relative; display: flex; flex-direction: column; gap: 8px; padding: 26px 22px 16px; text-align: center;
-  color: var(--ink); border-radius: 3px;
-  background: linear-gradient(180deg, var(--parchment), var(--parchment-2));
-  box-shadow: 0 0 0 1px #3a2c22, inset 0 0 0 4px var(--parchment), inset 0 0 0 5px rgba(138, 106, 51, 0.45), inset 0 0 40px rgba(140, 100, 40, 0.28), var(--shadow);
-}
-.quest__seal {
-  position: absolute; top: -18px; left: 50%; transform: translateX(-50%);
-  width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center;
-  background: radial-gradient(circle at 40% 35%, #c9503f, #8a2e27 70%); box-shadow: 0 0 0 1px #3a120e, 0 3px 6px rgba(0, 0, 0, 0.4), inset 0 0 0 3px rgba(255, 200, 170, 0.18);
-}
-.quest__seal .ic { width: 26px; height: 26px; filter: drop-shadow(0 1px 0 rgba(0, 0, 0, 0.5)); }
-.quest--done .quest__seal { background: radial-gradient(circle at 40% 35%, #8fbf63, #3f7a34 70%); box-shadow: 0 0 0 1px #15300f, 0 3px 6px rgba(0, 0, 0, 0.4); }
-.quest__kicker { margin: 0; display: flex; align-items: center; justify-content: center; gap: 4px; font: 700 10.5px var(--font-display); letter-spacing: 0.14em; text-transform: uppercase; color: #8a5a2e; }
-.quest__title { margin: 0; font: 400 24px/1.15 var(--font-title); color: var(--ink); }
-.quest__page { display: grid; gap: 10px; text-align: left; padding-top: 8px; border-top: 1px solid rgba(138, 106, 51, 0.35); }
-.quest__body { margin: 0; font-size: 16.5px; line-height: 1.5; }
-.quest__steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
-.quest__steps li { display: flex; align-items: center; gap: 10px; font-size: 16px; }
-.quest__steps li.is-done span:last-child { text-decoration: line-through; color: var(--ink-soft); }
-.quest__tick {
-  width: 24px; height: 24px; flex-shrink: 0; border-radius: 4px; padding: 0; display: grid; place-items: center;
-  border: 1.5px solid #8a6a33; background: rgba(255, 252, 240, 0.6);
-}
-.quest__tick .ic { width: 22px; height: 22px; }
-button.quest__tick { cursor: pointer; }
-.quest__foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: auto; padding-top: 6px; }
-.quest__place {
-  display: inline-flex; align-items: center; gap: 5px; font: 700 13px var(--font-display); letter-spacing: 0.04em; color: var(--ink);
-  background: rgba(255, 252, 240, 0.55); border: 1px solid rgba(138, 106, 51, 0.6); border-radius: 20px; padding: 5px 12px 5px 7px; cursor: pointer;
-}
-.quest__place .ic { width: 20px; height: 20px; }
-.quest__place:hover { background: #fffaf0; }
-/* Progress: a diamond for each step. */
-.quest__progress { display: flex; gap: 6px; padding-right: 4px; }
-.quest__progress i { width: 10px; height: 10px; transform: rotate(45deg); border: 1.5px solid #8a6a33; }
-.quest__progress i.is-on { background: #8a6a33; }
-.quest--past, .quests--past .quest { padding: 22px 16px 12px; opacity: 0.85; }
-.quests--past .quest__title { font-size: 19px; }
-.quest.is-hidden { opacity: 0.7; box-shadow: 0 0 0 1px #3a2c22, inset 0 0 0 4px var(--parchment), inset 0 0 0 5px rgba(138, 106, 51, 0.45), inset 0 0 40px rgba(140, 100, 40, 0.28); outline: 2px dashed rgba(201, 164, 92, 0.6); outline-offset: 4px; }
-/* The DM's buttons, under the card. */
-.quest__tools { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin: 4px -10px -4px; padding-top: 10px; border-top: 1px solid rgba(138, 106, 51, 0.3); }
-.quest__tools button {
-  display: inline-flex; align-items: center; gap: 4px; font: 600 12px var(--font-display); color: var(--ink);
-  background: rgba(255, 252, 240, 0.5); border: 1px solid rgba(138, 106, 51, 0.5); border-radius: 6px; padding: 4px 9px 4px 5px; cursor: pointer;
-}
-.quest__tools .ic { width: 18px; height: 18px; }
-.quest__tools .quest__delete { padding: 4px 10px; font-size: 16px; line-height: 1; color: var(--blood); }
-
-/* The quest writer (DM), a card over the page. */
-.journal__editor {
-  position: fixed; inset: 0; z-index: 10; display: grid; place-items: center;
-  padding: var(--top) 12px var(--nav); background: rgba(10, 6, 12, 0.6);
-}
-.journal__editor[hidden] { display: none; }
-.quest-form {
-  width: min(540px, 100%); max-height: 100%; overflow-y: auto; display: grid; gap: 12px; padding: 20px 22px;
-  background: var(--corners), var(--panel); border-radius: 4px; box-shadow: var(--frame);
-}
-.quest-form__title { margin: 0; font: 400 24px var(--font-title); }
-.quest-form__actions { display: flex; justify-content: flex-end; gap: 8px; }
-.quest__error { margin: 0; color: #f08a72; font-size: 14px; }
-.quest__error:empty { display: none; }
 
 /* ---------- Bestiary (Dungeon Master) ---------- */
 
@@ -1498,19 +1423,19 @@ input.is-bad { box-shadow: inset 0 0 0 2px #e2634e; }
 /* ---------- Party, Journal and Bestiary: the same painted parchment ---------- */
 
 .party .screen-head, .journal .screen-head, .bestiary .screen-head,
-.party__all, .party__card, .quest, .quest-form, .bestiary__window, .bestiary__gen, .statblock {
+.party__all, .party__card, .bestiary__window, .bestiary__gen, .statblock {
   border: 14px solid transparent; border-radius: 0; background: none; box-shadow: none; color: var(--pp-ink);
   border-image: url('/art/ui/paper/wide-sheet.webp') 26 fill / 22px / 0 stretch;
 }
 /* Which sheet for which box: special panels framed, tall ones tall paper, popups notes. */
-.quest--big, .bestiary__window { border-width: 22px; border-image: url('/art/ui/paper/framed-sheet.webp') 44 fill / 40px / 0 stretch; }
-.quests--past .quest, .quest-form, .bestiary__gen { border-image: url('/art/ui/paper/note-tall.webp') 24 fill / 22px / 0 stretch; }
+.bestiary__window { border-width: 22px; border-image: url('/art/ui/paper/framed-sheet.webp') 44 fill / 40px / 0 stretch; }
+.bestiary__gen { border-image: url('/art/ui/paper/note-tall.webp') 24 fill / 22px / 0 stretch; }
 .statblock { border-image: url('/art/ui/paper/ledger-sheet.webp') 30 fill / 24px / 0 stretch; }
 /* Titles are rolled-scroll banners: the rolls at both ends, the paper stretched between. */
 .party .screen-head, .journal .screen-head, .bestiary .screen-head {
   border-width: 10px 34px 12px; border-image: url('/art/ui/paper/rolled-scroll.webp') 30 46 34 46 fill / 12px 34px 14px 34px / 0 stretch;
 }
-.party .screen-head, .journal .screen-head, .bestiary .screen-head, .party__all, .party__card, .quest, .statblock {
+.party .screen-head, .bestiary .screen-head, .party__all, .party__card, .statblock {
   filter: drop-shadow(0 5px 8px rgba(20, 10, 0, 0.35));
 }
 /* Titles on a strip of parchment, so they read over the map. */
@@ -1556,32 +1481,109 @@ input.is-bad { box-shadow: inset 0 0 0 2px #e2634e; }
   filter: drop-shadow(0 5px 8px rgba(20, 10, 0, 0.35));
 }
 
-/* Journal: quest cards on the painted parchment, the wax seal on top. */
-.quest { padding: 18px 12px 6px; }
-.quest__seal { top: -26px; }
-.quest__title { font: 700 23px/1.2 var(--font-display); color: var(--pp-ink); }
-.quest__kicker { color: var(--pp-accent); }
-.quest__page { border-top-color: var(--pp-line); }
-.quest__body { color: var(--pp-ink); }
-.quest__tick { border-color: var(--pp-line-dark); background: rgba(255, 252, 240, 0.7); }
-.quest__place { border-color: var(--pp-line-dark); background: rgba(255, 252, 240, 0.7); color: var(--pp-ink); }
-.quest__progress i { border-color: var(--pp-bronze); }
-.quest__progress i.is-on { background: var(--pp-bronze); }
-.quest__tools { border-top-color: var(--pp-line); margin: 4px -4px 0; }
-.quest__tools button { border-color: var(--pp-line-dark); background: rgba(255, 252, 240, 0.7); }
-.quest.is-hidden { opacity: 1; outline: 2px dashed rgba(138, 46, 31, 0.6); outline-offset: 2px; box-shadow: none; }
-.quests--past .quest { padding: 16px 10px 6px; opacity: 1; filter: drop-shadow(0 5px 8px rgba(20, 10, 0, 0.35)) sepia(0.25) brightness(0.96); }
-.journal .journal__past {
-  display: inline-flex; padding: 6px 14px; color: var(--pp-ink); border-radius: 3px;
-  background: rgba(250, 240, 214, 0.92); box-shadow: 0 0 0 1.5px var(--pp-line-dark), 0 4px 8px rgba(20, 10, 0, 0.3);
+/* Journal: one tall sheet (ledger paper) with bookmarks, a list and a page. */
+.journal { display: flex; justify-content: center; }
+.jr {
+  width: min(1120px, 100%); height: 100%; display: flex; flex-direction: column; padding: 6px 10px 4px; color: var(--pp-ink);
+  border: 22px solid transparent; border-image: url('/art/ui/paper/ledger-sheet.webp') 34 fill / 30px / 0 stretch;
+  filter: drop-shadow(0 6px 10px rgba(20, 10, 0, 0.35));
 }
-.journal .journal__past::after { display: none; }
-.journal__empty { display: inline-block; padding: 8px 14px; border-radius: 4px; background: rgba(255, 250, 235, 0.85); color: var(--pp-soft); }
-.quest-form { padding: 6px 8px; }
-.quest-form__title { font: 700 22px var(--font-display); color: var(--pp-ink); }
-.journal__editor { background: rgba(30, 20, 10, 0.45); }
+.jr__head { display: flex; align-items: center; gap: 14px; }
+.jr__title { margin: 0; font: 700 26px/1.2 var(--font-display); letter-spacing: 0.04em; color: var(--pp-ink); }
+.jr__search {
+  flex: 1; display: flex; align-items: center; gap: 6px; max-width: 420px; margin-left: auto; padding: 0 10px;
+  border-radius: 20px; background: rgba(255, 252, 240, 0.7); border: 1.5px solid var(--pp-line-dark);
+}
+.jr__search input { flex: 1; min-width: 0; border: 0; background: none; padding: 7px 0; font: 16px var(--font-body); color: var(--pp-ink); outline: none; }
+.jr__search input::placeholder { color: #8a7458; }
+.jr__new[hidden] { display: none; }
 
-/* Bestiary: the creature window on parchment with an inked forest behind it. */
+/* Bookmarks: the three sections, the open one underlined in red pencil. */
+.jr__tabs { display: flex; gap: 4px; margin-top: 10px; border-bottom: 1.5px solid var(--pp-line); }
+.jr-tab {
+  position: relative; display: flex; align-items: center; gap: 7px; padding: 8px 14px 10px; cursor: pointer;
+  font: 700 14px var(--font-display); letter-spacing: 0.08em; text-transform: uppercase; color: var(--pp-soft); background: none; border: 0;
+}
+.jr-tab .ic { width: 20px; height: 20px; }
+.jr-tab small { font: 600 12px var(--font-body); color: #8a7458; }
+.jr-tab:hover { color: var(--pp-ink); }
+.jr-tab.is-on { color: var(--pp-accent); }
+.jr-tab.is-on::after { content: ''; position: absolute; left: 6px; right: 6px; bottom: -2px; height: 3px; border-radius: 2px; background: var(--pp-accent); }
+
+/* The list (left) and the page (right), split by an inked line. */
+.jr__body { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(250px, 0.8fr) minmax(0, 1.4fr); }
+.jr__list { min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 6px 12px 10px 0; }
+.jr__list ul { list-style: none; margin: 0; padding: 0; }
+.jr-group { margin: 12px 0 4px; font: 700 11px var(--font-display); letter-spacing: 0.14em; text-transform: uppercase; color: var(--pp-accent); display: flex; align-items: center; gap: 4px; }
+.jr-group--section { color: var(--pp-ink); }
+.jr-item {
+  width: 100%; display: flex; align-items: center; gap: 10px; text-align: left; font: inherit; color: var(--pp-ink); cursor: pointer;
+  background: none; border: 0; border-bottom: 1px solid rgba(168, 134, 90, 0.35); padding: 8px 6px; border-radius: 3px;
+}
+.jr-item:hover { background: rgba(255, 252, 240, 0.5); }
+.jr-item.is-on { background: rgba(138, 46, 31, 0.1); box-shadow: inset 3px 0 0 var(--pp-accent); }
+.jr-item.is-hidden { opacity: 0.6; }
+.jr-item.is-dead b { text-decoration: line-through; }
+.jr-item__text { display: flex; flex-direction: column; min-width: 0; }
+.jr-item__text b { font: 700 16px var(--font-body); }
+.jr-item__text small { font-size: 13.5px; color: var(--pp-soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.jr-mark { flex-shrink: 0; display: grid; place-items: center; width: 30px; height: 30px; }
+.jr-mark .ic { width: 24px; height: 24px; }
+.jr-mark--done, .jr-mark--failed { filter: grayscale(0.4); }
+/* People get a little round face, coloured by how they feel about the party. */
+.jr-face {
+  flex-shrink: 0; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center;
+  font: 700 14px var(--font-display); color: #fff8ec; background: #8a7a68; box-shadow: 0 0 0 2px rgba(255, 252, 240, 0.8), 0 0 0 3px var(--pp-line-dark);
+}
+.jr-face--friendly { background: #5f8a45; }
+.jr-face--hostile { background: var(--pp-accent); }
+.jr-face--neutral { background: #a07a3a; }
+.jr-empty, .jr-hint { color: var(--pp-soft); font-style: italic; font-size: 15px; margin: 18px 4px; }
+
+.jr__page { min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 8px 6px 14px 22px; border-left: 1.5px solid var(--pp-line); }
+.jr-back { display: none; margin: 2px 0 8px; font: 700 13px var(--font-display); letter-spacing: 0.04em; color: var(--pp-accent); background: none; border: 0; padding: 4px 0; cursor: pointer; }
+.jr-kicker { margin: 4px 0 2px; font: 700 11px var(--font-display); letter-spacing: 0.14em; text-transform: uppercase; color: var(--pp-accent); }
+.jr-name { margin: 0 0 8px; font: 700 28px/1.15 var(--font-display); color: var(--pp-ink); }
+.jr-name.is-dead { text-decoration: line-through; text-decoration-thickness: 2px; }
+.jr-meta { margin: 0 0 10px; }
+.jr-text { margin: 0 0 12px; font-size: 17px; line-height: 1.55; color: var(--pp-ink); max-width: 62ch; }
+.jr-text.is-empty { color: var(--pp-soft); font-style: italic; }
+.jr-h { margin: 16px 0 6px; font: 700 12px var(--font-display); letter-spacing: 0.12em; text-transform: uppercase; color: var(--pp-ink); padding-bottom: 4px; border-bottom: 1px solid var(--pp-line); }
+.jr-h small { font: 400 12px var(--font-body); letter-spacing: 0; text-transform: none; color: var(--pp-soft); }
+.jr-link {
+  display: inline-flex; align-items: center; gap: 5px; font: 600 15px var(--font-body); color: var(--pp-accent); cursor: pointer;
+  background: none; border: 0; padding: 2px 0; text-decoration: underline; text-decoration-color: rgba(138, 46, 31, 0.35); text-underline-offset: 3px;
+}
+.jr-link small { color: var(--pp-soft); font-weight: 400; margin-left: 6px; }
+.jr-link.is-unknown { color: var(--pp-soft); text-decoration: none; cursor: default; }
+.jr-links { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.jr-badges { display: flex; gap: 6px; margin: 0 0 10px; }
+.jr-badge { font: 700 11px var(--font-display); letter-spacing: 0.08em; text-transform: uppercase; padding: 3px 10px; border-radius: 20px; border: 1.5px solid currentColor; }
+.jr-badge--friendly { color: #4f7a3a; }
+.jr-badge--neutral, .jr-badge--unknown, .jr-badge--alive { color: var(--pp-soft); }
+.jr-badge--hostile, .jr-badge--dead { color: var(--pp-accent); }
+.jr-badge--missing { color: var(--pp-bronze); }
+.jr-steps { list-style: none; margin: 0 0 12px; padding: 0; display: grid; gap: 6px; }
+.jr-steps li { display: flex; align-items: center; gap: 10px; font-size: 16.5px; }
+.jr-steps li.is-done span:last-child { text-decoration: line-through; color: var(--pp-soft); }
+.jr-tick { width: 24px; height: 24px; flex-shrink: 0; border-radius: 4px; padding: 0; display: grid; place-items: center; border: 1.5px solid var(--pp-line-dark); background: rgba(255, 252, 240, 0.7); }
+.jr-tick .ic { width: 22px; height: 22px; }
+button.jr-tick { cursor: pointer; }
+/* The DM's buttons under an entry. */
+.jr-tools { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--pp-line); }
+.jr-tools button {
+  display: inline-flex; align-items: center; gap: 5px; font: 600 13px var(--font-display); color: var(--pp-ink); cursor: pointer;
+  background: rgba(255, 252, 240, 0.7); border: 1.5px solid var(--pp-line-dark); border-radius: 6px; padding: 5px 10px 5px 6px;
+}
+.jr-tools .ic { width: 18px; height: 18px; }
+.jr-tools .jr-tools__delete { margin-left: auto; color: var(--pp-accent); padding: 5px 10px; }
+.jr-form { display: grid; gap: 12px; max-width: 620px; }
+.jr-form .field-row { flex-wrap: wrap; }
+.jr-form__actions { display: flex; justify-content: flex-end; gap: 8px; }
+.jr-error { margin: 0; color: var(--pp-accent); font-size: 14px; }
+.jr-error:empty { display: none; }
+
+ with an inked forest behind it. */
 .bestiary__window { padding: 8px; }
 .bestiary__stage {
   background:
@@ -1850,11 +1852,19 @@ input.is-bad { box-shadow: inset 0 0 0 2px #e2634e; }
   .party__manage { flex-direction: row; margin-top: -2px; padding: 8px; border-radius: 0 0 6px 6px; }
   .party__xp { margin-left: 0; }
 
-  /* Journal */
-  .quests--active, .quests--past { grid-template-columns: 1fr; }
-  .quest { padding: 24px 16px 14px; }
-  .quest__title { font-size: 22px; }
-  .journal__editor { padding: var(--top) 8px calc(var(--nav) + 8px); }
+  /* Journal: the list and the page take turns. */
+  .jr { padding: 4px 2px; border-width: 14px; border-image-width: 22px; }
+  .jr__head { flex-wrap: wrap; gap: 8px; }
+  .jr__search { order: 3; flex-basis: 100%; }
+  .jr__title { font-size: 22px; }
+  .jr-tab { padding: 8px 4px; font-size: 12px; letter-spacing: 0.04em; }
+  .jr-tab .ic { width: 18px; height: 18px; }
+  .jr__body { grid-template-columns: 1fr; }
+  .jr__page { border-left: 0; padding: 4px 2px 10px; }
+  .jr:not(.is-reading) .jr__page { display: none; }
+  .jr.is-reading .jr__list { display: none; }
+  .jr-back { display: inline-flex; }
+  .jr-name { font-size: 22px; }
 
   /* Bestiary: the window on top, the stats below; the page scrolls. */
   .bestiary { display: block; overflow-y: auto; overscroll-behavior: contain; }
