@@ -7,5 +7,7 @@ export default defineConfig({
   base: './',
   server: { open: true },
   plugins: [viteSingleFile()],
+  // Shown in the name-badge menu, to check a phone runs the newest version.
+  define: { __BUILD_TIME__: JSON.stringify(new Date().toISOString()) },
   build: { outDir: 'Play', emptyOutDir: true, chunkSizeWarningLimit: 2000 },
 });

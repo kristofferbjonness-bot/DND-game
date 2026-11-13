@@ -618,6 +618,7 @@ body[data-screen="map"] .panel { top: 70px; }
 }
 .role-menu button:hover, .role-menu button.is-on { background: rgba(217, 199, 160, 0.4); }
 .role-menu i { width: 14px; height: 14px; border-radius: 4px; flex-shrink: 0; }
+.role-menu__version { margin: 4px 10px 2px; font-size: 11px; color: var(--ink-soft); }
 .role-menu hr { border: 0; border-top: 1px solid var(--parchment-edge); margin: 6px 4px; }
 
 /* While the DM previews a player's view, the badge stands out a little. */

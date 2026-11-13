@@ -624,7 +624,8 @@ roleChip.addEventListener('click', (e) => {
       <button type="button" data-view=""${viewAs ? '' : ' class="is-on"'}><i style="background:#3b2f22"></i>Dungeon Master</button>
       ${party.map((c) => `<button type="button" data-view="${c.id}"${c.id === viewAs ? ' class="is-on"' : ''}><i style="background:${c.colour}"></i>${c.name}</button>`).join('')}
       <hr />` : ''}
-    <button type="button" data-action="logout">Log out</button>`;
+    <button type="button" data-action="logout">Log out</button>
+    <p class="role-menu__version">Version ${new Date(__BUILD_TIME__).toLocaleString([], { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</p>`;
   roleMenu.hidden = !roleMenu.hidden;
 });
 roleMenu.addEventListener('click', async (e) => {
