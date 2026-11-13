@@ -1,4 +1,4 @@
-// The dice tray: a d20 tab on the left edge (under the rulebook) that opens a
+// The dice tray: the d20 button in the bar (showing the latest roll) opens a
 // small tray. Tap dice to build a roll, or tap a ready-made roll for your hero
 // (initiative, attacks, damage). Every roll goes into a log the whole table
 // sees live. The Dungeon Master can roll hidden and clear the log.
@@ -70,8 +70,21 @@ export function createDiceTray({ button, root, who, save, clear }) {
       </li>`;
   }
 
+  // The bar button shows the table's latest roll.
+  let lastButton = '';
+  function drawButton() {
+    const top = log[0];
+    const nat = top?.dice.find((d) => d.kept && d.sides === 20)?.value;
+    const html = `${die(20, top ? top.total : '')}<span class="bar__dice-text">${top
+      ? `<small>${esc(top.who)}</small><b>${esc(top.label || 'Roll')}</b>` : '<small>Dice</small><b>Roll</b>'}</span>`;
+    if (html !== lastButton) { lastButton = html; button.innerHTML = html; }
+    button.classList.toggle('is-nat20', nat === 20);
+    button.classList.toggle('is-nat1', nat === 1);
+  }
+
   function render() {
     button.classList.toggle('has-news', unread);
+    drawButton();
     if (root.hidden) return;
     const me = who();
     const quick = quickRolls();
@@ -166,6 +179,12 @@ export function createDiceTray({ button, root, who, save, clear }) {
     render();
   });
   root.addEventListener('change', (e) => { if (e.target.closest('.dt-secret')) secret = e.target.checked; });
+  // A tap anywhere else closes the tray (the path still holds buttons a re-render removed).
+  document.addEventListener('click', (e) => {
+    if (root.hidden || e.composedPath().some((el) => el === root || el === button)) return;
+    root.hidden = true;
+    button.classList.remove('is-open');
+  });
 
   return {
     // The log as loaded from the database (newest first).

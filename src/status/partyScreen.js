@@ -1,48 +1,57 @@
-// The Party screen: one card per hero with their key numbers. Tapping a card
-// opens that hero on the Status screen. For the Dungeon Master:
+// The Party screen: a plate per hero with their portrait, health and key
+// numbers. Tapping a plate opens that hero on the Hero screen. For the Dungeon Master:
 //   onNew        a "New hero" button that opens the character creator;
-//   onManage     a "Manage" button on each card (health, XP, items);
+//   onManage     a "Manage" button on each plate (health, XP, items);
 //   onEveryone   party-wide actions: ('short' | 'long' | 'xp', amount).
 import { derive, signed } from '../character/rules.js';
+import { icon } from '../ui/icons.js';
+import { heroPortrait, portraitImg } from '../ui/portraits.js';
 
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
 
 export function renderParty(root, characters, onOpen, { onNew, onManage, onEveryone } = {}) {
   root.innerHTML = `
     <div class="party__inner">
-      <div class="party__head">
-        <h2 class="party__title">The Party</h2>
-        ${onNew ? '<button type="button" class="party__new">＋ New hero</button>' : ''}
-      </div>
+      <header class="screen-head">
+        <h2 class="screen-title">The Party</h2>
+        ${onNew ? `<button type="button" class="btn btn--gold party__new">${icon('plus')}New hero</button>` : ''}
+      </header>
       ${onEveryone ? `
         <div class="party__all">
-          <span>Everyone:</span>
-          <button type="button" data-all="short">Short rest</button>
-          <button type="button" data-all="long">Long rest</button>
-          <input type="number" inputmode="numeric" min="0" placeholder="XP" aria-label="XP for everyone" />
-          <button type="button" data-all="xp">Give XP each</button>
+          <span class="party__all-label">Everyone</span>
+          <button type="button" class="btn btn--small" data-all="short">Short rest</button>
+          <button type="button" class="btn btn--small" data-all="long">Long rest</button>
+          <span class="party__xp">
+            <input type="number" inputmode="numeric" min="0" placeholder="XP" aria-label="XP for everyone" />
+            <button type="button" class="btn btn--small" data-all="xp">${icon('xp')}Give XP each</button>
+          </span>
         </div>` : ''}
       <ul class="party__list">
         ${characters.map((c) => {
           const d = derive(c);
+          const hp = Math.max(0, c.hp.current / c.hp.max);
           return `
           <li class="party__item">
-            <button type="button" class="party__card" data-id="${esc(c.id)}">
+            <button type="button" class="party__card${c.hp.current <= 0 ? ' is-down' : hp <= 0.3 ? ' is-low' : ''}" data-id="${esc(c.id)}" style="--hero:${esc(c.colour)}">
+              <span class="party__face">${portraitImg(heroPortrait(c), { name: c.name, colour: c.colour })}<span class="lvl lvl--small" title="Level ${c.level}"><b>${c.level}</b></span></span>
               <span class="party__who">
                 <b>${esc(c.name)}</b>
-                <small>Level ${c.level} ${esc(c.class)} · ${esc(c.race)}</small>
+                <small>${esc(c.class)} · ${esc(c.race)}</small>
               </span>
               <span class="party__hp">
-                <span class="hp"><span style="width:${Math.round((c.hp.current / c.hp.max) * 100)}%"></span></span>
-                <small>${c.hp.current} / ${c.hp.max} HP</small>
+                <span class="hpbar">
+                  <span class="hpbar__icon">${icon('hp')}</span>
+                  <span class="hpbar__track"><i style="width:${Math.round(hp * 100)}%"></i></span>
+                  <b class="hpbar__num">${c.hp.current}<small>/${c.hp.max}</small></b>
+                </span>
               </span>
               <span class="party__stats">
-                <span><b>${d.ac}</b>AC</span>
-                <span><b>${signed(d.initiative)}</b>Init</span>
-                <span><b>${d.passivePerception}</b>Perc</span>
+                <span title="Armour class">${icon('ac')}<b>${d.ac}</b></span>
+                <span title="Initiative">${icon('init')}<b>${signed(d.initiative)}</b></span>
+                <span title="Passive perception">${icon('wis')}<b>${d.passivePerception}</b></span>
               </span>
             </button>
-            ${onManage ? `<button type="button" class="party__manage" data-manage="${esc(c.id)}">Manage</button>` : ''}
+            ${onManage ? `<button type="button" class="btn btn--small party__manage" data-manage="${esc(c.id)}">${icon('pen')}Manage</button>` : ''}
           </li>`;
         }).join('')}
       </ul>

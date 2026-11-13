@@ -1,9 +1,12 @@
-// The Bestiary (Dungeon Master only): every enemy, with its figure and stats,
+// The Bestiary (Dungeon Master only): a framed window with the creature's
+// figure and a strip of portraits to pick from; its stats as cards beside it;
 // and a generator where Claude designs a new one from a description.
 import { MONSTERS, addMonster, removeMonster } from '../data/monsters.js';
 import { registerRecipe, sanitizeRecipe } from '../character/model.js';
 import { signed } from '../character/rules.js';
 import { createCharacterViewer } from '../status/viewer.js';
+import { icon } from '../ui/icons.js';
+import { monsterPortrait, portraitImg } from '../ui/portraits.js';
 import { generateMonster, saveMonster, deleteMonster, explain } from '../net/backend.js';
 
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
@@ -37,37 +40,42 @@ export function cleanMonster(raw, prompt) {
 // `onAdded()` lets the rest of the app know the list changed.
 export function createBestiaryScreen(root, { onChanged } = {}) {
   root.innerHTML = `
-    <div class="bestiary__side">
-      <div class="bestiary__list-view">
-        <div class="bestiary__head">
-          <h2>Bestiary</h2>
-          <button type="button" class="bestiary__new">＋ Generate new</button>
-        </div>
+    <section class="bestiary__window">
+      <div class="bestiary__stage"></div>
+      <p class="bestiary__name"></p>
+      <div class="beast-strip">
+        <button type="button" class="beast-strip__arrow" data-step="-1" aria-label="Previous creature">‹</button>
         <ul class="bestiary__list"></ul>
+        <button type="button" class="beast-strip__arrow" data-step="1" aria-label="Next creature">›</button>
+      </div>
+    </section>
+    <section class="bestiary__side">
+      <div class="bestiary__list-view">
+        <header class="screen-head">
+          <h2 class="screen-title">Bestiary</h2>
+          <button type="button" class="btn btn--gold bestiary__new">${icon('magic')}Create with Claude</button>
+        </header>
       </div>
       <form class="bestiary__gen" hidden>
-        <div class="bestiary__head">
-          <h2>New monster</h2>
-          <button type="button" class="bestiary__cancel">Cancel</button>
-        </div>
-        <textarea class="bestiary__prompt" rows="4" maxlength="800" placeholder="Describe it, e.g. a horse-sized sand scorpion with a glowing blue stinger that hunts near Razz of Mataz"></textarea>
-        <button type="submit" class="bestiary__go">Generate with Claude</button>
+        <header class="screen-head">
+          <h2 class="screen-title">New creature</h2>
+          <button type="button" class="btn bestiary__cancel">Cancel</button>
+        </header>
+        <textarea class="field__input bestiary__prompt" rows="4" maxlength="800" placeholder="Describe it, e.g. a horse-sized sand scorpion with a glowing blue stinger that hunts near Razz of Mataz"></textarea>
+        <button type="submit" class="btn btn--gold bestiary__go">${icon('magic')}Create with Claude</button>
         <div class="bestiary__progress" hidden><span></span><small></small></div>
         <p class="bestiary__error" role="alert" hidden></p>
         <div class="bestiary__decide" hidden>
-          <button type="button" class="bestiary__keep">Add to bestiary</button>
-          <button type="submit" class="bestiary__again">Try again</button>
+          <button type="button" class="btn btn--gold bestiary__keep">Add to the bestiary</button>
+          <button type="submit" class="btn bestiary__again">Try again</button>
         </div>
       </form>
-    </div>
-    <div class="bestiary__detail">
-      <div class="bestiary__stage"></div>
       <div class="bestiary__stats"></div>
-    </div>`;
+    </section>`;
 
   const $ = (sel) => root.querySelector(sel);
   const listView = $('.bestiary__list-view'), gen = $('.bestiary__gen');
-  const list = $('.bestiary__list'), stats = $('.bestiary__stats');
+  const list = $('.bestiary__list'), stats = $('.bestiary__stats'), nameEl = $('.bestiary__name');
   const prompt = $('.bestiary__prompt'), go = $('.bestiary__go');
   const progress = $('.bestiary__progress'), errorEl = $('.bestiary__error'), decide = $('.bestiary__decide');
   const viewer = createCharacterViewer($('.bestiary__stage'));
@@ -78,28 +86,44 @@ export function createBestiaryScreen(root, { onChanged } = {}) {
   function renderList() {
     if (!MONSTERS[selected]) selected = Object.keys(MONSTERS)[0];
     list.innerHTML = Object.entries(MONSTERS).map(([id, m]) => `
-      <li><button type="button" class="beast${id === selected && !draft ? ' is-on' : ''}" data-id="${esc(id)}">
-        <span class="pick__badge pick__badge--enemy">${esc(m.name[0])}</span>
-        <span class="beast__who"><b>${esc(m.name)}</b><small>${esc(m.kind)} · AC ${m.ac} · ${m.hp} HP</small></span>
-        ${m.generated ? '<span class="beast__tag">Claude</span>' : ''}
+      <li><button type="button" class="beast${id === selected && !draft ? ' is-on' : ''}" data-id="${esc(id)}" title="${esc(m.name)}">
+        ${portraitImg(monsterPortrait(m.model ?? id, m.generated ? id : ''), { name: m.name, colour: '#2f3157' })}
       </button></li>`).join('');
+    list.querySelector('.is-on')?.scrollIntoView({ block: 'nearest', inline: 'center' });
   }
 
+  // A guess at how an attack is made, for its icon.
+  const attackIcon = (a) => (/bow|arrow|shot|sling|crossbow/i.test(a.name) ? 'bow'
+    : /spit|bolt|ray|breath|spell|curse|magic|blast/i.test(`${a.name} ${a.type}`) ? 'magic'
+    : /throw|knife|dagger|javelin/i.test(a.name) ? 'dagger' : 'sword');
+
   function renderStats(m, id) {
+    nameEl.textContent = m?.name ?? '';
     if (!m) { stats.innerHTML = ''; return; }
     stats.innerHTML = `
       <div class="statblock">
-        <div class="statblock__head">
+        <header class="statblock__head">
           <div><h3>${esc(m.name)}</h3><p>${esc(m.kind)}</p></div>
-          ${id && MONSTERS[id]?.generated ? `<button type="button" class="statblock__delete" data-id="${esc(id)}">Delete</button>` : ''}
+          ${m.generated || !id ? '<span class="beast__tag">Made by Claude</span>' : ''}
+        </header>
+        <div class="tiles">
+          <div class="tile">${icon('ac')}<b>${m.ac}</b><span>Armour</span></div>
+          <div class="tile">${icon('hp')}<b>${m.hp}</b><span>Hit points</span></div>
+          <div class="tile">${icon('speed')}<b>${m.speed}<small>ft</small></b><span>Speed</span></div>
+          <div class="tile">${icon('init')}<b>${signed(m.initiative ?? 0)}</b><span>Initiative</span></div>
         </div>
-        <div class="statblock__nums">
-          <span><b>${m.ac}</b>AC</span><span><b>${m.hp}</b>HP</span><span><b>${m.speed}</b>Speed</span><span><b>${signed(m.initiative ?? 0)}</b>Init</span>
-        </div>
-        <ul class="statblock__attacks">
-          ${m.attacks.map((a) => `<li><b>${esc(a.name)}</b> <span>${signed(a.toHit)} to hit · ${esc(a.dice)}${a.bonus ? ` ${a.bonus > 0 ? '+' : '−'} ${Math.abs(a.bonus)}` : ''} ${esc(a.type)}</span></li>`).join('')}
+        <h3 class="sheet__h">Attacks</h3>
+        <ul class="atks">
+          ${m.attacks.map((a) => `
+            <li class="atk">
+              <span class="atk__icon">${icon(attackIcon(a))}</span>
+              <span class="atk__main"><b>${esc(a.name)}</b></span>
+              <span class="atk__num"><small>To hit</small><b>${signed(a.toHit)}</b></span>
+              <span class="atk__num atk__num--dmg"><small>${esc(a.type)}</small><b>${esc(a.dice)}${a.bonus ? `${a.bonus > 0 ? '+' : '−'}${Math.abs(a.bonus)}` : ''}</b></span>
+            </li>`).join('')}
         </ul>
-        ${m.note ? `<p class="statblock__note">${esc(m.note)}</p>` : ''}
+        ${m.note ? `<h3 class="sheet__h">Lore</h3><p class="statblock__note">${esc(m.note)}</p>` : ''}
+        ${id && MONSTERS[id]?.generated ? `<button type="button" class="sheet__delete statblock__delete" data-id="${esc(id)}">Delete from the bestiary</button>` : ''}
       </div>`;
   }
 
@@ -115,6 +139,11 @@ export function createBestiaryScreen(root, { onChanged } = {}) {
     const b = e.target.closest('.beast');
     if (b) select(b.dataset.id);
   });
+  root.querySelectorAll('.beast-strip__arrow').forEach((b) => b.addEventListener('click', () => {
+    const ids = Object.keys(MONSTERS);
+    if (!ids.length) return;
+    select(ids[(ids.indexOf(selected) + Number(b.dataset.step) + ids.length) % ids.length]);
+  }));
 
   stats.addEventListener('click', async (e) => {
     const b = e.target.closest('.statblock__delete');

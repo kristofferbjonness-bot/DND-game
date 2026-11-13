@@ -1,52 +1,93 @@
-// The Status screen: the character sheet on the left, the 3D figure on the right.
-// Arrows beside the figure switch between the party's characters.
+// The Hero screen (Status): the hero's figure in a framed window on the left,
+// with their name, health and experience; the sheet on the right: key numbers,
+// the six abilities as cards, and tabs for Combat, Skills, Gear and Story.
+// The Dungeon Master flips between heroes with the arrows or the portraits.
 import { ABILITIES, SKILLS, derive, signed } from '../character/rules.js';
 import { createCharacterViewer } from './viewer.js';
 import { ITEMS } from '../data/items.js';
 import { SLOTS, optionsFor, equip } from '../character/equipment.js';
 import { itemInfo } from '../character/progress.js';
+import { icon } from '../ui/icons.js';
+import { heroPortrait, portraitImg } from '../ui/portraits.js';
 
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
 
 const TABS = [
-  { id: 'combat', label: 'Combat' },
-  { id: 'skills', label: 'Skills' },
-  { id: 'gear', label: 'Gear' },
-  { id: 'story', label: 'Story' },
+  { id: 'combat', label: 'Combat', icon: 'combat' },
+  { id: 'skills', label: 'Skills', icon: 'prof' },
+  { id: 'gear', label: 'Gear', icon: 'bag' },
+  { id: 'story', label: 'Story', icon: 'scroll' },
 ];
 
-const list = (items) => `<ul class="list">${items.join('')}</ul>`;
-const item = (main, sub, side = '') => `
-  <li class="list__item">
-    <div class="list__main"><span>${main}</span>${sub ? `<small>${sub}</small>` : ''}</div>
-    ${side}
-  </li>`;
+// What each ability is for, in a few words.
+const USE = {
+  str: 'Hit hard · lift · climb',
+  dex: 'Aim · dodge · sneak',
+  con: 'Health · stamina',
+  int: 'Know · recall · study',
+  wis: 'Notice · sense · heal',
+  cha: 'Talk · charm · lead',
+};
+
+const SLOT_ICON = { mainHand: 'sword', offHand: 'ac', armour: 'armour' };
+const ATTACK_ICON = { melee: 'sword', arrow: 'bow', thrown: 'dagger', magic: 'magic' };
+const itemIcon = (it) => (it.kind === 'weapon' ? (it.props?.includes('ammunition') ? 'bow' : 'sword')
+  : it.kind === 'armour' ? 'armour' : it.kind === 'shield' ? 'ac' : it.gem ? 'gem'
+  : /potion|elixir|flask/i.test(it.name ?? '') ? 'potion' : 'bag');
+
+const tile = (ic, label, value) => `<div class="tile">${icon(ic)}<b>${value}</b><span>${label}</span></div>`;
 
 function sheet(c, tab, editable, dm) {
   const d = derive(c);
-  const hpPct = Math.round((c.hp.current / c.hp.max) * 100);
+
+  const abilities = ABILITIES.map((a) => {
+    const save = c.saves.includes(a.id);
+    return `
+      <div class="abil abil--${a.id}${save ? ' is-save' : ''}">
+        <span class="abil__icon">${icon(a.id)}</span>
+        <span class="abil__name"><span class="full">${a.name}</span><span class="short">${a.short}</span></span>
+        <b class="abil__mod">${signed(d.mod(a.id))}</b>
+        <span class="abil__score" title="Score">${c.abilities[a.id]}</span>
+        <small class="abil__use">${USE[a.id]}</small>
+        <span class="abil__save" title="${save ? 'Trained in this saving throw' : 'Saving throw'}">${save ? '◆' : '◇'} Save ${signed(d.save(a.id))}</span>
+      </div>`;
+  }).join('');
 
   const combat = `
     <h3 class="sheet__h">Attacks</h3>
-    ${list(d.attacks.map((a) => item(esc(a.name), esc(a.note), `<span class="list__side"><b>${signed(a.toHit)}</b><small>${esc(a.damage)} ${esc(a.type)}</small></span>`)))}
+    <ul class="atks">
+      ${d.attacks.map((a) => `
+        <li class="atk">
+          <span class="atk__icon">${icon(ATTACK_ICON[a.throwFirst ? 'thrown' : a.style] ?? 'sword')}</span>
+          <span class="atk__main"><b>${esc(a.name)}</b>${a.note ? `<small>${esc(a.note)}</small>` : ''}</span>
+          <span class="atk__num"><small>To hit</small><b>${signed(a.toHit)}</b></span>
+          <span class="atk__num atk__num--dmg"><small>${esc(a.type)}</small><b>${esc(a.damage)}</b></span>
+        </li>`).join('')}
+    </ul>
     <h3 class="sheet__h">Features</h3>
-    ${list(c.features.map((f) => item(esc(f.name), esc(f.text), f.uses
-      ? `<span class="uses" title="Uses per ${esc(f.uses.per)}">${Array.from({ length: f.uses.max }, (_, i) => `<i class="${i < f.uses.max - f.uses.used ? 'is-on' : ''}"></i>`).join('')}</span>`
-      : '')))}`;
+    <ul class="feats">
+      ${c.features.map((f) => `
+        <li class="feat">
+          <span class="feat__main"><b>${esc(f.name)}</b><small>${esc(f.text)}</small></span>
+          ${f.uses ? `<span class="uses" title="Uses per ${esc(f.uses.per)}">${Array.from({ length: f.uses.max }, (_, i) => `<i class="${i < f.uses.max - f.uses.used ? 'is-on' : ''}"></i>`).join('')}<small>per ${esc(f.uses.per)}</small></span>` : ''}
+        </li>`).join('')}
+    </ul>`;
 
   const skills = `
-    <h3 class="sheet__h">Saving throws</h3>
-    <div class="saves">
-      ${ABILITIES.map((a) => `<span class="save${c.saves.includes(a.id) ? ' is-prof' : ''}">${a.short}<b>${signed(d.save(a.id))}</b></span>`).join('')}
-    </div>
-    <h3 class="sheet__h">Skills</h3>
+    <p class="sheet__hint"><b class="mark mark--on">◆</b> trained · <b class="mark mark--star">★</b> expert — add the number to your ${icon('dex', 'inline')} d20</p>
     <ul class="skills">
       ${SKILLS.map((s) => {
         const prof = c.skills.includes(s.id), expert = c.expertise?.includes(s.id);
-        return `<li class="skill${prof ? ' is-prof' : ''}${expert ? ' is-expert' : ''}"><span>${s.name}</span><b>${signed(d.skill(s.id))}</b></li>`;
+        return `<li class="skill${prof ? ' is-prof' : ''}${expert ? ' is-expert' : ''}">
+          <b class="mark">${expert ? '★' : prof ? '◆' : '·'}</b>
+          <span>${s.name}<small>${s.ability.toUpperCase()}</small></span>
+          <b class="skill__mod">${signed(d.skill(s.id))}</b></li>`;
       }).join('')}
     </ul>
-    <p class="sheet__note">Passive Perception <b>${d.passivePerception}</b> · Hit dice <b>${c.hitDice.total - c.hitDice.used}${esc(c.hitDice.die)}</b></p>`;
+    <div class="tiles tiles--small">
+      ${tile('wis', 'Passive Perception', d.passivePerception)}
+      ${tile('hp', 'Hit dice left', `${c.hitDice.total - c.hitDice.used}<small>${esc(c.hitDice.die)}</small>`)}
+    </div>`;
 
   const equippedIds = new Set(Object.values(c.equipped));
   const describe = (it) => it.kind === 'armour'
@@ -61,6 +102,7 @@ function sheet(c, tab, editable, dm) {
         const current = c.equipped[slot.id];
         return `
         <label class="slot">
+          <span class="slot__icon">${icon(SLOT_ICON[slot.id] ?? 'bag')}</span>
           <span class="slot__label">${slot.label}</span>
           <select class="slot__select" data-slot="${slot.id}"${!editable || (!ids.length && !current) ? ' disabled' : ''}>
             <option value="">${reason && !current ? esc(reason) : 'Nothing'}</option>
@@ -69,15 +111,20 @@ function sheet(c, tab, editable, dm) {
         </label>`;
       }).join('')}
     </div>
-    <h3 class="sheet__h">Inventory</h3>
-    ${list(c.items.map((i) => {
-      const it = itemInfo(i);
-      const note = [describe(it), i.note ?? it.note].filter(Boolean).join(' · ');
-      const side = equippedIds.has(i.id) ? '<span class="list__tag list__tag--on">Equipped</span>' : `<span class="list__qty">×${i.qty ?? 1}</span>`;
-      return item(esc(it.name), esc(note), side);
-    }))}
+    <h3 class="sheet__h">Pack</h3>
+    <ul class="pack">
+      ${c.items.map((i) => {
+        const it = itemInfo(i);
+        const note = [describe(it), i.note ?? it.note].filter(Boolean).join(' · ');
+        return `<li class="pack__item${equippedIds.has(i.id) ? ' is-equipped' : ''}">
+          <span class="pack__icon">${icon(itemIcon(it))}</span>
+          <span class="pack__main"><b>${esc(it.name)}</b>${note ? `<small>${esc(note)}</small>` : ''}</span>
+          ${equippedIds.has(i.id) ? '<span class="pack__tag">In hand</span>' : `<span class="pack__qty">×${i.qty ?? 1}</span>`}
+        </li>`;
+      }).join('')}
+    </ul>
     <div class="coins">
-      ${['pp', 'gp', 'sp', 'cp'].map((k) => `<span class="coin coin--${k}"><i></i>${c.coins[k] ?? 0} <small>${k.toUpperCase()}</small></span>`).join('')}
+      ${[['pp', 'Platinum'], ['gp', 'Gold'], ['sp', 'Silver'], ['cp', 'Copper']].map(([k, name]) => `<span class="coin coin--${k}" title="${name}">${icon('coin')}<b>${c.coins[k] ?? 0}</b><small>${k.toUpperCase()}</small></span>`).join('')}
     </div>`;
 
   const story = `
@@ -95,33 +142,16 @@ function sheet(c, tab, editable, dm) {
   const panels = { combat, skills, gear, story };
 
   return `
-    <header class="sheet__head">
-      <p class="sheet__kicker">Level ${c.level} ${esc(c.class)} · ${esc(c.race)}</p>
-      <h2 class="sheet__name">${esc(c.name)}</h2>
-      <div class="xp" title="${c.xp} XP${d.xp.next ? ` of ${d.xp.next} for level ${c.level + 1}` : ''}">
-        <div class="xp__bar"><span style="width:${Math.round(d.xp.progress * 100)}%"></span></div>
-        <small>${c.xp}${d.xp.next ? ` / ${d.xp.next}` : ''} XP</small>
-      </div>
-    </header>
-
-    <div class="vitals">
-      <div class="hp-block">
-        <div class="hp-block__top"><span>Hit points</span><b>${c.hp.current}<small> / ${c.hp.max}</small></b></div>
-        <div class="hp"><span style="width:${hpPct}%"></span></div>
-      </div>
-      <div class="stat"><b>${d.ac}</b><span>AC</span></div>
-      <div class="stat"><b>${signed(d.initiative)}</b><span>Init</span></div>
-      <div class="stat"><b>${c.speed}</b><span>Speed</span></div>
-      <div class="stat"><b>${signed(d.prof)}</b><span>Prof</span></div>
+    <div class="tiles">
+      ${tile('ac', 'Armour', d.ac)}
+      ${tile('init', 'Initiative', signed(d.initiative))}
+      ${tile('speed', 'Speed', `${c.speed}<small>ft</small>`)}
+      ${tile('prof', 'Proficiency', signed(d.prof))}
     </div>
-
-    <div class="abilities">
-      ${ABILITIES.map((a) => `
-        <div class="ability"><span>${a.short}</span><b>${signed(d.mod(a.id))}</b><small>${c.abilities[a.id]}</small></div>`).join('')}
-    </div>
-
+    <h3 class="sheet__h">Abilities <small>roll ${icon('dex', 'inline')} d20 + the big number</small></h3>
+    <div class="abils">${abilities}</div>
     <nav class="tabs" role="tablist">
-      ${TABS.map((t) => `<button type="button" role="tab" class="tab${t.id === tab ? ' is-active' : ''}" data-tab="${t.id}">${t.label}</button>`).join('')}
+      ${TABS.map((t) => `<button type="button" role="tab" class="tab${t.id === tab ? ' is-active' : ''}" data-tab="${t.id}">${icon(t.icon)}<span>${t.label}</span></button>`).join('')}
     </nav>
     ${TABS.map((t) => `<section class="tabpanel" data-panel="${t.id}"${t.id === tab ? '' : ' hidden'}>${panels[t.id]}</section>`).join('')}`;
 }
@@ -130,27 +160,56 @@ function sheet(c, tab, editable, dm) {
 // `onDelete(character)` lets the Dungeon Master delete a hero.
 export function createStatusScreen(root, characters, { onChange, onDelete } = {}) {
   root.innerHTML = `
-    <div class="status__sheet"></div>
-    <div class="status__stage">
-      <div class="status__canvas"></div>
-      <div class="picker">
-        <button type="button" class="picker__arrow" data-step="-1" aria-label="Previous character">‹</button>
-        <div class="picker__name"><b></b><small></small></div>
-        <button type="button" class="picker__arrow" data-step="1" aria-label="Next character">›</button>
+    <section class="status__hero">
+      <header class="status__plate"></header>
+      <div class="status__stage">
+        <div class="status__canvas"></div>
+        <button type="button" class="picker__arrow picker__arrow--prev" data-step="-1" aria-label="Previous hero">‹</button>
+        <button type="button" class="picker__arrow picker__arrow--next" data-step="1" aria-label="Next hero">›</button>
       </div>
-    </div>`;
-  const sheetEl = root.querySelector('.status__sheet');
-  const pickerName = root.querySelector('.picker__name b');
-  const pickerLine = root.querySelector('.picker__name small');
-  const viewer = createCharacterViewer(root.querySelector('.status__canvas'));
-  let index = 0, tab = 'combat', player = null, dm = false;
+      <div class="picker"></div>
+      <div class="status__vitals"></div>
+    </section>
+    <section class="status__sheet"></section>`;
+  const $ = (sel) => root.querySelector(sel);
+  const sheetEl = $('.status__sheet'), plate = $('.status__plate'), vitals = $('.status__vitals'), picker = $('.picker');
+  const viewer = createCharacterViewer($('.status__canvas'));
+  let index = 0, tab = 'combat', player = null, dm = false, shownId = null;
 
   // Players may change their own hero's gear; the Dungeon Master may change anyone's.
   const editable = (c) => !player || player === c.id;
 
+  function renderHero(c) {
+    const d = derive(c);
+    const hp = Math.max(0, c.hp.current / c.hp.max);
+    plate.innerHTML = `
+      <span class="lvl" title="Level ${c.level}"><b>${c.level}</b></span>
+      <div class="status__who">
+        <h2 class="sheet__name">${esc(c.name)}</h2>
+        <p class="sheet__kicker">Level ${c.level} ${esc(c.class)} · ${esc(c.race)}</p>
+      </div>`;
+    vitals.innerHTML = `
+      <div class="hpbar${c.hp.current <= 0 ? ' is-down' : hp <= 0.3 ? ' is-low' : ''}" title="Hit points">
+        <span class="hpbar__icon">${icon('hp')}</span>
+        <span class="hpbar__track"><i style="width:${Math.round(hp * 100)}%"></i></span>
+        <b class="hpbar__num">${c.hp.current}<small>/${c.hp.max}</small></b>
+      </div>
+      <div class="xpbar" title="${c.xp} XP${d.xp.next ? ` of ${d.xp.next} for level ${c.level + 1}` : ''}">
+        <span class="xpbar__icon">${icon('xp')}</span>
+        <span class="xpbar__track"><i style="width:${Math.round(d.xp.progress * 100)}%"></i></span>
+        <small>${c.xp}${d.xp.next ? `/${d.xp.next}` : ''} XP</small>
+      </div>
+      ${c.tagline ? `<p class="status__tagline">${esc(c.tagline)}</p>` : ''}`;
+    picker.innerHTML = player ? '' : characters.map((h) => `
+      <button type="button" class="picker__chip${h.id === c.id ? ' is-on' : ''}" data-id="${esc(h.id)}" title="${esc(h.name)}" style="--hero:${esc(h.colour)}">
+        ${portraitImg(heroPortrait(h), { name: h.name, colour: h.colour })}
+      </button>`).join('');
+  }
+
   function render({ keepScroll = false } = {}) {
     const c = characters[index];
     const scroll = sheetEl.scrollTop;
+    renderHero(c);
     sheetEl.innerHTML = sheet(c, tab, editable(c), dm && !player);
     sheetEl.scrollTop = keepScroll ? scroll : 0;
   }
@@ -159,10 +218,8 @@ export function createStatusScreen(root, characters, { onChange, onDelete } = {}
     index = Math.max(0, characters.findIndex((c) => c.id === id));
     const c = characters[index];
     if (!c) return;
+    shownId = c.id;
     render();
-    pickerName.textContent = c.name;
-    pickerName.dataset.id = c.id;
-    pickerLine.textContent = c.tagline ?? '';
     viewer.show(c);
   }
 
@@ -178,13 +235,12 @@ export function createStatusScreen(root, characters, { onChange, onDelete } = {}
 
   // Someone (maybe on another device) changed a character: redraw if it is showing.
   function refresh(id) {
-    const shown = pickerName.dataset.id;
-    if (!characters.some((x) => x.id === shown)) { // the hero on show was deleted
+    if (!characters.some((x) => x.id === shownId)) { // the hero on show was deleted
       const next = player ?? characters[0]?.id;
       if (next) showCharacter(next);
       return;
     }
-    if (shown !== id) return;
+    if (shownId !== id) { if (characters[index]) renderHero(characters[index]); return; } // portraits in the picker
     index = characters.findIndex((x) => x.id === id);
     render({ keepScroll: true });
     viewer.show(characters[index]);
@@ -202,9 +258,11 @@ export function createStatusScreen(root, characters, { onChange, onDelete } = {}
     sheetEl.querySelectorAll('.tab').forEach((t) => t.classList.toggle('is-active', t === btn));
     sheetEl.querySelectorAll('.tabpanel').forEach((p) => { p.hidden = p.dataset.panel !== tab; });
   });
-  root.querySelector('.picker').addEventListener('click', (e) => {
+  root.querySelector('.status__hero').addEventListener('click', (e) => {
+    const chip = e.target.closest('.picker__chip');
+    if (chip) { showCharacter(chip.dataset.id); return; }
     const btn = e.target.closest('.picker__arrow');
-    if (!btn) return;
+    if (!btn || player) return;
     const next = (index + Number(btn.dataset.step) + characters.length) % characters.length;
     showCharacter(characters[next].id);
   });
@@ -220,7 +278,7 @@ export function createStatusScreen(root, characters, { onChange, onDelete } = {}
   if (characters.length) showCharacter(characters[0].id);
   return {
     start: () => viewer.start(), stop: () => viewer.stop(), showCharacter, setPlayer, refresh,
-    current: () => pickerName.dataset.id ?? null,
+    current: () => shownId,
     setDm(on) { dm = on; if (characters[index]) render({ keepScroll: true }); },
   };
 }

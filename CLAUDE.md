@@ -264,11 +264,21 @@ The original assets (hand-drawn world map, location art, character art, lore doc
       levels 1–2 so far). It does no ability score improvements or subclasses yet.
     - Every change is saved at once. Players get a toast for XP, levels, HP, items and coins
       (`tellPlayer` in main.js).
-- Map HUD is kept minimal:
-  - Top left: a "‹ World" back button (in cities) and the Places menu, titled with the current
-    map.
-  - Bottom right: show-whole-map and compass.
-  - Bottom left: "?" opens the controls help and the miniature-blur setting.
+- **Look (redesign 2026-11-13): a medieval storybook, Lord of the Rings feel, fitting the voxel world.**
+  NOT pixel art and NOT generic flat app icons (the owner rejected both).
+  - Dark carved panels with a gold hairline and diamond corners (`--frame`, `--corners` in style.css),
+    parchment for reading (quests, story, lore), gold buttons for the main action.
+  - Fonts: Uncial Antiqua (titles), Cinzel (labels, numbers), Alegreya Sans (text).
+  - Icons are little voxel objects (`src/ui/voxelIcons.js`: 12×12 grids built from bevelled cubes and
+    photographed once); `icon(name)` in `src/ui/icons.js`, with flat SVGs as a no-3D fallback.
+  - Portraits of heroes and monsters are small renders of their figures (`src/ui/portraits.js`,
+    one shared offscreen renderer, cached by gear/look).
+- **The bar** (`#bar` in index.html) holds the sky dial (time + weather, opens the sky card), the
+  map/places menu (and ‹ back from cities), the screen tabs, the latest dice roll (opens the tray),
+  the other heroes with HP (wide screens only) and "you" (portrait + HP, opens the view-as/log-out
+  menu; `drawBar` in main.js). Top bar on wide screens; a two-row dock at the bottom on upright phones.
+  The rulebook stays its own tab on the left edge.
+- Map HUD: bottom right show-whole-map and compass; bottom left "?" help.
 
 ## Decisions so far
 

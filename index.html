@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
-    <meta name="theme-color" content="#cfe9f0" />
+    <meta name="theme-color" content="#15111c" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -14,21 +14,34 @@
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 16 16%27%3E%3Crect x=%272%27 y=%276%27 width=%2712%27 height=%278%27 fill=%27%2386c95c%27/%3E%3Crect x=%275%27 y=%272%27 width=%276%27 height=%274%27 fill=%27%23eef4f8%27/%3E%3C/svg%3E" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Alegreya+Sans:ital,wght@0,400;0,500;0,700;1,400&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Uncial+Antiqua&family=Cinzel:wght@500;600;700&family=Alegreya+Sans:ital,wght@0,400;0,500;0,700;1,400&display=swap" rel="stylesheet" />
   </head>
   <body>
     <div id="app"></div>
 
-    <nav class="topnav" aria-label="Game">
-      <button type="button" class="topnav__tab is-active" data-screen="map">Map</button>
-      <button type="button" class="topnav__tab" data-screen="status">Status</button>
-      <button type="button" class="topnav__tab" data-screen="party">Party</button>
-      <button type="button" class="topnav__tab" data-screen="journal">Journal</button>
-      <button type="button" class="topnav__tab topnav__tab--dm" data-screen="combat">Combat</button>
-      <button type="button" class="topnav__tab topnav__tab--dmonly" data-screen="bestiary">Bestiary</button>
-    </nav>
-
-    <button id="role" type="button" class="role-chip" hidden title="Menu"></button>
+    <!-- The bar: sky and time, where you are, the screens, the last dice roll, the party and you.
+         Along the top on wide screens; a dock along the bottom on upright phones. -->
+    <header id="bar" class="bar" hidden>
+      <button id="sky-toggle" type="button" class="bar__sky" aria-label="Weather and time"></button>
+      <div class="bar__place">
+        <button id="back" type="button" class="bar__back" hidden aria-label="Back to the world map">‹</button>
+        <details class="places">
+          <summary id="view-title">World Map</summary>
+          <ul id="places"></ul>
+        </details>
+      </div>
+      <nav class="topnav" aria-label="Game">
+        <button type="button" class="topnav__tab is-active" data-screen="map" data-icon="map"><span>Map</span></button>
+        <button type="button" class="topnav__tab" data-screen="status" data-icon="hero"><span>Hero</span></button>
+        <button type="button" class="topnav__tab" data-screen="party" data-icon="party"><span>Party</span></button>
+        <button type="button" class="topnav__tab" data-screen="journal" data-icon="journal"><span>Journal</span></button>
+        <button type="button" class="topnav__tab topnav__tab--dm" data-screen="combat" data-icon="combat"><span>Fight</span></button>
+        <button type="button" class="topnav__tab topnav__tab--dmonly" data-screen="bestiary" data-icon="bestiary"><span>Beasts</span></button>
+      </nav>
+      <button id="dice-toggle" type="button" class="bar__dice" aria-label="Dice and the roll log"></button>
+      <div id="bar-party" class="bar__party"></div>
+      <button id="role" type="button" class="bar__me" aria-label="You"></button>
+    </header>
     <div id="role-menu" class="role-menu" hidden></div>
 
     <section id="start" class="start" aria-label="Log in">
@@ -79,16 +92,6 @@
     <main id="fight" class="screen combat" hidden></main>
     <main id="bestiary" class="screen bestiary" hidden></main>
 
-    <div class="hud-corner">
-      <button id="back" type="button" class="hud chip" hidden>‹ World</button>
-      <nav class="hud hud--places" aria-label="Places">
-        <details>
-          <summary id="view-title">World Map</summary>
-          <ul id="places"></ul>
-        </details>
-      </nav>
-    </div>
-
     <aside id="panel" class="panel" hidden>
       <button type="button" class="panel__close" aria-label="Close">×</button>
       <img class="panel__image" hidden />
@@ -103,7 +106,6 @@
     </aside>
 
     <div class="hud-stack">
-      <button id="sky-toggle" type="button" class="hud round sky-toggle" aria-label="Weather and time">☀️</button>
       <button id="home" type="button" class="hud round" aria-label="Show the whole map" title="Show the whole map">
         <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" />
@@ -111,33 +113,29 @@
       </button>
       <button id="compass" type="button" class="hud round compass" aria-label="Turn the map north-up" title="North up">
         <svg class="compass__needle" viewBox="0 0 40 40" aria-hidden="true">
-          <path d="M20 5 L26 20 L14 20 Z" fill="#9a3b3b" />
-          <path d="M20 35 L26 20 L14 20 Z" fill="#d9c7a0" />
-          <text x="20" y="4.5" text-anchor="middle" font-size="7" font-weight="700" fill="#3b2f22" dominant-baseline="hanging">N</text>
+          <path d="M20 5 L26 20 L14 20 Z" fill="#d0533e" />
+          <path d="M20 35 L26 20 L14 20 Z" fill="#cfc6bb" />
+          <text x="20" y="4.5" text-anchor="middle" font-size="7" font-weight="700" fill="#efe5d2" dominant-baseline="hanging">N</text>
         </svg>
       </button>
     </div>
 
-    <div id="sky" class="hud sky" hidden></div>
+    <div id="sky" class="sky" hidden></div>
 
     <button id="rulebook-toggle" type="button" class="rb-toggle" aria-label="Rulebook" title="Rulebook">
-      <svg viewBox="0 0 32 40" aria-hidden="true">
-        <rect x="3" y="2" width="26" height="36" rx="3" fill="#8e3b2f" />
-        <rect x="3" y="2" width="5" height="36" rx="2" fill="#6e2b22" />
-        <rect x="12" y="10" width="13" height="2.5" rx="1" fill="#e8c77a" />
-        <rect x="12" y="15" width="10" height="2" rx="1" fill="#e8c77a" opacity="0.7" />
-        <path d="M18.5 22 l2.2 4.6 5 .7 -3.6 3.5 .9 5 -4.5 -2.4 -4.5 2.4 .9 -5 -3.6 -3.5 5 -.7z" fill="#e8c77a" transform="translate(0 -2) scale(.95)" />
+      <svg viewBox="0 0 10 13" shape-rendering="crispEdges" aria-hidden="true">
+        <rect x="1" y="0" width="9" height="13" fill="#1a1420" />
+        <rect x="2" y="1" width="7" height="11" fill="#9a3b30" />
+        <rect x="2" y="1" width="1" height="11" fill="#6e2620" />
+        <rect x="4" y="3" width="4" height="1" fill="#f0c95a" />
+        <rect x="4" y="5" width="3" height="1" fill="#f0c95a" />
+        <rect x="5" y="7" width="1" height="3" fill="#f0c95a" />
+        <rect x="4" y="8" width="3" height="1" fill="#f0c95a" />
+        <rect x="9" y="2" width="1" height="10" fill="#efe5d2" />
       </svg>
     </button>
     <div id="rulebook" class="rb" hidden></div>
 
-    <button id="dice-toggle" type="button" class="rb-toggle dt-toggle" aria-label="Dice" title="Dice">
-      <svg viewBox="0 0 40 40" aria-hidden="true">
-        <polygon points="20,2 36,11 36,29 20,38 4,29 4,11" fill="#fffaf0" stroke="#9a3b3b" stroke-width="3" stroke-linejoin="round" />
-        <polygon points="20,9 30,27 10,27" fill="none" stroke="#9a3b3b" stroke-width="2" stroke-linejoin="round" />
-        <text x="20" y="24.5" text-anchor="middle" font-size="8" font-weight="700" fill="#3b2f22" font-family="Georgia, serif">20</text>
-      </svg>
-    </button>
     <div id="dice" class="dt" hidden></div>
 
     <button id="help-toggle" type="button" class="hud round" aria-label="Controls and settings" aria-expanded="false">?</button>

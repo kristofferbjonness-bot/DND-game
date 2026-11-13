@@ -32,6 +32,8 @@ import { createJournalScreen } from './journal/journalScreen.js';
 import { createDiceTray } from './dice/diceTray.js';
 import { createHeroManager } from './status/heroManager.js';
 import { shortRest, longRest, readyToLevel } from './character/progress.js';
+import { icon } from './ui/icons.js';
+import { heroPortrait, portraitImg } from './ui/portraits.js';
 import { loadRevealed, setRevealed, watchRevealed, loadWorld, saveWorld, watchWorld, loadEncounter, saveEncounter, loadRolls, addRoll, clearRolls, watchRolls, loadQuests, saveQuest, deleteQuest, watchQuests } from './net/backend.js';
 import { supabase, myProfile, loadCharacters, seedCharacters, saveCharacter, deleteCharacter, watchCharacters, signOut, explain, encounterChannel, loadMonsters, watchMonsters } from './net/backend.js';
 import './style.css';
@@ -536,7 +538,7 @@ const list = document.getElementById('places');
 const homeButton = document.getElementById('home');
 const backButton = document.getElementById('back');
 const viewTitle = document.getElementById('view-title');
-const placesMenu = document.querySelector('.hud--places details');
+const placesMenu = document.querySelector('.places');
 function buildPlacesList() {
   list.replaceChildren();
   for (const tier of view.listTiers) {
@@ -548,7 +550,7 @@ function buildPlacesList() {
       b.textContent = p.name;
       if (seesAll() && isSecretable(p) && !revealed.has(p.id)) b.classList.add('is-secret');
       b.className = `places__item places__item--${tier}`;
-      b.addEventListener('click', () => { placesMenu.open = false; select(p); });
+      b.addEventListener('click', () => { placesMenu.open = false; showScreen('map'); select(p); });
       li.appendChild(b);
       list.appendChild(li);
     }
@@ -696,6 +698,7 @@ function showScreen(id) {
   if (id === 'bestiary') bestiaryScreen.start(); else bestiaryScreen?.stop();
   if (id === 'map') clock.getDelta(); // no time jump after being away
 }
+for (const b of document.querySelectorAll('.topnav__tab')) b.insertAdjacentHTML('afterbegin', icon(b.dataset.icon));
 document.querySelector('.topnav').addEventListener('click', (e) => {
   const btn = e.target.closest('.topnav__tab');
   if (btn) showScreen(btn.dataset.screen);
@@ -703,7 +706,41 @@ document.querySelector('.topnav').addEventListener('click', (e) => {
 document.body.dataset.screen = 'map';
 
 // --- Start: log in, load the party, and go in as the DM or a player ---------------------------
+const bar = document.getElementById('bar');
 const roleChip = document.getElementById('role');
+const barParty = document.getElementById('bar-party');
+const escHtml = (s) => String(s ?? '').replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
+const hpTone = (c) => (c.hp.current <= 0 ? ' is-down' : c.hp.current / c.hp.max <= 0.3 ? ' is-low' : '');
+
+// The bar's "you" button (your hero, or the Dungeon Master) and, on wide
+// screens, the rest of the party with their health.
+function drawBar() {
+  if (!me) return;
+  const heroId = me.dm ? viewAs : me.heroId;
+  const hero = party.find((c) => c.id === heroId);
+  roleChip.classList.toggle('is-previewing', Boolean(viewAs));
+  roleChip.innerHTML = hero ? `
+    <span class="bar__face" style="--hero:${escHtml(hero.colour)}">${portraitImg(heroPortrait(hero), { name: hero.name, colour: hero.colour })}</span>
+    <span class="bar__me-text">
+      <small>${viewAs ? 'Viewing as' : `Level ${hero.level} ${escHtml(hero.class)}`}</small>
+      <b>${escHtml(hero.name)}</b>
+      <span class="bar__hp${hpTone(hero)}"><i style="width:${Math.round(Math.max(0, hero.hp.current / hero.hp.max) * 100)}%"></i><em>${hero.hp.current}/${hero.hp.max}</em></span>
+    </span>`
+    : `<span class="bar__face bar__face--dm">${icon('crown')}</span><span class="bar__me-text"><small>You are the</small><b>Dungeon Master</b></span>`;
+  barParty.innerHTML = party.filter((c) => c.id !== heroId).map((c) => `
+    <button type="button" class="bar__mate${hpTone(c)}" data-hero="${escHtml(c.id)}" title="${escHtml(c.name)}: ${c.hp.current} of ${c.hp.max} HP" style="--hero:${escHtml(c.colour)}">
+      <span class="bar__face">${portraitImg(heroPortrait(c), { name: c.name, colour: c.colour })}</span>
+      <em>${c.hp.current}</em>
+    </button>`).join('');
+}
+barParty.addEventListener('click', (e) => {
+  const b = e.target.closest('[data-hero]');
+  if (!b) return;
+  // Players only open their own hero; the rest of the party is on the Party screen.
+  if (document.body.dataset.role === 'player') { showScreen('party'); return; }
+  showScreen('status');
+  statusScreen.showCharacter(b.dataset.hero);
+});
 let watching = null;
 
 // The character creator: players make their own hero when they first log in;
@@ -745,6 +782,7 @@ function everyone(what, amount) {
 // Redraws whatever shows a hero after a change made here.
 function heroChanged(id) {
   applyParty();
+  drawBar();
   statusScreen.refresh(id);
   combatScreen.refresh();
   combatView.refresh();
@@ -923,13 +961,10 @@ const roleMenu = document.getElementById('role-menu');
 
 function applyView() {
   const heroId = me.dm ? viewAs : me.heroId;
-  const hero = party.find((c) => c.id === heroId);
   document.body.dataset.role = heroId ? 'player' : 'dm';
-  // The badge shows whose view this is; for the DM it is also the view switcher.
-  roleChip.textContent = !me.dm ? hero.name : viewAs ? `Viewing as ${hero.name}` : 'Dungeon Master';
-  roleChip.style.setProperty('--badge', heroId ? hero.colour : '#3b2f22');
-  roleChip.classList.toggle('is-previewing', Boolean(viewAs));
-  roleChip.hidden = false;
+  // The bar shows whose view this is; for the DM, its "you" button is also the view switcher.
+  bar.hidden = false;
+  drawBar();
   statusScreen.setDm(me.dm);
   statusScreen.setPlayer(heroId);
   applyFog();
@@ -975,7 +1010,7 @@ roleMenu.addEventListener('click', async (e) => {
   document.body.dataset.fight = '';
   me = null;
   viewAs = null;
-  roleChip.hidden = true;
+  bar.hidden = true;
   delete document.body.dataset.role;
   revealed.clear();
   applyFog();
