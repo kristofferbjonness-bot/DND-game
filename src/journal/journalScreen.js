@@ -507,55 +507,105 @@ export function createJournalScreen(root, { entries, canEdit, mapPlaces, heroes 
     lore = (await loader()).LORE;
     renderList();
   }
-  const has = (kind, title) => entries.some((e) => kindOf(e) === kind && e.data.title === title);
-  const missingLore = () => (lore ? [
-    ...lore.places.filter((p) => !has('place', p.title)),
-    ...lore.notes.filter((n) => !entries.some((e) => kindOf(e) === 'placenote' && e.data.place === n.place)),
-    ...lore.people.filter((p) => !has('npc', p.title)),
-    ...(lore.items ?? []).filter((x) => !has('item', x.title)),
-  ].length : 0);
+  // What the lore file would change in the journal: a list of steps (add, update, remove).
+  // An entry is only updated or removed if it still looks the way the lore file left it
+  // (`was`), so edits made in the app are never overwritten.
+  const find = (kind, title) => entries.find((e) => kindOf(e) === kind && e.data.title === title);
+  const secretText = (about) => entries.find((e) => kindOf(e) === 'secret' && e.data.about === about)?.data.body ?? '';
+  function lorePlan() {
+    if (!lore) return [];
+    const steps = [];
+    const ids = {}; // lore place keys → journal ids (filled in as places are found or added)
+    const resolve = (ref) => ids[ref] ?? ref;
+    // One entry of `kind` from the lore file: `data` is what it should hold, `about` gives its secret's key.
+    const sync = (kind, l, data, about = (row) => row.id) => {
+      const current = find(kind, l.title) ?? (l.was?.title ? find(kind, l.was.title) : null);
+      if (!current) {
+        steps.push({ what: 'add', run: async () => {
+          const row = await put({ data: { ...data(), shown: false } });
+          if (l.secret) await putSecret(about(row), l.secret);
+          return row;
+        } });
+        return current;
+      }
+      const want = data();
+      const differs = Object.keys(want).some((k) => (current.data[k] ?? '') !== (want[k] ?? ''));
+      const untouched = current.data.body === (l.was?.body ?? l.body) && (!l.was?.title || current.data.title === l.was.title || current.data.title === l.title);
+      if (differs && l.was && untouched) {
+        steps.push({ what: 'update', run: async () => put({ id: current.id, data: { ...current.data, ...want } }) });
+      }
+      const sec = secretText(about(current));
+      if (l.secret && sec !== l.secret && (!sec || sec === l.was?.secret)) {
+        steps.push({ what: 'update', run: async () => putSecret(about(current), l.secret) });
+      }
+      return current;
+    };
+    for (const p of lore.places) {
+      const row = sync('place', p, () => ({ kind: 'place', title: p.title, place: resolve(p.place), body: p.body }));
+      if (row) ids[p.key] = row.id;
+      else steps.at(-1).key = p.key; // the add step records the new id
+    }
+    for (const n of lore.notes) {
+      const current = entries.find((e) => kindOf(e) === 'placenote' && e.data.place === n.place);
+      const about = `map:${n.place}`;
+      if (!current) {
+        steps.push({ what: 'add', run: async () => { await put({ data: { kind: 'placenote', place: n.place, body: n.body, shown: false } }); if (n.secret) await putSecret(about, n.secret); } });
+        continue;
+      }
+      if (n.was && current.data.body !== n.body && current.data.body === n.was.body) {
+        steps.push({ what: 'update', run: async () => put({ id: current.id, data: { ...current.data, body: n.body } }) });
+      }
+      const sec = secretText(about);
+      if (n.secret && sec !== n.secret && (!sec || sec === n.was?.secret)) steps.push({ what: 'update', run: async () => putSecret(about, n.secret) });
+    }
+    for (const p of lore.people) {
+      sync('npc', p, () => ({ kind: 'npc', title: p.title, role: p.role, place: resolve(p.place), attitude: p.attitude, status: p.status, body: p.body }));
+    }
+    for (const x of lore.items ?? []) {
+      sync('item', x, () => ({ kind: 'item', title: x.title, type: x.type, place: resolve(x.place ?? ''), body: x.body }));
+    }
+    for (const r of lore.removed ?? []) {
+      const current = find(r.kind, r.title);
+      if (current && (current.data.body ?? '') === (r.body ?? '')) {
+        steps.push({ what: 'remove', run: async () => {
+          await onDelete(current.id);
+          entries.splice(entries.indexOf(current), 1);
+          await putSecret(current.id, '');
+        } });
+      }
+    }
+    return steps;
+  }
+  const describePlan = (steps) => {
+    const n = (w) => steps.filter((x) => x.what === w).length;
+    return [n('add') && `add ${n('add')}`, n('update') && `update ${n('update')}`, n('remove') && `remove ${n('remove')}`].filter(Boolean).join(', ');
+  };
   function drawImport() {
-    const n = canEdit() ? missingLore() : 0;
-    importBtn.hidden = !n && !importing;
-    if (!importing) importBtn.textContent = `Import lore (${n})`;
+    const steps = canEdit() ? lorePlan() : [];
+    importBtn.hidden = !steps.length && !importing;
+    if (!importing) importBtn.textContent = `Update from lore (${steps.length})`;
   }
   importBtn.addEventListener('click', async () => {
-    if (importing || !confirm(`Add ${missingLore()} people, places, notes and items from your lore file to the journal? They start hidden from the players.`)) return;
+    const steps = lorePlan();
+    if (importing || !steps.length || !confirm(`From your lore file: ${describePlan(steps)} journal entries? New ones start hidden from the players. Anything you have edited in the app is left alone.`)) return;
     importing = true;
     let done = 0;
-    const step = () => { done++; importBtn.textContent = `Importing… ${done}`; };
     try {
-      const ids = {};
-      const resolve = (ref) => ids[ref] ?? ref;
-      for (const p of lore.places) {
-        const old = entries.find((e) => kindOf(e) === 'place' && e.data.title === p.title);
-        if (old) { ids[p.key] = old.id; continue; }
-        const row = await put({ data: { kind: 'place', title: p.title, place: resolve(p.place), body: p.body, shown: false } });
-        ids[p.key] = row.id;
-        if (p.secret) await putSecret(row.id, p.secret);
-        step();
+      // Places first, so people can point at them; the plan is worked out again after each
+      // round, since new places get their ids only once saved.
+      for (let round = 0; round < 300; round++) {
+        const now = lorePlan();
+        if (!now.length) break;
+        for (const st of now) {
+          await st.run();
+          done++;
+          importBtn.textContent = `Updating… ${done}`;
+          if (st.key) break; // a new place: work out the plan again with its id
+        }
       }
-      for (const n of lore.notes) {
-        if (entries.some((e) => kindOf(e) === 'placenote' && e.data.place === n.place)) continue;
-        await put({ data: { kind: 'placenote', place: n.place, body: n.body, shown: false } });
-        if (n.secret) await putSecret(`map:${n.place}`, n.secret);
-        step();
-      }
-      for (const p of lore.people) {
-        if (has('npc', p.title)) continue;
-        const row = await put({ data: { kind: 'npc', title: p.title, role: p.role, place: resolve(p.place), attitude: p.attitude, status: p.status, body: p.body, shown: false } });
-        if (p.secret) await putSecret(row.id, p.secret);
-        step();
-      }
-      for (const x of lore.items ?? []) {
-        if (has('item', x.title)) continue;
-        const row = await put({ data: { kind: 'item', title: x.title, type: x.type, holder: '', place: resolve(x.place ?? ''), body: x.body, shown: false } });
-        if (x.secret) await putSecret(row.id, x.secret);
-        step();
-      }
-      alert(`Imported ${done} entries. They are hidden from the players until you press "Show to players".`);
+      alert(`Done: ${done} changes. New entries are hidden from the players until you press "Show to players".`);
     } catch (err) {
-      alert(`The import stopped after ${done} entries: ${err.message}. Press Import lore again to add the rest.`);
+      alert(`The update stopped after ${done} changes: ${err.message}. Press the button again to finish.`);
     } finally {
       importing = false;
       render();

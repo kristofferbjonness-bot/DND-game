@@ -272,8 +272,11 @@ The original assets (hand-drawn world map, location art, character art, lore doc
   - The owner's lore (`DND Lore/`: DND world.docx, the slides and the campaign summary) was turned into
     `src/data/lore-import.local.js` (people, places, town notes and secrets). It is NOT in git and is only
     loaded on the dev server (`import.meta.env.DEV` + `import.meta.glob`), so DM secrets never reach the
-    public repo or the built app. The DM runs it once with "Import lore (N)" in the Journal; it skips
-    anything already there and adds everything hidden.
+    public repo or the built app. The DM presses "Update from lore (N)" in the Journal (dev server):
+    it adds what is missing (hidden), and updates or removes entries the lore file changed, but only
+    if they still match the old text (`was` / `removed` in the lore file), so edits made in the app
+    are never overwritten. When the owner updates DND world.docx: re-extract it (textutil), diff, and
+    edit lore-import.local.js with `was` for changed entries and `removed` for deleted ones.
   - Players see entries with `shown` (RLS) and only discovered map places. The DM writes, edits, ticks
     steps, completes, hides and deletes. Players get a toast for new entries.
   - Places of active visible quests get a 📜 on their map label (`questFor`, quests only).
