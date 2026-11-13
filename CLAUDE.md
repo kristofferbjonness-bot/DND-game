@@ -260,6 +260,11 @@ The original assets (hand-drawn world map, location art, character art, lore doc
   - Places = the world-map places this viewer knows (with their lore from locations.js) plus the DM's
     places. A place page lists the people met there, places inside it and its quests; people link to
     where they were met. Map place cards have "Read about it in the journal" (`openPlace`).
+  - Items (fourth bookmark): `item` rows `{ title, type (book/note/letter/map/object), holder (hero id or
+    '' = the party), place (where found), body (its text), shown }`. Hidden = not given yet; "Give to the
+    party" shows it, and players get a toast ("📖 You found: …"). The text reads like a book page
+    (`.jr-read`). Three vague lore texts about the greater lore (hymnal, letter, children's rhyme) are in
+    the private lore import.
   - DM secrets: `secret` rows `{ about: entry id or 'map:<place id>', body, shown: false }`, shown in a
     dashed red "DM only" box and edited in every form. Never shown, so RLS never sends them to players.
   - People are grouped by the town they belong to (`townOf`: a map place, or the town a smaller place is

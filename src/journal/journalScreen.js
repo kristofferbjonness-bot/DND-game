@@ -8,6 +8,8 @@
 //   npc        { title (name), role, place, attitude, status, body, shown }
 //   place      { title, place (the map place it is in, or ''), body, shown }    places the DM adds
 //   placenote  { place (a map place id), body, shown }                           notes on a map place
+//   item       { title, type, holder (hero id, or '' for the party), place (where found), body (its text), shown }
+//              lore books, notes, letters, maps and objects; shown = the party has been given it
 //   secret     { about (an entry id, or 'map:<place id>'), body, shown: false }   DM-only notes
 // Players see entries marked shown (RLS) and only map places they have discovered. Secrets are
 // never shown, so the database never sends them to players.
@@ -28,19 +30,25 @@ const SECTIONS = [
   { id: 'quests', label: 'Quests', icon: 'scroll', kind: 'quest', newLabel: 'New quest' },
   { id: 'people', label: 'People', icon: 'hero', kind: 'npc', newLabel: 'New person' },
   { id: 'places', label: 'Places', icon: 'pin', kind: 'place', newLabel: 'New place' },
+  { id: 'items', label: 'Items', icon: 'journal', kind: 'item', newLabel: 'New item' },
 ];
+const ITEM_TYPE = {
+  book: { label: 'Book', icon: 'journal' }, note: { label: 'Note', icon: 'scroll' }, letter: { label: 'Letter', icon: 'scroll' },
+  map: { label: 'Map', icon: 'map' }, object: { label: 'Object', icon: 'bag' },
+};
 const TIER_NAME = { continent: 'Continent', city: 'Town', local: 'Place', region: 'Land', water: 'Water' };
 
 // entries: the shared list of { id, data, created_at }.
 // canEdit(): true for the Dungeon Master (not previewing).
 // mapPlaces(): the world-map places this viewer may see: [{ id, name, subtitle, text, tier, secret }].
+// heroes(): the party [{ id, name }] for who holds an item.
 // onSave(entry) → saved row; onDelete(id); onShowPlace(mapPlaceId).
-export function createJournalScreen(root, { entries, canEdit, mapPlaces, onSave, onDelete, onShowPlace }) {
+export function createJournalScreen(root, { entries, canEdit, mapPlaces, heroes = () => [], onSave, onDelete, onShowPlace }) {
   root.innerHTML = `
     <div class="jr">
       <header class="jr__head">
         <h2 class="jr__title">Journal</h2>
-        <label class="jr__search">${icon('wis', 'inline')}<input type="search" placeholder="Search people, places and quests" aria-label="Search the journal" /></label>
+        <label class="jr__search">${icon('wis', 'inline')}<input type="search" placeholder="Search people, places, quests and items" aria-label="Search the journal" /></label>
         <button type="button" class="btn jr__import" hidden></button>
         <button type="button" class="btn btn--gold jr__new" hidden>${icon('plus')}<span></span></button>
       </header>
@@ -179,8 +187,28 @@ export function createJournalScreen(root, { entries, canEdit, mapPlaces, onSave,
     ].join('');
   }
 
-  const ITEMS = { quests: questItems, people: peopleItems, places: placeItems };
+  // Items: what the party has, and (for the DM) what they haven't been given yet.
+  const holderName = (id) => (id ? heroes().find((h) => h.id === id)?.name ?? 'Someone' : 'The party');
+  function itemItems() {
+    const its = all('item')
+      .filter((x) => matches(x.data.title, x.data.body, ITEM_TYPE[x.data.type]?.label))
+      .sort((a, b) => a.data.title.localeCompare(b.data.title));
+    const one = (x) => item('item', x.id, {
+      title: x.data.title,
+      sub: [ITEM_TYPE[x.data.type]?.label ?? 'Item', x.data.shown === false ? '' : esc(holderName(x.data.holder))].filter(Boolean).join(' · '),
+      mark: `<span class="jr-mark">${icon(ITEM_TYPE[x.data.type]?.icon ?? 'bag')}</span>`,
+      cls: x.data.shown === false ? ' is-hidden' : '',
+    });
+    const given = its.filter((x) => x.data.shown !== false), kept = its.filter((x) => x.data.shown === false);
+    return [
+      given.length ? `<p class="jr-group">${canEdit() ? 'Given to the party' : 'What we carry'}</p><ul>${given.map(one).join('')}</ul>` : '',
+      kept.length ? `<p class="jr-group">Not given yet</p><ul>${kept.map(one).join('')}</ul>` : '',
+    ].join('');
+  }
+
+  const ITEMS = { quests: questItems, people: peopleItems, places: placeItems, items: itemItems };
   const EMPTY = {
+    items: 'No books, notes or special things yet.',
     quests: 'No quests yet.',
     people: 'Nobody written down yet. People the party meets will appear here.',
     places: 'No places yet.',
@@ -191,6 +219,7 @@ export function createJournalScreen(root, { entries, canEdit, mapPlaces, onSave,
       quests: all('quest').length,
       people: all('npc').length,
       places: mapPlaces().length + all('place').length,
+      items: all('item').length,
     };
     tabsEl.innerHTML = SECTIONS.map((s) => `
       <button type="button" role="tab" class="jr-tab${s.id === section && !query ? ' is-on' : ''}" data-section="${s.id}">
@@ -217,7 +246,9 @@ export function createJournalScreen(root, { entries, canEdit, mapPlaces, onSave,
   const tools = (e, extra = '') => (canEdit() ? `
     <div class="jr-tools">
       ${extra}
-      <button type="button" data-do="shown">${icon(e.data.shown === false ? 'wis' : 'lock')}${e.data.shown === false ? 'Show to players' : 'Hide from players'}</button>
+      <button type="button" data-do="shown">${icon(e.data.shown === false ? 'wis' : 'lock')}${kindOf(e) === 'item'
+        ? (e.data.shown === false ? 'Give to the party' : 'Take it back')
+        : (e.data.shown === false ? 'Show to players' : 'Hide from players')}</button>
       <button type="button" data-do="edit">${icon('pen')}Edit</button>
       <button type="button" data-do="delete" class="jr-tools__delete">Delete</button>
     </div>` : '');
@@ -273,6 +304,18 @@ export function createJournalScreen(root, { entries, canEdit, mapPlaces, onSave,
       related('Places here', here.places, 'place', (x) => esc(x.data.title)),
       related('Quests', here.quests, 'quest', (x) => esc(x.data.title)),
     ].join('');
+  }
+
+  // An item: who has it, where it was found, and its text to read like a page of a book.
+  function itemPage(x) {
+    const d = x.data, t = ITEM_TYPE[d.type] ?? ITEM_TYPE.object;
+    return `
+      <p class="jr-kicker">${t.label}${d.shown === false ? ' · 🔒 not given to the party yet' : ` · carried by ${esc(holderName(d.holder))}`}</p>
+      <h3 class="jr-name">${esc(d.title)}</h3>
+      ${d.place ? `<p class="jr-meta">${placeLink(d.place, 'Found at ')}</p>` : ''}
+      ${d.body ? `<div class="jr-read jr-read--${esc(d.type ?? 'object')}">${d.body.split(/\n{2,}/).map((para) => `<p>${lines(para)}</p>`).join('')}</div>` : '<p class="jr-text is-empty">Nothing written in it.</p>'}
+      ${secretBox(x.id)}
+      ${tools(x)}`;
   }
 
   function placePage(p) {
@@ -357,6 +400,20 @@ export function createJournalScreen(root, { entries, canEdit, mapPlaces, onSave,
         <label class="field"><span>What the party knows about it</span><textarea class="field__input" name="body" rows="5" maxlength="2000">${esc(d.body)}</textarea></label>
         ${secretField(editing.id)}${shownBox(d)}${formEnd}
       </form>`;
+    if (kind === 'item') return `
+      <form class="jr-form" data-kind="item">
+        <h3 class="jr-name">${isNew ? 'New item' : 'Edit item'}</h3>
+        <div class="field-row">
+          <label class="field"><span>Name</span><input class="field__input" name="title" maxlength="80" required value="${esc(d.title)}" placeholder="e.g. A water-stained hymnal" /></label>
+          <label class="field"><span>Kind</span><select class="field__input" name="type">${Object.entries(ITEM_TYPE).map(([k, v]) => `<option value="${k}"${k === (d.type ?? 'book') ? ' selected' : ''}>${v.label}</option>`).join('')}</select></label>
+        </div>
+        <div class="field-row">
+          <label class="field"><span>Who has it</span><select class="field__input" name="holder"><option value="">The whole party</option>${heroes().map((h) => `<option value="${esc(h.id)}"${h.id === d.holder ? ' selected' : ''}>${esc(h.name)}</option>`).join('')}</select></label>
+          <label class="field"><span>Found at</span><select class="field__input" name="place">${placeOptions(d.place, 'Not saying')}</select></label>
+        </div>
+        <label class="field"><span>What is written in it (or what it is)</span><textarea class="field__input" name="body" rows="9" maxlength="6000">${esc(d.body)}</textarea></label>
+        ${secretField(editing.id)}${shownBox(d, 'The party has been given it')}${formEnd}
+      </form>`;
     return `
       <form class="jr-form" data-kind="placenote">
         <h3 class="jr-name">Notes on ${esc(mapPlace(d.place)?.name ?? 'this place')}</h3>
@@ -371,7 +428,7 @@ export function createJournalScreen(root, { entries, canEdit, mapPlaces, onSave,
     let html = '';
     if (open?.type === 'map') { const m = mapPlace(open.id); if (m) html = mapPage(m); } else if (open) {
       const e = byId(open.id);
-      if (e && visible(e)) html = { quest: questPage, npc: npcPage, place: placePage }[kindOf(e)]?.(e) ?? '';
+      if (e && visible(e)) html = { quest: questPage, npc: npcPage, place: placePage, item: itemPage }[kindOf(e)]?.(e) ?? '';
     }
     if (!html) {
       open = null;
@@ -391,7 +448,7 @@ export function createJournalScreen(root, { entries, canEdit, mapPlaces, onSave,
   function show(type, id) {
     open = { type, id };
     editing = null;
-    if (!query) section = type === 'quest' ? 'quests' : type === 'npc' ? 'people' : 'places';
+    if (!query) section = { quest: 'quests', npc: 'people', item: 'items' }[type] ?? 'places';
     render();
   }
 
@@ -455,6 +512,7 @@ export function createJournalScreen(root, { entries, canEdit, mapPlaces, onSave,
     ...lore.places.filter((p) => !has('place', p.title)),
     ...lore.notes.filter((n) => !entries.some((e) => kindOf(e) === 'placenote' && e.data.place === n.place)),
     ...lore.people.filter((p) => !has('npc', p.title)),
+    ...(lore.items ?? []).filter((x) => !has('item', x.title)),
   ].length : 0);
   function drawImport() {
     const n = canEdit() ? missingLore() : 0;
@@ -462,7 +520,7 @@ export function createJournalScreen(root, { entries, canEdit, mapPlaces, onSave,
     if (!importing) importBtn.textContent = `Import lore (${n})`;
   }
   importBtn.addEventListener('click', async () => {
-    if (importing || !confirm(`Add ${missingLore()} people, places and notes from your lore file to the journal? They start hidden from the players.`)) return;
+    if (importing || !confirm(`Add ${missingLore()} people, places, notes and items from your lore file to the journal? They start hidden from the players.`)) return;
     importing = true;
     let done = 0;
     const step = () => { done++; importBtn.textContent = `Importing… ${done}`; };
@@ -489,6 +547,12 @@ export function createJournalScreen(root, { entries, canEdit, mapPlaces, onSave,
         if (p.secret) await putSecret(row.id, p.secret);
         step();
       }
+      for (const x of lore.items ?? []) {
+        if (has('item', x.title)) continue;
+        const row = await put({ data: { kind: 'item', title: x.title, type: x.type, holder: '', place: resolve(x.place ?? ''), body: x.body, shown: false } });
+        if (x.secret) await putSecret(row.id, x.secret);
+        step();
+      }
       alert(`Imported ${done} entries. They are hidden from the players until you press "Show to players".`);
     } catch (err) {
       alert(`The import stopped after ${done} entries: ${err.message}. Press Import lore again to add the rest.`);
@@ -504,6 +568,7 @@ export function createJournalScreen(root, { entries, canEdit, mapPlaces, onSave,
       quest: { title: '', body: '', status: 'active', place: '', steps: [], shown: true },
       npc: { kind: 'npc', title: '', role: '', place: '', attitude: 'neutral', status: 'alive', body: '', shown: true },
       place: { kind: 'place', title: '', place: '', body: '', shown: true },
+      item: { kind: 'item', title: '', type: 'book', holder: '', place: '', body: '', shown: false },
     }[kind];
     editing = { data: blank };
     renderPage();
@@ -566,6 +631,8 @@ export function createJournalScreen(root, { entries, canEdit, mapPlaces, onSave,
       data = { kind, title: f.title.value.trim() || 'Someone', role: f.role.value.trim(), place: f.place.value, attitude: f.attitude.value, status: f.status.value, body: f.body.value.trim(), shown };
     } else if (kind === 'place') {
       data = { kind, title: f.title.value.trim() || 'A place', place: f.place.value, body: f.body.value.trim(), shown };
+    } else if (kind === 'item') {
+      data = { kind, title: f.title.value.trim() || 'Something', type: f.type.value, holder: f.holder.value, place: f.place.value, body: f.body.value, shown };
     } else {
       data = { kind, place: d.place, body: f.body.value.trim(), shown };
     }

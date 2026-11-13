@@ -1057,6 +1057,7 @@ const journalScreen = createJournalScreen(screens.journal, {
   entries: quests,
   canEdit: () => seesAll(),
   // The world-map places this viewer may read about (the DM sees all, hidden ones marked).
+  heroes: () => party.map((c) => ({ id: c.id, name: c.name })),
   mapPlaces: () => views.world.places
     .filter((p) => p.tier !== 'unnamed' && knows(p))
     .map((p) => ({ id: p.id, name: p.name, subtitle: p.subtitle, text: p.text, tier: p.tier, secret: seesAll() && isSecretable(p) && !revealed.has(p.id) })),
@@ -1080,8 +1081,9 @@ async function loadJournal() {
   watchingQuests ??= watchQuests((event, row) => {
     const i = quests.findIndex((q) => q.id === row.id);
     if (event === 'DELETE') { if (i >= 0) quests.splice(i, 1); } else if (i >= 0) quests[i] = row; else quests.push(row);
-    if (event === 'INSERT' && me && !seesAll() && row.data.shown !== false) {
-      const what = { npc: 'Someone new in your journal', place: 'A new place in your journal', placenote: 'New notes in your journal' }[row.data.kind] ?? '📜 New quest';
+    // Something new for a player: added, or revealed by the DM (it was not in their list before).
+    if (event !== 'DELETE' && i < 0 && me && !seesAll() && row.data.shown !== false) {
+      const what = { npc: 'Someone new in your journal', place: 'A new place in your journal', placenote: 'New notes in your journal', item: '📖 You found' }[row.data.kind] ?? '📜 New quest';
       toast(row.data.title ? `${what}: ${row.data.title}` : what);
     }
     journalScreen.refresh();
