@@ -84,6 +84,11 @@ The original assets (hand-drawn world map, location art, character art, lore doc
     Gear and Story.
   - Design rule: keep it calm. Use one card, plain rows with thin dividers, and no boxes inside
     boxes.
+- **Attribute points** (the owner's rule: 1 point per level up, no back-dating): stored as
+  `abilityPoints` on the sheet. Spent on the Hero screen's Abilities card with + / − and Save
+  (`spendAbilityPoints` in progress.js), by the player for their own hero or by the DM. Max score 20;
+  raising Con raises max HP by the modifier change × level. The DM's Manage panel can give or take a
+  point. A dot on the Hero tab shows unspent points; players get a toast.
 - Character data is in `src/data/characters.js` and stores only the basics. The 5e maths
   (modifiers, saves, skills with expertise, attacks, XP levels) is in `src/character/rules.js`.
   - Heroes: Rikart Hagenstorm (Fighter), Flame Slinger (Rogue) and Edbart Frostvarg (Ranger).
@@ -266,7 +271,7 @@ The original assets (hand-drawn world map, location art, character art, lore doc
       items away.
     - An "Everyone" row does party-wide short or long rests and XP.
     - The rules are in `src/character/progress.js`. Level up adds the average hit die + Con to
-      max HP, one hit die, and class features for the new level when `CLASSES` has them (only
+      max HP, one hit die, one attribute point (`abilityPoints`), and class features for the new level when `CLASSES` has them (only
       levels 1–2 so far). It does no ability score improvements or subclasses yet.
     - Every change is saved at once. Players get a toast for XP, levels, HP, items and coins
       (`tellPlayer` in main.js).

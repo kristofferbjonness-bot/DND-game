@@ -746,6 +746,9 @@ function drawBar() {
   const heroId = me.dm ? viewAs : me.heroId;
   const hero = party.find((c) => c.id === heroId);
   roleChip.classList.toggle('is-previewing', Boolean(viewAs));
+  // A dot on the Hero tab while attribute points wait to be spent (any hero, for the DM).
+  const waiting = hero ? hero.abilityPoints > 0 : party.some((c) => c.abilityPoints > 0);
+  document.querySelector('.topnav__tab[data-screen=status]').classList.toggle('has-points', Boolean(waiting));
   roleChip.innerHTML = hero ? `
     <span class="bar__face" style="--hero:${escHtml(hero.colour)}">${portraitImg(heroPortrait(hero), { name: hero.name, colour: hero.colour })}</span>
     <span class="bar__me-text">
@@ -824,7 +827,7 @@ async function removeHero(c) {
     toast(`${c.name} was deleted.`);
   } catch (err) { toast(`Could not delete: ${explain(err)}`); }
 }
-statusScreen = createStatusScreen(screens.status, party, { onChange: saveHero, onDelete: removeHero });
+statusScreen = createStatusScreen(screens.status, party, { onChange(c) { saveHero(c); drawBar(); applyParty(); }, onDelete: removeHero });
 combatScreen = createCombatScreen(screens.combat, { party, onHeroChange: saveHero, onPublic: publishFight, onSave: saveFightSoon });
 
 // The running fight is saved online (DM only, supabase/session.sql), so a reload
@@ -931,6 +934,7 @@ function applyRow(row) {
 function tellPlayer(before, after) {
   const news = [];
   if (after.level > before.level) news.push(`You reached level ${after.level}!`);
+  if ((after.abilityPoints ?? 0) > (before.abilityPoints ?? 0)) news.push('You have an attribute point to spend on your Hero page.');
   else if (after.xp > before.xp) news.push(`You gained ${after.xp - before.xp} XP.`);
   const hp = after.hp.current - before.hp.current;
   if (hp > 0 && after.level === before.level) news.push(`You regained ${hp} HP.`);

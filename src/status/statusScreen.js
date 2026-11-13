@@ -2,11 +2,11 @@
 // with their name, health and experience; the sheet on the right: key numbers,
 // the six abilities as cards, and tabs for Combat, Skills, Gear and Story.
 // The Dungeon Master flips between heroes with the arrows or the portraits.
-import { ABILITIES, SKILLS, derive, signed } from '../character/rules.js';
+import { ABILITIES, SKILLS, derive, signed, modifier } from '../character/rules.js';
 import { createCharacterViewer } from './viewer.js';
 import { ITEMS } from '../data/items.js';
 import { SLOTS, optionsFor, equip } from '../character/equipment.js';
-import { itemInfo } from '../character/progress.js';
+import { itemInfo, spendAbilityPoints, MAX_SCORE } from '../character/progress.js';
 import { icon } from '../ui/icons.js';
 import { heroPortrait, portraitImg } from '../ui/portraits.js';
 
@@ -37,21 +37,37 @@ const itemIcon = (it) => (it.kind === 'weapon' ? (it.props?.includes('ammunition
 
 const tile = (ic, label, value) => `<div class="tile">${icon(ic)}<b>${value}</b><span>${label}</span></div>`;
 
-function sheet(c, tab, editable, dm) {
+// `pending`: attribute points chosen but not saved yet ({ str: 1 }), shown on the cards.
+function sheet(c, tab, editable, dm, pending) {
   const d = derive(c);
+  const points = editable ? (c.abilityPoints ?? 0) : 0;
+  const chosen = Object.values(pending).reduce((n, v) => n + v, 0);
 
   const abilities = ABILITIES.map((a) => {
     const save = c.saves.includes(a.id);
+    const add = pending[a.id] ?? 0;
+    const score = c.abilities[a.id] + add;
     return `
-      <div class="abil abil--${a.id}${save ? ' is-save' : ''}">
+      <div class="abil abil--${a.id}${save ? ' is-save' : ''}${add ? ' is-raised' : ''}">
         <span class="abil__icon">${icon(a.id)}</span>
         <span class="abil__name"><span class="full">${a.name}</span><span class="short">${a.short}</span></span>
-        <b class="abil__mod">${signed(d.mod(a.id))}</b>
-        <span class="abil__score" title="Score">${c.abilities[a.id]}</span>
+        <b class="abil__mod">${signed(add ? modifier(score) : d.mod(a.id))}</b>
+        <span class="abil__score" title="Score">${score}</span>
         <small class="abil__use">${USE[a.id]}</small>
+        ${points ? `
+          <span class="abil__spend">
+            <button type="button" data-spend="${a.id}" data-d="-1" aria-label="One point less on ${a.name}"${add ? '' : ' disabled'}>−</button>
+            <button type="button" data-spend="${a.id}" data-d="1" aria-label="One point on ${a.name}"${chosen < points && score < MAX_SCORE ? '' : ' disabled'}>+</button>
+          </span>` : ''}
         <span class="abil__save" title="${save ? 'Trained in this saving throw' : 'Saving throw'}">${save ? '◆' : '◇'} Save ${signed(d.save(a.id))}</span>
       </div>`;
   }).join('');
+  // Points to spend: how many are left, and saving or undoing the choice.
+  const spendBar = points ? `
+    <div class="abils__points">
+      <span>${icon('xp', 'inline')} <b>${points - chosen}</b> ${points - chosen === 1 ? 'point' : 'points'} to spend${chosen ? '' : ': tap + on an attribute'}</span>
+      ${chosen ? '<button type="button" class="btn btn--small" data-points="reset">Undo</button><button type="button" class="btn btn--gold btn--small" data-points="save">Save</button>' : ''}
+    </div>` : '';
 
   const combat = `
     <h3 class="sheet__h">Attacks</h3>
@@ -150,6 +166,7 @@ function sheet(c, tab, editable, dm) {
     </div>
     <section class="sheet-card sheet-card--big sheet-card--abilities">
       <header class="sheet-card__head"><h3>Abilities</h3><small>Roll d20 + the big number</small></header>
+      ${spendBar}
       <div class="abils">${abilities}</div>
       <p class="abils__legend">◆ marks a proficient saving throw</p>
     </section>
@@ -180,6 +197,7 @@ export function createStatusScreen(root, characters, { onChange, onDelete } = {}
   const sheetEl = $('.status__sheet'), plate = $('.status__plate'), vitals = $('.status__vitals'), picker = $('.picker');
   const viewer = createCharacterViewer($('.status__canvas'));
   let index = 0, tab = 'combat', player = null, dm = false, shownId = null;
+  let pending = {}; // attribute points chosen but not saved yet
 
   // Players may change their own hero's gear; the Dungeon Master may change anyone's.
   const editable = (c) => !player || player === c.id;
@@ -213,7 +231,7 @@ export function createStatusScreen(root, characters, { onChange, onDelete } = {}
     const c = characters[index];
     const scroll = sheetEl.scrollTop;
     renderHero(c);
-    sheetEl.innerHTML = sheet(c, tab, editable(c), dm && !player);
+    sheetEl.innerHTML = sheet(c, tab, editable(c), dm && !player, pending);
     sheetEl.scrollTop = keepScroll ? scroll : 0;
   }
 
@@ -221,6 +239,7 @@ export function createStatusScreen(root, characters, { onChange, onDelete } = {}
     index = Math.max(0, characters.findIndex((c) => c.id === id));
     const c = characters[index];
     if (!c) return;
+    if (shownId !== c.id) pending = {};
     shownId = c.id;
     render();
     viewer.show(c);
@@ -250,6 +269,29 @@ export function createStatusScreen(root, characters, { onChange, onDelete } = {}
   }
 
   sheetEl.addEventListener('click', (e) => {
+    // Spending attribute points: choose with + and −, then save.
+    const spend = e.target.closest('[data-spend]');
+    if (spend) {
+      const k = spend.dataset.spend;
+      pending[k] = Math.max(0, (pending[k] ?? 0) + Number(spend.dataset.d));
+      if (!pending[k]) delete pending[k];
+      render({ keepScroll: true });
+      return;
+    }
+    const pts = e.target.closest('[data-points]');
+    if (pts) {
+      const c = characters[index];
+      if (pts.dataset.points === 'save') {
+        try {
+          const hp = spendAbilityPoints(c, pending);
+          pending = {};
+          onChange?.(c);
+          if (hp) renderHero(c);
+        } catch (err) { alert(err.message); }
+      } else pending = {};
+      render({ keepScroll: true });
+      return;
+    }
     if (e.target.closest('.sheet__delete')) {
       const c = characters[index];
       if (confirm(`Delete ${c.name} for good? Their player will have to pick or make a new hero.`)) onDelete?.(c);

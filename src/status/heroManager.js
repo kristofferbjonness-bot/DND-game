@@ -2,7 +2,7 @@
 // damage and healing, rests, experience and levelling up, loot and coins.
 // Every change is saved straight away, so the player sees it live.
 import { XP_FOR_LEVEL, derive } from '../character/rules.js';
-import { damage, heal, shortRest, longRest, readyToLevel, levelUp, giveItem, takeItem, itemInfo } from '../character/progress.js';
+import { damage, heal, shortRest, longRest, readyToLevel, levelUp, giveItem, takeItem, itemInfo, giveAbilityPoint } from '../character/progress.js';
 import { ITEMS } from '../data/items.js';
 
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
@@ -58,6 +58,15 @@ export function createHeroManager(root, { party, onSave }) {
             <button type="button" data-do="level" class="manage__btn${readyToLevel(c) ? ' manage__btn--ready' : ''}">Level up to ${c.level + 1}</button>
           </div>
           ${readyToLevel(c) ? `<p class="manage__note">${esc(c.name)} has enough XP for level ${c.level + 1}!</p>` : ''}
+        </section>
+
+        <section class="manage__sec">
+          <h3>Attribute points <small>${c.abilityPoints ? `${c.abilityPoints} not spent yet` : 'all spent'}</small></h3>
+          <div class="manage__row">
+            <button type="button" data-do="point" class="manage__btn manage__btn--good">Give an attribute point</button>
+            ${c.abilityPoints ? '<button type="button" data-do="unpoint" class="manage__btn">Take one back</button>' : ''}
+          </div>
+          <p class="manage__hint">They spend points on their Hero page. Every level up gives one.</p>
         </section>
 
         <section class="manage__sec">
@@ -134,8 +143,10 @@ export function createHeroManager(root, { party, onSave }) {
       case 'long': change(`${n} took a long rest: full HP and everything ready again.`, longRest); break;
       case 'xp': { const v = num('xp'); if (v) change(`${n} gained ${v} XP.`, (h) => { h.xp += v; }); break; }
       case 'level':
-        change((r) => `${n} is now level ${hero().level}: +${r.gain} max HP${r.features.length ? `, new: ${r.features.join(', ')}` : ''}.`, (h) => levelUp(h) ?? false);
+        change((r) => `${n} is now level ${hero().level}: +${r.gain} max HP, 1 attribute point${r.features.length ? `, new: ${r.features.join(', ')}` : ''}.`, (h) => levelUp(h) ?? false);
         break;
+      case 'point': change(`${n} got an attribute point to spend.`, (h) => giveAbilityPoint(h, 1)); break;
+      case 'unpoint': change(`Took an attribute point back from ${n}.`, (h) => giveAbilityPoint(h, -1)); break;
       case 'give': {
         const key = root.querySelector('[name=item]').value;
         const name = root.querySelector('[name=newname]').value.trim();

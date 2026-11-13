@@ -306,6 +306,10 @@ button, summary, .label { -webkit-tap-highlight-color: transparent; touch-action
 }
 .topnav__tab--map.is-open .topnav__chev { transform: rotate(-135deg); margin-top: 3px; }
 body:not([data-screen="map"]) .topnav__chev { display: none; }
+.topnav__tab.has-points::before {
+  content: ''; position: absolute; top: 4px; left: 8px; width: 9px; height: 9px; border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, #d0503e, #8a2e27); box-shadow: 0 0 0 1.5px #f1e2bf;
+}
 .topnav__tab--dm, .topnav__tab--dmonly { display: none; }
 body[data-role="dm"] .topnav__tab--dm, body[data-fight="on"] .topnav__tab--dm, body[data-role="dm"] .topnav__tab--dmonly { display: flex; }
 body[data-role="player"][data-fight="on"] .topnav__tab--dm { color: var(--paper-red); }
@@ -577,7 +581,7 @@ body.is-placing .hud-stack { opacity: 0.4; }
 /* The six abilities as carved cards. */
 .abils { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
 .abil {
-  position: relative; display: grid; grid-template-columns: auto 1fr auto; grid-template-areas: "icon name score" "mod mod mod" "use use use" "save save save";
+  position: relative; display: grid; grid-template-columns: auto 1fr auto; grid-template-areas: "icon name score" "mod mod mod" "use use use" "spend spend spend" "save save save";
   align-items: center; gap: 2px 8px; padding: 10px 12px 0; border-radius: 4px; overflow: hidden;
   background: linear-gradient(180deg, #342b3a, #282030);
   box-shadow: 0 0 0 1px #0c090e, inset 0 0 0 1px rgba(201, 164, 92, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.06);
@@ -765,6 +769,24 @@ body.is-placing .hud-stack { opacity: 0.4; }
 .sheet-card__head h3 { margin: 0; font: 700 16px var(--font-display); letter-spacing: 0.1em; text-transform: uppercase; color: var(--pp-ink); }
 .sheet-card__head small { font-size: 15px; color: var(--pp-soft); }
 .abils__legend { margin: 12px 0 2px; font-size: 14px; color: var(--pp-soft); }
+
+/* Attribute points to spend (after a level up). */
+.abils__points {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: -4px 0 12px; padding: 8px 12px;
+  border-radius: 6px; background: rgba(154, 107, 31, 0.14); border: 1.5px dashed var(--pp-bronze); color: var(--pp-ink); font-size: 15px;
+}
+.abils__points span { flex: 1; display: flex; align-items: center; gap: 4px; }
+.abils__points b { font: 700 20px var(--font-body); color: var(--pp-accent); }
+.status .abils__points .btn:not(.btn--gold) { color: var(--pp-ink); background: rgba(255, 250, 235, 0.75); border: 1.5px solid var(--pp-line-dark); box-shadow: none; }
+.abil__spend { grid-area: spend; display: flex; justify-content: center; gap: 10px; margin-top: 4px; }
+.abil__spend button {
+  width: 32px; height: 32px; border-radius: 50%; padding: 0; cursor: pointer; font: 700 19px/1 var(--font-body);
+  color: var(--pp-ink); background: rgba(255, 252, 240, 0.9); border: 1.5px solid var(--pp-line-dark);
+}
+.abil__spend button[data-d="1"]:not(:disabled) { color: #fff8ec; background: var(--pp-accent); border-color: #5e1d14; }
+.abil__spend button:disabled { opacity: 0.3; cursor: default; }
+.status .abil.is-raised { box-shadow: inset 0 0 0 2px var(--pp-accent); }
+.status .abil.is-raised .abil__mod, .status .abil.is-raised .abil__score { color: var(--pp-accent); }
 
 /* Inner boxes: lighter parchment with a thin hand-inked line. */
 .status .abil, .status .atk, .status .slot, .status .story {
@@ -1232,6 +1254,7 @@ input.is-bad { box-shadow: inset 0 0 0 2px #e2634e; }
 .manage__btn--bad { background: linear-gradient(180deg, #b84536, #8c2f25); }
 .manage__btn--ready { color: #2a1f16; background: linear-gradient(180deg, var(--gold-hi), var(--gold)); }
 .manage__note { margin: 0; font-size: 13px; color: var(--gold-hi); font-weight: 700; }
+.manage__hint { margin: 0; font-size: 13px; color: var(--bone-soft); }
 .manage__num { width: 80px; padding: 6px 8px; }
 .manage__select { flex: 1; min-width: 0; width: auto; padding: 6px 30px 6px 8px; font-size: 15px; }
 .manage__select--coin { flex: 0 0 auto; }

@@ -30,8 +30,9 @@ export function longRest(c) {
 export const MAX_LEVEL = 20;
 export const readyToLevel = (c) => c.level < MAX_LEVEL && c.xp >= XP_FOR_LEVEL[c.level];
 
-// One level up: average hit die + Con more HP, one more hit die, and the class's
-// new features when the app knows them (levels 1–2 for now). Returns what changed.
+// One level up: average hit die + Con more HP, one more hit die, one attribute
+// point to spend, and the class's new features when the app knows them (levels
+// 1–2 for now). Returns what changed.
 export function levelUp(c) {
   if (c.level >= MAX_LEVEL) return null;
   const die = Number(String(c.hitDice.die).replace('d', '')) || 8;
@@ -41,6 +42,7 @@ export function levelUp(c) {
   c.hp.max += gain;
   c.hp.current += gain;
   c.hitDice.total += 1;
+  c.abilityPoints = (c.abilityPoints ?? 0) + 1;
   const added = (CLASSES[c.class]?.features[c.level - 1] ?? [])
     .filter((f) => !c.features.some((have) => have.name === f.name))
     .map((f) => featureFor(f, c.abilities));
@@ -49,6 +51,32 @@ export function levelUp(c) {
 }
 
 // Gives an item from the catalogue, or something new by name (`{ name, note }`).
+// --- Attribute points: earned on level up, spent on the Hero screen ---------------------------
+export const MAX_SCORE = 20; // the most an attribute can reach
+
+export function giveAbilityPoint(c, n = 1) {
+  c.abilityPoints = Math.max(0, (c.abilityPoints ?? 0) + n);
+}
+
+// Spends points: `adds` is { str: 1, con: 1, ... }. Raising Constitution also
+// raises max HP by the change in its modifier for every level, as in D&D.
+// Returns the extra HP.
+export function spendAbilityPoints(c, adds) {
+  const total = Object.values(adds).reduce((n, v) => n + v, 0);
+  if (total <= 0) return 0;
+  if (total > (c.abilityPoints ?? 0)) throw new Error('Not enough points.');
+  for (const [k, v] of Object.entries(adds)) {
+    if (v < 0 || c.abilities[k] === undefined || c.abilities[k] + v > MAX_SCORE) throw new Error(`An attribute can go up to ${MAX_SCORE}.`);
+  }
+  const conBefore = modifier(c.abilities.con);
+  for (const [k, v] of Object.entries(adds)) c.abilities[k] += v;
+  const hp = (modifier(c.abilities.con) - conBefore) * c.level;
+  c.hp.max += hp;
+  c.hp.current += hp;
+  c.abilityPoints -= total;
+  return hp;
+}
+
 export function giveItem(c, { id, name, note, qty = 1 }) {
   if (id && ITEMS[id]) {
     const have = c.items.find((i) => i.id === id && !i.note && !note);
