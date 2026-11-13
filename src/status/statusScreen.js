@@ -148,12 +148,17 @@ function sheet(c, tab, editable, dm) {
       ${tile('speed', 'Speed', `${c.speed}<small>ft</small>`)}
       ${tile('prof', 'Proficiency', signed(d.prof))}
     </div>
-    <h3 class="sheet__h">Abilities <small>roll ${icon('dex', 'inline')} d20 + the big number</small></h3>
-    <div class="abils">${abilities}</div>
-    <nav class="tabs" role="tablist">
-      ${TABS.map((t) => `<button type="button" role="tab" class="tab${t.id === tab ? ' is-active' : ''}" data-tab="${t.id}">${icon(t.icon)}<span>${t.label}</span></button>`).join('')}
-    </nav>
-    ${TABS.map((t) => `<section class="tabpanel" data-panel="${t.id}"${t.id === tab ? '' : ' hidden'}>${panels[t.id]}</section>`).join('')}`;
+    <section class="sheet-card sheet-card--big sheet-card--abilities">
+      <header class="sheet-card__head"><h3>Abilities</h3><small>Roll d20 + the big number</small></header>
+      <div class="abils">${abilities}</div>
+      <p class="abils__legend">◆ marks a proficient saving throw</p>
+    </section>
+    <section class="sheet-card sheet-card--big sheet-card--details">
+      <nav class="tabs" role="tablist">
+        ${TABS.map((t) => `<button type="button" role="tab" class="tab${t.id === tab ? ' is-active' : ''}" data-tab="${t.id}">${icon(t.icon)}<span>${t.label}</span></button>`).join('')}
+      </nav>
+      ${TABS.map((t) => `<section class="tabpanel" data-panel="${t.id}"${t.id === tab ? '' : ' hidden'}>${panels[t.id]}</section>`).join('')}
+    </section>`;
 }
 
 // `onChange(character)` is called after the gear changes, to save it.
@@ -189,15 +194,13 @@ export function createStatusScreen(root, characters, { onChange, onDelete } = {}
         <p class="sheet__kicker">Level ${c.level} ${esc(c.class)} · ${esc(c.race)}</p>
       </div>`;
     vitals.innerHTML = `
-      <div class="hpbar${c.hp.current <= 0 ? ' is-down' : hp <= 0.3 ? ' is-low' : ''}" title="Hit points">
-        <span class="hpbar__icon">${icon('hp')}</span>
-        <span class="hpbar__track"><i style="width:${Math.round(hp * 100)}%"></i></span>
-        <b class="hpbar__num">${c.hp.current}<small>/${c.hp.max}</small></b>
+      <div class="vital vital--hp${c.hp.current <= 0 ? ' is-down' : hp <= 0.3 ? ' is-low' : ''}">
+        <div class="vital__row"><span>${icon('hp', 'inline')} Hit points</span><b>${c.hp.current}<small> / ${c.hp.max}</small></b></div>
+        <span class="vital__track"><i style="width:${Math.round(hp * 100)}%"></i></span>
       </div>
-      <div class="xpbar" title="${c.xp} XP${d.xp.next ? ` of ${d.xp.next} for level ${c.level + 1}` : ''}">
-        <span class="xpbar__icon">${icon('xp')}</span>
-        <span class="xpbar__track"><i style="width:${Math.round(d.xp.progress * 100)}%"></i></span>
-        <small>${c.xp}${d.xp.next ? `/${d.xp.next}` : ''} XP</small>
+      <div class="vital vital--xp" title="${d.xp.next ? `${d.xp.next - c.xp} XP to level ${c.level + 1}` : ''}">
+        <div class="vital__row"><span>${icon('xp', 'inline')} Experience</span><b>${c.xp}<small>${d.xp.next ? ` / ${d.xp.next}` : ''} XP</small></b></div>
+        <span class="vital__track"><i style="width:${Math.round(d.xp.progress * 100)}%"></i></span>
       </div>
       ${c.tagline ? `<p class="status__tagline">${esc(c.tagline)}</p>` : ''}`;
     picker.innerHTML = player ? '' : characters.map((h) => `

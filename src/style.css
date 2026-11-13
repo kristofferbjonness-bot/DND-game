@@ -724,6 +724,129 @@ body.is-placing .hud-stack { opacity: 0.4; }
   border: 1px solid rgba(240, 138, 114, 0.45); border-radius: 6px; padding: 7px 14px; cursor: pointer;
 }
 
+/* ---------- Hero (Status): painted parchment ----------
+   Every card is the painted parchment panel (public/art/ui/parchment-panel.webp) as a 9-slice
+   border image, so the torn edges stay at the edges and the middle stretches. Inner boxes are
+   lighter parchment with a thin inked line. All text is real text. No purple; the backdrop
+   behind the cards is transparent. See design/hero-sheet/README.md. */
+
+.status {
+  --pp-ink: #2b2118; --pp-soft: #5c4a36; --pp-line: #cdb38a; --pp-line-dark: #a8865a;
+  --pp-box: rgba(255, 250, 235, 0.55); --pp-accent: #8a2e1f; --pp-bronze: #9a6b1f;
+  background: transparent; color: var(--pp-ink);
+}
+.status__hero, .status .tile, .status .sheet-card {
+  border: 14px solid transparent; border-radius: 0; box-shadow: none; background: none;
+  border-image: url('/art/ui/parchment-panel.webp') 40 fill / 30px / 0 stretch;
+}
+.status .tile, .status .sheet-card { filter: drop-shadow(0 5px 8px rgba(20, 10, 0, 0.35)); }
+.status__hero { padding: 14px; }
+
+/* The hero card. */
+.status .sheet__name { font: 700 28px/1.1 var(--font-display); color: var(--pp-ink); text-shadow: none; }
+.status .sheet__kicker { font: 400 15px var(--font-body); letter-spacing: 0; text-transform: none; color: var(--pp-soft); }
+.status .sheet__kicker::first-letter { text-transform: uppercase; }
+.status__stage {
+  background: rgba(255, 250, 235, 0.45); border: 1px dashed #b79a6c; border-radius: 6px;
+  box-shadow: inset 0 0 30px rgba(140, 100, 40, 0.15);
+}
+.status .picker__arrow { background: #f4e9cf; color: var(--pp-ink); border: 1px solid #b79a6c; box-shadow: 0 2px 4px rgba(60, 40, 15, 0.25); }
+.status .picker__chip { opacity: 0.75; border-radius: 6px; background: var(--pp-box); box-shadow: 0 0 0 1px var(--pp-line); }
+.status .picker__chip.is-on { opacity: 1; box-shadow: 0 0 0 2px var(--pp-accent); transform: none; }
+.status__vitals { gap: 12px; padding: 14px 4px 2px; }
+.vital { display: grid; gap: 5px; }
+.vital__row { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.vital__row span { display: flex; align-items: center; gap: 5px; font: 700 12px var(--font-display); letter-spacing: 0.1em; text-transform: uppercase; color: var(--pp-soft); }
+.vital__row b { font: 700 21px var(--font-body); color: var(--pp-ink); }
+.vital__row b small { font-size: 15px; font-weight: 400; color: var(--pp-soft); }
+.vital--xp .vital__row b { font-size: 16px; }
+.vital__track { display: block; height: 12px; border-radius: 6px; overflow: hidden; background: rgba(90, 60, 25, 0.18); box-shadow: inset 0 1px 2px rgba(60, 40, 15, 0.3); }
+.vital--xp .vital__track { height: 8px; }
+.vital__track i { display: block; height: 100%; background: linear-gradient(180deg, #a83b28, var(--pp-accent)); transition: width 0.4s ease; }
+.vital--xp .vital__track i { background: linear-gradient(180deg, #b98a35, var(--pp-bronze)); }
+.vital.is-low .vital__track i { background: linear-gradient(180deg, #d79a35, #a8701c); }
+.status .status__tagline { font-size: 17px; color: var(--pp-soft); margin-top: 4px; }
+
+/* The four small cards on top. */
+.status .tiles { gap: 14px; }
+.status .tile { padding: 4px 8px; column-gap: 12px; border-width: 12px; border-image-width: 22px; }
+.status .tile .ic { width: 28px; height: 28px; }
+.status .tile b { font: 700 28px/1 var(--font-body); color: var(--pp-ink); }
+.status .tile b small { font-size: 15px; color: var(--pp-ink); }
+.status .tile span { font: 700 11px var(--font-display); letter-spacing: 0.08em; color: var(--pp-soft); margin-top: 3px; }
+
+/* The big cards: Abilities, and the details with the tabs. */
+.status .sheet-card { margin-top: 18px; padding: 10px 12px 8px; }
+.sheet-card__head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+.sheet-card__head h3 { margin: 0; font: 700 16px var(--font-display); letter-spacing: 0.1em; text-transform: uppercase; color: var(--pp-ink); }
+.sheet-card__head small { font-size: 15px; color: var(--pp-soft); }
+.abils__legend { margin: 12px 0 2px; font-size: 14px; color: var(--pp-soft); }
+
+/* Inner boxes: lighter parchment with a thin hand-inked line. */
+.status .abil, .status .atk, .status .slot, .status .story {
+  background: var(--pp-box); color: var(--pp-ink);
+  border: 1.5px solid var(--pp-line-dark); border-radius: 4px 6px 5px 4px;
+  box-shadow: inset 0 0 0 1px rgba(255, 252, 240, 0.4), 0 1px 0 rgba(255, 252, 240, 0.5);
+}
+.status .abils { gap: 14px; }
+.status .abil { padding: 12px 14px 0; gap: 4px 8px; }
+.status .abil__icon .ic { width: 22px; height: 22px; }
+.status .abil__name { font: 700 12px var(--font-display); letter-spacing: 0.1em; color: var(--pp-ink); }
+.status .abil__score { background: none; box-shadow: none; font: 600 14px var(--font-body); color: var(--pp-soft); }
+.status .abil__mod { font: 700 40px/1.1 var(--font-body); color: var(--pp-ink); text-shadow: none; }
+.status .abil__use { font-size: 14px; color: var(--pp-soft); }
+.status .abil__save { margin: 10px -14px 0; padding: 7px 0; font: 400 14px var(--font-body); letter-spacing: 0; text-transform: none; color: var(--pp-soft); background: none; border-top: 1px solid var(--pp-line); }
+.status .abil.is-save .abil__save { font-weight: 700; color: var(--pp-ink); background: rgba(150, 110, 50, 0.13); }
+
+/* Tabs: inked capitals, the open one underlined in red. */
+.status .tabs { margin: 0 0 4px; border-bottom: 1px solid var(--pp-line); justify-content: flex-start; gap: 6px; }
+.status .tab { flex: 0 1 auto; padding: 8px 12px 10px; font: 700 14px var(--font-display); letter-spacing: 0.08em; color: var(--pp-soft); }
+.status .tab .ic { width: 18px; height: 18px; }
+.status .tab:hover { color: var(--pp-ink); }
+.status .tab.is-active { color: var(--pp-accent); }
+.status .tab.is-active::after { left: 0; right: 0; height: 3px; background: var(--pp-accent); }
+.status .sheet__h { color: var(--pp-ink); font-size: 13px; }
+.status .sheet__h::after { background: linear-gradient(90deg, var(--pp-line), transparent); }
+.status .sheet__hint, .status .sheet__h small { color: var(--pp-soft); }
+
+/* Inside the tabs. */
+.status .atk { padding: 12px 16px; }
+.status .atk__main b { font: 700 18px var(--font-body); color: var(--pp-ink); }
+.status .atk__main small { font-size: 15px; color: var(--pp-soft); }
+.status .atk__num small { font: 700 11px var(--font-display); color: var(--pp-soft); }
+.status .atk__num b { font: 700 24px var(--font-body); color: var(--pp-accent); }
+.status .atk__num--dmg b { color: var(--pp-ink); }
+.status .feat { border-bottom-color: rgba(168, 134, 90, 0.35); }
+.status .feat__main b { font-size: 17px; color: var(--pp-ink); }
+.status .feat__main small { font-size: 15px; color: var(--pp-soft); }
+.status .uses i { border-color: var(--pp-accent); }
+.status .uses i.is-on { background: var(--pp-accent); }
+.status .uses small { color: var(--pp-soft); }
+.status .skill { color: var(--pp-soft); border-bottom-color: rgba(168, 134, 90, 0.3); }
+.status .skill.is-prof { color: var(--pp-ink); font-weight: 700; }
+.status .skill span small { color: #8a7458; }
+.status .skill__mod { color: var(--pp-soft); }
+.status .skill.is-prof .skill__mod, .status .mark--on, .status .skill.is-prof .mark { color: var(--pp-accent); }
+.status .mark--star, .status .skill.is-expert .mark { color: var(--pp-bronze); }
+.status .mark { color: #a8956f; }
+.status .tiles--small .tile { border-width: 10px; border-image-width: 22px; }
+.status .slot__label { color: var(--pp-soft); }
+.status .slot__select {
+  color: var(--pp-ink); background-color: rgba(255, 252, 240, 0.8); border: 1px solid var(--pp-line-dark); box-shadow: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%235c4a36' stroke-width='2'/%3E%3C/svg%3E");
+}
+.status .slot__select:disabled { color: var(--pp-soft); }
+.status .pack__item { border-bottom-color: rgba(168, 134, 90, 0.3); }
+.status .pack__main b { color: var(--pp-ink); }
+.status .pack__main small, .status .pack__qty { color: var(--pp-soft); }
+.status .pack__tag { color: var(--pp-accent); }
+.status .coin { background: var(--pp-box); box-shadow: inset 0 0 0 1px var(--pp-line-dark); }
+.status .coin b { color: var(--pp-ink); }
+.status .coin small { color: var(--pp-soft); }
+.status .story { box-shadow: none; background: var(--pp-box); }
+.status .story dt { color: var(--pp-accent); }
+.status .sheet__delete { color: var(--pp-accent); border-color: rgba(138, 46, 31, 0.5); }
+
 /* ---------- Party ---------- */
 
 .party { overflow-y: auto; }
@@ -1586,6 +1709,25 @@ input.is-bad { box-shadow: inset 0 0 0 2px #e2634e; }
   .slot { grid-template-columns: auto 70px 1fr; gap: 8px; }
   .story { grid-template-columns: 1fr; gap: 0; padding: 14px 16px; }
   .story dd { margin-bottom: 10px; }
+  .status .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .status .tile { grid-template-columns: auto 1fr; justify-items: start; text-align: left; padding: 2px 6px; }
+  .status .tile .ic { grid-row: span 2; width: 24px; height: 24px; }
+  .status .tile b { font-size: 24px; }
+  .status .tile span { font-size: 10px; }
+  .status .sheet-card { margin-top: 12px; padding: 8px 8px 6px; }
+  .status .sheet-card__head small { font-size: 13px; }
+  .status .abils { gap: 8px; }
+  .status .abil { padding: 8px 8px 0; gap: 2px 4px; }
+  .status .abil__name { font-size: 11px; letter-spacing: 0.02em; overflow: visible; }
+  .status .abil__score { min-width: 0; }
+  .status .abil__mod { font-size: 32px; }
+  .status .abil__use { font-size: 12px; }
+  .status .abil__save { margin: 6px -8px 0; font-size: 12px; padding: 5px 0; }
+  .status .tab { padding: 8px 6px 10px; font-size: 12px; letter-spacing: 0.04em; }
+  .status .tab .ic { display: none; }
+  .status .atk { padding: 10px; }
+  .status .atk__num b { font-size: 19px; }
+  .status .sheet__name { font-size: 22px; }
 
   /* Party */
   .party__item { flex-direction: column; gap: 0; }
