@@ -725,7 +725,7 @@ body.is-placing .hud-stack { opacity: 0.4; }
 }
 
 /* ---------- Hero (Status): painted parchment ----------
-   Every card is the painted parchment panel (public/art/ui/parchment-panel.webp) as a 9-slice
+   Every card is one of the painted paper sheets (public/art/ui/paper/) as a 9-slice
    border image, so the torn edges stay at the edges and the middle stretches. Inner boxes are
    lighter parchment with a thin inked line. All text is real text. No purple; the backdrop
    behind the cards is transparent. See design/hero-sheet/README.md. */
@@ -737,7 +737,7 @@ body.is-placing .hud-stack { opacity: 0.4; }
 }
 .status__hero, .status .tile, .status .sheet-card {
   border: 14px solid transparent; border-radius: 0; box-shadow: none; background: none;
-  border-image: url('/art/ui/parchment-panel.webp') 40 fill / 30px / 0 stretch;
+  border-image: url('/art/ui/paper/wide-sheet.webp') 26 fill / 22px / 0 stretch;
 }
 .status .tile, .status .sheet-card { filter: drop-shadow(0 5px 8px rgba(20, 10, 0, 0.35)); }
 .status__hero { padding: 14px; }
@@ -749,17 +749,6 @@ body.is-placing .hud-stack { opacity: 0.4; }
 }
 .status .tile { border-width: 12px; border-image: url('/art/ui/paper/wide-sheet.webp') 26 fill / 20px / 0 stretch; }
 .status .sheet-card { position: relative; }
-
-/* Bronze corners on the big cards (the four directions are separate files). */
-.status__hero::after, .status .sheet-card--big::after {
-  content: ''; position: absolute; inset: -14px; pointer-events: none; z-index: 2;
-  background:
-    url('/art/ui/corner-tl.webp') top left / 58px auto no-repeat,
-    url('/art/ui/corner-tr.webp') top right / 58px auto no-repeat,
-    url('/art/ui/corner-bl.webp') bottom left / 58px auto no-repeat,
-    url('/art/ui/corner-br.webp') bottom right / 58px auto no-repeat;
-}
-.status__hero::after { inset: -22px; }
 
 /* The level number on a red wax seal, next to the name. */
 .status .lvl { width: 58px; height: 58px; margin: -6px 2px -6px -4px; }
@@ -1530,13 +1519,21 @@ input.is-bad { box-shadow: inset 0 0 0 2px #e2634e; }
 .party .screen-head, .journal .screen-head, .bestiary .screen-head,
 .party__all, .party__card, .quest, .quest-form, .bestiary__window, .bestiary__gen, .statblock {
   border: 14px solid transparent; border-radius: 0; background: none; box-shadow: none; color: var(--pp-ink);
-  border-image: url('/art/ui/parchment-panel.webp') 40 fill / 30px / 0 stretch;
+  border-image: url('/art/ui/paper/wide-sheet.webp') 26 fill / 22px / 0 stretch;
+}
+/* Which sheet for which box: special panels framed, tall ones tall paper, popups notes. */
+.quest--big, .bestiary__window { border-width: 22px; border-image: url('/art/ui/paper/framed-sheet.webp') 44 fill / 40px / 0 stretch; }
+.quests--past .quest, .quest-form, .bestiary__gen { border-image: url('/art/ui/paper/note-tall.webp') 24 fill / 22px / 0 stretch; }
+.statblock { border-image: url('/art/ui/paper/ledger-sheet.webp') 30 fill / 24px / 0 stretch; }
+/* Titles are rolled-scroll banners: the rolls at both ends, the paper stretched between. */
+.party .screen-head, .journal .screen-head, .bestiary .screen-head {
+  border-width: 10px 34px 12px; border-image: url('/art/ui/paper/rolled-scroll.webp') 30 46 34 46 fill / 12px 34px 14px 34px / 0 stretch;
 }
 .party .screen-head, .journal .screen-head, .bestiary .screen-head, .party__all, .party__card, .quest, .statblock {
   filter: drop-shadow(0 5px 8px rgba(20, 10, 0, 0.35));
 }
 /* Titles on a strip of parchment, so they read over the map. */
-.party .screen-head, .journal .screen-head, .bestiary .screen-head { padding: 0 6px; border-width: 10px; border-image-width: 24px; }
+.party .screen-head, .journal .screen-head, .bestiary .screen-head { padding: 0 4px; }
 :is(.party, .journal, .bestiary) .screen-title { font: 700 24px/1.2 var(--font-display); letter-spacing: 0.04em; color: var(--pp-ink); text-shadow: none; }
 :is(.party, .journal, .bestiary) .sheet__h { color: var(--pp-ink); }
 :is(.party, .journal, .bestiary) .sheet__h::after { background: linear-gradient(90deg, var(--pp-line), transparent); }
@@ -1573,7 +1570,7 @@ input.is-bad { box-shadow: inset 0 0 0 2px #e2634e; }
 .party .hpbar__num { font: 700 21px var(--font-body); color: var(--pp-ink); }
 .party .hpbar__num small { color: var(--pp-soft); font-size: 15px; }
 .party__manage {
-  border: 12px solid transparent !important; border-image: url('/art/ui/parchment-panel.webp') 40 fill / 26px / 0 stretch !important;
+  border: 10px solid transparent !important; border-image: url('/art/ui/paper/small-square.webp') 18 fill / 16px / 0 stretch !important;
   background: none !important; color: var(--pp-ink) !important; padding: 0 6px !important;
   filter: drop-shadow(0 5px 8px rgba(20, 10, 0, 0.35));
 }
@@ -1852,7 +1849,6 @@ input.is-bad { box-shadow: inset 0 0 0 2px #e2634e; }
   .status .tile b { font-size: 24px; }
   .status .tile span { font-size: 10px; }
   .status .sheet-card { margin-top: 12px; padding: 8px 8px 6px; }
-  .status__hero::after, .status .sheet-card--big::after { background-size: 40px auto; }
   .status .sheet-card__head small { font-size: 13px; }
   .status .abils { gap: 8px; }
   .status .abil { padding: 8px 8px 0; gap: 2px 4px; }
