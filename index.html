@@ -25,6 +25,23 @@
       <button type="button" class="topnav__tab" data-screen="party">Party</button>
     </nav>
 
+    <button id="role" type="button" class="role-chip" hidden title="Change who you are"></button>
+
+    <section id="start" class="start" aria-label="Choose how to play">
+      <div class="start__half start__half--dm"><div class="start__inner">
+        <p class="start__kicker">Run the world</p>
+        <h1 class="start__title">Dungeon Master</h1>
+        <p class="start__text">See every hero, the whole map and everything behind the curtain.</p>
+        <button type="button" class="start__dm" data-role="dm">Log in as Dungeon Master</button>
+      </div></div>
+      <div class="start__half start__half--player"><div class="start__inner">
+        <p class="start__kicker">Join the party</p>
+        <h1 class="start__title">Player</h1>
+        <p class="start__text">Who are you playing?</p>
+        <ul class="start__heroes"></ul>
+      </div></div>
+    </section>
+
     <main id="status" class="screen status" hidden></main>
     <main id="party" class="screen party" hidden></main>
 

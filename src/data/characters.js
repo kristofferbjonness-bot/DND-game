@@ -17,6 +17,7 @@ export const CHARACTERS = [
     background: 'Disciple of Hrimnir',
     alignment: 'Lawful Neutral', // PLACEHOLDER
     model: 'rikart',
+    colour: '#3d4b7a', // badge colour on the start screen
 
     // PLACEHOLDER scores (standard array + human bonus).
     abilities: { str: 16, dex: 15, con: 15, int: 11, wis: 13, cha: 9 },
@@ -73,6 +74,7 @@ export const CHARACTERS = [
     background: 'Wanderer of the southern isles',
     alignment: 'Chaotic Good', // PLACEHOLDER
     model: 'flame-slinger',
+    colour: '#b8402f', // badge colour on the start screen
 
     abilities: { str: 10, dex: 17, con: 13, int: 8, wis: 13, cha: 14 }, // PLACEHOLDER
     saves: ['dex', 'int'],
@@ -131,6 +133,7 @@ export const CHARACTERS = [
     background: 'Outlander',
     alignment: 'Neutral Good', // PLACEHOLDER
     model: 'edbart',
+    colour: '#6f7882', // badge colour on the start screen
 
     abilities: { str: 13, dex: 16, con: 14, int: 11, wis: 15, cha: 9 }, // PLACEHOLDER
     saves: ['str', 'dex'],

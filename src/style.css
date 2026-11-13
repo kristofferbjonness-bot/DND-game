@@ -485,3 +485,87 @@ body:not([data-screen="map"]) .labels { display: none; }
   .party__title { font-size: 20px; margin-bottom: 8px; }
   .party__card { padding: 10px 16px; gap: 14px; }
 }
+
+/* ---------- Start: Dungeon Master | Player ---------- */
+
+.start {
+  position: fixed; inset: 0; z-index: 8;
+  display: grid; grid-template-columns: 1fr 1fr;
+}
+.start[hidden] { display: none; }
+.start__half {
+  display: flex; flex-direction: column; justify-content: center; align-items: center;
+  padding: max(24px, var(--safe-t)) 48px max(24px, var(--safe-b));
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+}
+.start__half--dm {
+  padding-left: max(48px, var(--safe-l));
+  background: linear-gradient(160deg, rgba(36, 30, 40, 0.92), rgba(52, 40, 46, 0.88));
+  color: #f3e9d6;
+}
+.start__half--player {
+  padding-right: max(48px, var(--safe-r));
+  background: linear-gradient(160deg, rgba(246, 238, 219, 0.92), rgba(240, 222, 196, 0.9));
+}
+.start__inner { width: min(100%, 420px); display: flex; flex-direction: column; gap: 6px; }
+.start__kicker { margin: 0; font-size: 13px; text-transform: uppercase; letter-spacing: 0.16em; opacity: 0.7; }
+.start__title { margin: 0; font: 700 40px/1.1 var(--font-display); letter-spacing: 0.03em; }
+.start__text { margin: 4px 0 20px; font-size: 17px; opacity: 0.8; max-width: 26em; }
+.start__dm {
+  align-self: flex-start;
+  font: 700 16px var(--font-display); letter-spacing: 0.05em;
+  color: #2a2228; background: #e8c77a; border: 0; border-radius: 999px;
+  padding: 13px 26px; cursor: pointer; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+}
+.start__dm:hover { background: #f1d48e; }
+
+.start__heroes { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; max-width: 420px; }
+.hero-pick {
+  width: 100%; display: flex; align-items: center; gap: 14px;
+  font: inherit; color: var(--ink); text-align: left; cursor: pointer;
+  background: rgba(255, 252, 245, 0.85); border: 0; border-radius: 16px;
+  box-shadow: 0 4px 14px rgba(60, 40, 20, 0.1); padding: 10px 16px 10px 10px;
+}
+.hero-pick:hover { background: #fff; }
+.hero-pick__badge {
+  width: 44px; height: 44px; border-radius: 12px; flex-shrink: 0;
+  display: grid; place-items: center;
+  font: 700 20px var(--font-display); color: #fff8ec;
+}
+.hero-pick__who { flex: 1; display: flex; flex-direction: column; }
+.hero-pick__who b { font: 700 17px var(--font-display); }
+.hero-pick__who small { font-size: 13px; color: var(--ink-soft); }
+.hero-pick__go { font: 700 22px var(--font-display); color: var(--ink-soft); }
+
+/* Who you are, top right; tap to change. */
+.role-chip {
+  position: fixed; z-index: 6;
+  top: max(16px, var(--safe-t)); right: max(16px, var(--safe-r));
+  display: flex; align-items: center; gap: 8px;
+  font: 700 13px var(--font-display); letter-spacing: 0.04em; color: var(--ink);
+  background: rgba(246, 238, 219, 0.94); border: 1.5px solid var(--parchment-edge); border-radius: 999px;
+  box-shadow: var(--shadow); padding: 8px 14px 8px 8px; cursor: pointer;
+}
+.role-chip::before { content: ''; width: 16px; height: 16px; border-radius: 5px; background: var(--badge, var(--ink)); }
+.role-chip[hidden] { display: none; }
+body[data-screen="map"] .panel { top: 70px; }
+
+/* A player sees only their own hero on Status. */
+.status.is-locked .picker__arrow { visibility: hidden; }
+
+@media (max-height: 500px) and (orientation: landscape) {
+  .start__half { padding: 20px 28px; }
+  .start__inner { gap: 2px; }
+  .start__half--dm { padding-left: max(28px, var(--safe-l)); }
+  .start__half--player { padding-right: max(28px, var(--safe-r)); }
+  .start__title { font-size: 28px; }
+  .start__text { font-size: 15px; margin-bottom: 12px; }
+  .start__kicker { font-size: 11px; }
+  .start__heroes { gap: 6px; }
+  .hero-pick { padding: 6px 12px 6px 6px; border-radius: 12px; }
+  .hero-pick__badge { width: 34px; height: 34px; font-size: 16px; border-radius: 9px; }
+  .hero-pick__who b { font-size: 15px; }
+  .hero-pick__who small { font-size: 12px; }
+  .role-chip { top: 8px; right: max(10px, var(--safe-r)); padding: 6px 12px 6px 6px; font-size: 12px; }
+  body[data-screen="map"] .panel { top: 54px; }
+}

@@ -43,6 +43,13 @@ The original assets (hand-drawn world map, location art, character art, lore doc
 
 ## Screens
 
+- **Start screen** (shown every time the app opens): split in two.
+  - Left: "Log in as Dungeon Master". Right: "Player", with a list of heroes to pick.
+  - Players land on Status locked to their own hero (the ‹ › arrows are hidden). The DM lands on
+    the map and can flip through every hero.
+  - The role chip at the top right shows who you are; tapping it returns to the start screen.
+  - There are no real accounts or passwords yet. That comes with Supabase (roadmap step 3).
+
 - The top nav has three screens: **Map · Status · Party**. The map only renders while it is showing.
 - **Status** (`src/status/statusScreen.js`) has the character sheet on the left and a 3D figure
   on the right, with ‹ › arrows to switch hero.

@@ -142,6 +142,12 @@ export function createStatusScreen(root, characters) {
     showCharacter(characters[next].id);
   });
 
+  // A player only sees their own hero here; the Dungeon Master can flip through everyone.
+  function setPlayer(id) {
+    root.classList.toggle('is-locked', Boolean(id));
+    showCharacter(id ?? characters[index].id);
+  }
+
   showCharacter(characters[0].id);
-  return { start: () => viewer.start(), stop: () => viewer.stop(), showCharacter };
+  return { start: () => viewer.start(), stop: () => viewer.stop(), showCharacter, setPlayer };
 }

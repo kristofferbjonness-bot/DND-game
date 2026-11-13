@@ -484,6 +484,46 @@ document.querySelector('.topnav').addEventListener('click', (e) => {
 });
 document.body.dataset.screen = 'map';
 
+// --- Start: log in as Dungeon Master or as a player's hero ------------------------------------
+// Shown every time the app opens. The choice decides what Status shows: a player
+// gets their own hero, the Dungeon Master can flip through the whole party.
+const start = document.getElementById('start');
+const roleChip = document.getElementById('role');
+let role = null; // { kind: 'dm' } or { kind: 'player', id }
+
+start.querySelector('.start__heroes').innerHTML = CHARACTERS.map((c) => `
+  <li>
+    <button type="button" class="hero-pick" data-id="${c.id}">
+      <span class="hero-pick__badge" style="background:${c.colour}">${c.name[0]}</span>
+      <span class="hero-pick__who"><b>${c.name}</b><small>Level ${c.level} ${c.class} · ${c.race}</small></span>
+      <span class="hero-pick__go" aria-hidden="true">›</span>
+    </button>
+  </li>`).join('');
+
+function logIn(next) {
+  role = next;
+  document.body.dataset.role = role.kind;
+  start.hidden = true;
+  const hero = CHARACTERS.find((c) => c.id === role.id);
+  roleChip.textContent = role.kind === 'dm' ? 'Dungeon Master' : hero.name;
+  roleChip.style.setProperty('--badge', hero?.colour ?? '#3b2f22');
+  roleChip.hidden = false;
+  statusScreen ??= createStatusScreen(screens.status, CHARACTERS);
+  statusScreen.setPlayer(role.kind === 'player' ? role.id : null);
+  showScreen(role.kind === 'player' ? 'status' : 'map');
+}
+
+start.addEventListener('click', (e) => {
+  if (e.target.closest('.start__dm')) logIn({ kind: 'dm' });
+  const pick = e.target.closest('.hero-pick');
+  if (pick) logIn({ kind: 'player', id: pick.dataset.id });
+});
+roleChip.addEventListener('click', () => {
+  start.hidden = false;
+  roleChip.hidden = true;
+  showScreen('map');
+});
+
 // --- Loop ------------------------------------------------------------------------------------------
 const clock = new THREE.Clock();
 let frame = 0;
