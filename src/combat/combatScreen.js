@@ -16,7 +16,8 @@ const plus = (n) => (n ? ` ${n > 0 ? '+' : '−'} ${Math.abs(n)}` : '');
 // whose HP changed, so the player sees it on their own sheet.
 // `onPublic(state)` receives what players may see, after every change (see publicState).
 // `onSave(encounter | null)` keeps the running fight safe online (null when it ends).
-export function createCombatScreen(root, { party, onHeroChange, onPublic, onSave }) {
+// `onBegin(types)` is told which Bestiary creatures are in a fight when it begins.
+export function createCombatScreen(root, { party, onHeroChange, onPublic, onSave, onBegin }) {
   root.innerHTML = `
     <div class="combat__setup">
       <div class="combat__col">
@@ -234,6 +235,7 @@ export function createCombatScreen(root, { party, onHeroChange, onPublic, onSave
     });
     encounter.turn = 0;
     encounter.round = 1;
+    onBegin?.(encounter.enemies.map((e) => e.type));
     showStep('battle');
     scene.setFighters(heroesInFight(), encounter.enemies);
     skipDowned();

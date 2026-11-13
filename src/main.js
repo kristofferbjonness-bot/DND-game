@@ -22,7 +22,7 @@ import { renderParty } from './status/partyScreen.js';
 import { createCombatScreen } from './combat/combatScreen.js';
 import { createCombatView } from './combat/combatView.js';
 import { createBestiaryScreen } from './bestiary/bestiaryScreen.js';
-import { addMonster, removeMonster } from './data/monsters.js';
+import { MONSTERS, addMonster, removeMonster } from './data/monsters.js';
 import { registerRecipe } from './character/model.js';
 import { CHARACTERS as STARTING_HEROES } from './data/characters.js';
 import { createStartScreen } from './start/startScreen.js';
@@ -828,7 +828,11 @@ async function removeHero(c) {
   } catch (err) { toast(`Could not delete: ${explain(err)}`); }
 }
 statusScreen = createStatusScreen(screens.status, party, { onChange(c) { saveHero(c); drawBar(); applyParty(); }, onDelete: removeHero });
-combatScreen = createCombatScreen(screens.combat, { party, onHeroChange: saveHero, onPublic: publishFight, onSave: saveFightSoon });
+combatScreen = createCombatScreen(screens.combat, {
+  party, onHeroChange: saveHero, onPublic: publishFight, onSave: saveFightSoon,
+  // The party has now met these creatures: they go into everyone's journal.
+  onBegin: (types) => journalScreen.meetCreatures(types).catch((err) => console.warn('Could not note the creatures:', err.message)),
+});
 
 // The running fight is saved online (DM only, supabase/session.sql), so a reload
 // or a closed app picks it up again where it was.
@@ -869,6 +873,7 @@ async function loadBestiary() {
     if (event === 'DELETE') removeMonster(row.id); else useMonster(row);
     bestiaryScreen.refresh();
     combatScreen.refresh();
+    journalScreen.refresh();
   });
   bestiaryScreen.refresh();
   combatScreen.refresh();
@@ -1058,6 +1063,8 @@ const journalScreen = createJournalScreen(screens.journal, {
   canEdit: () => seesAll(),
   // The world-map places this viewer may read about (the DM sees all, hidden ones marked).
   heroes: () => party.map((c) => ({ id: c.id, name: c.name })),
+  monsters: () => Object.entries(MONSTERS).map(([id, m]) => ({ id, name: m.name, kind: m.kind, note: m.note, model: m.model, generated: m.generated })),
+  onOpenBestiary(id) { showScreen('bestiary'); bestiaryScreen.show(id); },
   mapPlaces: () => views.world.places
     .filter((p) => p.tier !== 'unnamed' && knows(p))
     .map((p) => ({ id: p.id, name: p.name, subtitle: p.subtitle, text: p.text, tier: p.tier, secret: seesAll() && isSecretable(p) && !revealed.has(p.id) })),
@@ -1083,8 +1090,9 @@ async function loadJournal() {
     if (event === 'DELETE') { if (i >= 0) quests.splice(i, 1); } else if (i >= 0) quests[i] = row; else quests.push(row);
     // Something new for a player: added, or revealed by the DM (it was not in their list before).
     if (event !== 'DELETE' && i < 0 && me && !seesAll() && row.data.shown !== false) {
-      const what = { npc: 'Someone new in your journal', place: 'A new place in your journal', placenote: 'New notes in your journal', item: '📖 You found' }[row.data.kind] ?? '📜 New quest';
-      toast(row.data.title ? `${what}: ${row.data.title}` : what);
+      const what = { npc: 'Someone new in your journal', place: 'A new place in your journal', placenote: 'New notes in your journal', item: '📖 You found', creature: 'A new creature in your journal' }[row.data.kind] ?? '📜 New quest';
+      const name = row.data.title ?? MONSTERS[row.data.monster]?.name;
+      toast(name ? `${what}: ${name}` : what);
     }
     journalScreen.refresh();
     applyFog();

@@ -1513,7 +1513,9 @@ input.is-bad { box-shadow: inset 0 0 0 2px #e2634e; }
 .jr__new[hidden] { display: none; }
 
 /* Bookmarks: the three sections, the open one underlined in red pencil. */
-.jr__tabs { display: flex; gap: 4px; margin-top: 10px; border-bottom: 1.5px solid var(--pp-line); }
+.jr__tabs { display: flex; gap: 4px; margin-top: 10px; border-bottom: 1.5px solid var(--pp-line); overflow-x: auto; scrollbar-width: none; }
+.jr__tabs::-webkit-scrollbar { display: none; }
+.jr-tab { flex-shrink: 0; }
 .jr-tab {
   position: relative; display: flex; align-items: center; gap: 7px; padding: 8px 14px 10px; cursor: pointer;
   font: 700 14px var(--font-display); letter-spacing: 0.08em; text-transform: uppercase; color: var(--pp-soft); background: none; border: 0;
@@ -1660,6 +1662,98 @@ button.jr-tick { cursor: pointer; }
 .bestiary .atk__num--dmg b { color: var(--pp-ink); }
 .statblock__note { font-style: italic; }
 .bestiary .sheet__delete { color: var(--pp-accent); border-color: rgba(138, 46, 31, 0.5); }
+
+/* ---------- Fight: the same painted paper ---------- */
+
+.combat { --pp-ink: #2b2118; --pp-soft: #5c4a36; --pp-line: #cdb38a; --pp-line-dark: #a8865a; --pp-accent: #8a2e1f; color: var(--pp-ink); }
+.combat:not(.is-battle) { background: transparent; }
+/* Setup and initiative: one ledger sheet each. */
+.combat__setup, .combat__init {
+  border: 22px solid transparent; border-image: url('/art/ui/paper/ledger-sheet.webp') 34 fill / 30px / 0 stretch;
+  filter: drop-shadow(0 6px 10px rgba(20, 10, 0, 0.35)); padding: 6px 10px; height: 100%;
+}
+.combat__col:first-child { padding-right: 18px; border-right: 1.5px solid var(--pp-line); }
+.combat .combat__h { font: 700 21px var(--font-display); color: var(--pp-ink); padding-bottom: 8px; border-bottom: 1.5px solid var(--pp-line); }
+.combat .combat__h span { color: #fff8ec; background: radial-gradient(circle at 40% 35%, #c9503f, #8a2e27); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35); }
+.combat .pick, .combat .init-row {
+  color: var(--pp-ink); background: none; box-shadow: none; border-radius: 4px; border-bottom: 1px solid rgba(168, 134, 90, 0.4);
+}
+.combat .combat__heroes-pick, .combat .combat__enemies-pick, .combat .init-list { gap: 0; }
+.combat .pick:hover { background: rgba(255, 252, 240, 0.5); }
+.combat .pick.is-on { background: rgba(138, 46, 31, 0.08); box-shadow: inset 3px 0 0 var(--pp-accent); }
+.combat .pick__who b, .combat .init-row__name { color: var(--pp-ink); font-size: 16px; }
+.combat .pick__who small, .combat .combat__hint, .combat .combat__summary, .combat .init-row__roll, .combat .init-row__bonus { color: var(--pp-soft); }
+.combat .pick__check { border-color: var(--pp-line-dark); }
+.combat .pick.is-on .pick__check { background: var(--pp-accent); border-color: var(--pp-accent); box-shadow: inset 0 0 0 3px #f4e6c6; }
+.combat .pick__badge { box-shadow: 0 0 0 1.5px var(--pp-line-dark); }
+.combat .pick__badge--enemy { background: #4a3d5c; }
+.combat .stepper button { color: var(--pp-ink); background: rgba(255, 252, 240, 0.85); border: 1.5px solid var(--pp-line-dark); box-shadow: none; }
+.combat .stepper b { color: var(--pp-ink); }
+.combat .combat__go { padding-top: 10px; border-top: 1.5px solid var(--pp-line); }
+.combat .combat__toggle { color: var(--pp-ink); }
+.combat .init-row__total { color: var(--pp-accent); }
+.combat .init-row input, .combat .attack__roll input, .combat .die input {
+  color: var(--pp-ink); background: rgba(255, 252, 240, 0.85); border: 1.5px solid var(--pp-line-dark); box-shadow: none;
+}
+.combat .combat__roll-enemies, .combat .combat__back, .combat .combat__end, .combat .turnbar__next, .combat .attack__close {
+  color: var(--pp-ink); background: rgba(255, 250, 235, 0.85); border: 1.5px solid var(--pp-line-dark); box-shadow: none;
+}
+.combat .combat__start:disabled, .combat .combat__begin:disabled { background: rgba(168, 134, 90, 0.35); color: rgba(43, 33, 24, 0.5); }
+
+/* Battle: little paper notes over the 3D field. */
+.combat .hpbox {
+  color: var(--pp-ink); background: none; box-shadow: none; padding: 2px 4px 3px;
+  border: 10px solid transparent; border-image: url('/art/ui/paper/note-small.webp') 22 fill / 16px / 0 stretch;
+  filter: drop-shadow(0 3px 5px rgba(20, 10, 0, 0.4));
+}
+.combat .hpbox.is-turn { filter: drop-shadow(0 0 6px rgba(240, 190, 80, 0.95)) drop-shadow(0 3px 5px rgba(20, 10, 0, 0.4)); }
+.combat .hpbox__top b, .combat .hpbox__nums { color: var(--pp-ink); }
+.combat .hpbox__top small { color: var(--pp-soft); }
+.combat .hpbox__track { background: rgba(90, 60, 25, 0.18); box-shadow: inset 0 1px 2px rgba(60, 40, 15, 0.3); border-radius: 4px; }
+.combat .hpbox__btn { color: var(--pp-ink); background: rgba(255, 252, 240, 0.9); border: 1.5px solid var(--pp-line-dark); box-shadow: none; }
+.combat .turns {
+  color: var(--pp-ink); background: none; box-shadow: none; border-radius: 0; padding: 0 4px;
+  border: solid transparent; border-width: 8px 26px 10px; border-image: url('/art/ui/paper/rolled-scroll.webp') 30 46 34 46 fill / 10px 26px 12px 26px / 0 stretch;
+  filter: drop-shadow(0 4px 6px rgba(20, 10, 0, 0.35));
+}
+.combat .turns__round { color: var(--pp-accent); }
+.combat .turns__chip small { color: var(--pp-soft); }
+.combat .turns__chip.is-now i { outline-color: var(--pp-accent); }
+.combat .turnbar {
+  color: var(--pp-ink); background: none; box-shadow: none; border-radius: 0; padding: 0 2px 0 8px;
+  border: 10px solid transparent; border-image: url('/art/ui/paper/wide-sheet.webp') 26 fill / 18px / 0 stretch;
+  filter: drop-shadow(0 4px 6px rgba(20, 10, 0, 0.35));
+}
+.combat .turnbar__who { color: var(--pp-soft); }
+.combat .turnbar__who b { color: var(--pp-ink); }
+.combat .combat__end { border: 8px solid transparent; border-image: url('/art/ui/paper/small-square.webp') 18 fill / 14px / 0 stretch; background: none; padding: 2px 8px; filter: drop-shadow(0 3px 5px rgba(20, 10, 0, 0.35)); }
+/* The attack calculator: a sheet of paper. */
+.combat .attack__card {
+  color: var(--pp-ink); background: none; box-shadow: none; border-radius: 0; padding: 4px 8px 8px;
+  border: 22px solid transparent; border-image: url('/art/ui/paper/note-tall.webp') 26 fill / 28px / 0 stretch;
+  filter: drop-shadow(0 8px 16px rgba(20, 10, 0, 0.45));
+}
+.combat .attack__head b { font: 700 22px var(--font-display); color: var(--pp-ink); }
+.combat .attack__label { color: var(--pp-accent); }
+.combat .opt { color: var(--pp-ink); background: rgba(255, 252, 240, 0.7); border: 1.5px solid var(--pp-line-dark); box-shadow: none; }
+.combat .opt small, .combat .die small, .combat .attack__roll label, .combat .attack__result { color: var(--pp-soft); }
+.combat .opt.is-on { background: rgba(138, 46, 31, 0.1); box-shadow: inset 0 0 0 2px var(--pp-accent); }
+.combat .attack__result b { color: var(--pp-ink); }
+.combat .attack__result.is-hit, .combat .attack__result.is-hit b { color: #3f7a34; }
+.combat .attack__result.is-miss, .combat .attack__result.is-miss b { color: var(--pp-accent); }
+.combat .attack__apply[data-action="miss"] { color: var(--pp-ink); background: rgba(255, 250, 235, 0.85); border: 1.5px solid var(--pp-line-dark); }
+.combat .attack__sneak { color: var(--pp-ink); }
+.combat .fight-wait { color: var(--pp-ink); }
+.combat .fight-wait:not([hidden]) {
+  place-self: center; width: min(440px, 100%); height: auto; padding: 18px; text-align: center;
+  border: 18px solid transparent; border-image: url('/art/ui/paper/note-wide.webp') 24 fill / 22px / 0 stretch;
+}
+
+/* Journal: creatures, with their portrait from the Bestiary. */
+.jr-beast { flex-shrink: 0; width: 34px; height: 34px; border-radius: 6px; overflow: hidden; background: radial-gradient(circle at 50% 40%, #fbf1d8, #d8c08f); box-shadow: 0 0 0 1.5px var(--pp-line-dark); }
+.jr-creature { display: flex; align-items: center; gap: 16px; margin-bottom: 10px; }
+.jr-creature__face { flex-shrink: 0; width: 96px; height: 96px; border-radius: 10px; overflow: hidden; background: radial-gradient(circle at 50% 40%, #fbf1d8, #d8c08f); box-shadow: 0 0 0 2px var(--pp-line-dark), 0 0 0 5px #efe0bd, 0 0 0 6.5px var(--pp-line-dark); }
+.jr-creature .jr-name { margin-bottom: 0; }
 
 /* ==========================================================================
    Smaller screens
@@ -1901,8 +1995,10 @@ button.jr-tick { cursor: pointer; }
   .jr__head { flex-wrap: wrap; gap: 8px; }
   .jr__search { order: 3; flex-basis: 100%; }
   .jr__title { font-size: 22px; }
-  .jr-tab { padding: 8px 4px; font-size: 12px; letter-spacing: 0.04em; }
-  .jr-tab .ic { width: 18px; height: 18px; }
+  .jr-tab { padding: 8px 5px; font-size: 11.5px; letter-spacing: 0.03em; gap: 4px; }
+  .jr-tab small { display: none; }
+  .jr-tab .ic { display: none; }
+  .jr__tabs { justify-content: space-between; }
   .jr__body { grid-template-columns: 1fr; }
   .jr__page { border-left: 0; padding: 4px 2px 10px; }
   .jr:not(.is-reading) .jr__page { display: none; }
@@ -1947,6 +2043,8 @@ button.jr-tick { cursor: pointer; }
 
   /* Combat setup: one column that scrolls */
   .combat__setup { grid-template-columns: 1fr; grid-template-rows: none; align-content: start; overflow-y: auto; gap: 14px; }
+  .combat__setup, .combat__init { border-width: 14px; border-image-width: 22px; padding: 4px 2px; }
+  .combat__col:first-child { padding-right: 0; border-right: 0; }
   .combat__col { overflow: visible; }
   .combat__go { flex-wrap: wrap; justify-content: space-between; gap: 10px; }
   .combat__toggle { flex-basis: 100%; }
@@ -1955,7 +2053,7 @@ button.jr-tick { cursor: pointer; }
   /* Battle: turn order on top, enemies top right, heroes bottom left, actions above the dock */
   .turns { left: 10px; right: 10px; transform: none; max-width: none; }
   .combat__boxes--enemies { top: calc(var(--top) + 48px); right: 8px; max-height: 30%; }
-  .combat__boxes--heroes { bottom: calc(var(--nav) + 60px); left: 8px; max-height: 30%; }
+  .combat__boxes--heroes { bottom: calc(var(--nav) + 60px); left: 40px; max-height: 30%; }
   .combat__end { top: calc(var(--top) + 48px); bottom: auto; left: 8px; right: auto; padding: 6px 12px; font-size: 12px; }
   .hpbox { width: 150px; padding: 4px 7px 5px; }
   .hpbox--view { width: 140px; }

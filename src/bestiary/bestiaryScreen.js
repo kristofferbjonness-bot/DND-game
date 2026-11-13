@@ -230,5 +230,7 @@ export function createBestiaryScreen(root, { onChanged } = {}) {
     start() { viewer.start(); if (!draft) select(selected); },
     stop() { viewer.stop(); },
     refresh() { renderList(); },
+    // Shows one creature (from the Journal).
+    show(id) { if (MONSTERS[id]) select(id); },
   };
 }

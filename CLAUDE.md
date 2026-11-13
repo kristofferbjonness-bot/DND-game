@@ -171,6 +171,8 @@ The original assets (hand-drawn world map, location art, character art, lore doc
       `supabase/session.sql`).
     - On DM login `restoreFight()` loads it into `combatScreen.restore()` and re-broadcasts it.
     - End (or Back from initiative) deletes it.
+- **Fight screens** use the same paper: setup and initiative are ledger sheets; over the battle, health boxes are
+  note-small notes, the turn order a rolled-scroll strip, the bottom bar a wide sheet, the attack card a tall note.
 - **Bestiary** (DM only, `src/bestiary/bestiaryScreen.js`) lists every enemy with its 3D figure
   and stat block. "Generate new" has Claude design one from a text prompt.
   - Server: `netlify/edge-functions/generate.js` at POST `/api/generate-monster`.
@@ -264,6 +266,11 @@ The original assets (hand-drawn world map, location art, character art, lore doc
     '' = the party), place (where found), body (its text), shown }`. Hidden = not given yet; "Give to the
     party" shows it, and players get a toast ("📖 You found: …"). The text reads like a book page
     (`.jr-read`). The owner's lore texts are in the private lore import, not in the code.
+  - Creatures (fifth bookmark): `creature` rows `{ monster (Bestiary id), body (what the party learned),
+    shown }`. Beginning a fight adds every enemy type, shown (`onBegin` in combatScreen →
+    `journalScreen.meetCreatures`); the DM can show/hide any creature and write notes. Players see the
+    portrait, name, kind and description from the Bestiary, plus the notes; no stats. "Open in the
+    Bestiary" jumps to the DM's Beasts tab (`bestiaryScreen.show`).
   - DM secrets: `secret` rows `{ about: entry id or 'map:<place id>', body, shown: false }`, shown in a
     dashed red "DM only" box and edited in every form. Never shown, so RLS never sends them to players.
   - People are grouped by the town they belong to (`townOf`: a map place, or the town a smaller place is
