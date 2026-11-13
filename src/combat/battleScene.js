@@ -92,13 +92,15 @@ export function createBattleScene(container) {
     body.rotation.y = Math.atan2(facing.x - x, facing.z - z);
     holder.add(body);
     fighters.add(holder);
-    actors.push({ key, holder, body, figure, down: 0, isDown: false, shake: 0 });
+    const height = new THREE.Box3().setFromObject(figure.group).max.y;
+    actors.push({ key, holder, body, figure, height, down: 0, isDown: false, shake: 0 });
   }
 
   // heroes: character objects; enemies: [{ uid, type }].
   function setFighters(heroes, enemies) {
     fighters.clear();
     actors = [];
+    setActive(null);
     if (camera.userData.sized) resetView();
     const heroCentre = { x: -25, z: 12 }, enemyCentre = { x: 28, z: -16 };
     heroes.forEach((c, i) => {
@@ -116,6 +118,29 @@ export function createBattleScene(container) {
     const a = actors.find((x) => x.key === key);
     if (a) a.isDown = isDown;
   }
+  // A gold diamond bobbing above whoever's turn it is.
+  const marker = new THREE.Group();
+  {
+    const cells = [];
+    for (let y = -2; y <= 2; y++) {
+      const r = 2 - Math.abs(y);
+      for (let x = -r; x <= r; x++) for (let z = -r; z <= r; z++) if (Math.abs(x) + Math.abs(z) <= r) cells.push([x, y, z, '#f2c94c']);
+    }
+    const mesh = new THREE.InstancedMesh(bevelBox(1, 1, 1, 0.15), new THREE.MeshBasicMaterial({ toneMapped: false }), cells.length);
+    const m = new THREE.Matrix4();
+    const col = new THREE.Color();
+    cells.forEach(([x, y, z, c], i) => { mesh.setMatrixAt(i, m.makeTranslation(x, y, z)); mesh.setColorAt(i, col.set(c)); });
+    marker.add(mesh);
+    marker.scale.setScalar(0.7);
+    marker.visible = false;
+    scene.add(marker);
+  }
+  let active = null;
+  function setActive(key) {
+    active = actors.find((x) => x.key === key) ?? null;
+    marker.visible = Boolean(active);
+  }
+
   function hit(key) {
     const a = actors.find((x) => x.key === key);
     if (a) a.shake = 0.35;
@@ -163,11 +188,15 @@ export function createBattleScene(container) {
       a.shake = Math.max(0, a.shake - dt);
       a.body.position.x = Math.sin(t * 60) * a.shake * 1.5;
     }
+    if (active) {
+      marker.position.set(active.holder.position.x, active.height + 5 + Math.sin(t * 3) * 0.8, active.holder.position.z);
+      marker.rotation.y = t * 1.5;
+    }
     renderer.render(scene, camera);
   }
 
   return {
-    setFighters, setDown, hit,
+    setFighters, setDown, hit, setActive,
     start() { clock.getDelta(); resize(); renderer.setAnimationLoop(frame); },
     stop() { renderer.setAnimationLoop(null); },
   };

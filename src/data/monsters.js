@@ -8,8 +8,9 @@ export const MONSTERS = {
     kind: 'Humanoid · Kessit',
     ac: 13,
     hp: 11,
+    initiative: 2, // Dex modifier
     speed: 30,
-    attacks: [{ name: 'Curved knife', toHit: 4, damage: '1d6 + 2', type: 'slashing' }],
+    attacks: [{ name: 'Curved knife', toHit: 4, dice: '1d6', bonus: 2, type: 'slashing' }],
     note: 'Maze-born robbers of Razz of Mataz, wrapped in indigo cloth. They rob rather than kill.',
     model: 'hooknose',
   },

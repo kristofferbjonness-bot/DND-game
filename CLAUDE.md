@@ -113,6 +113,15 @@ The original assets (hand-drawn world map, location art, character art, lore doc
   - Health boxes have −/+ buttons. Hero HP is saved to the character (players see it live),
     while enemy HP only lives in the encounter.
   - At 0 HP a fighter falls over.
+  - Initiative step: type each d20 (or roll for enemies). Total = roll + Dex mod (monsters:
+    `initiative`). Order: total, then bonus, then roll. Fighters at 0 HP are skipped.
+  - Turn strip at the top, a gold marker over the active fighter, and a bottom bar with
+    Attack / Next turn.
+  - Attack calculator: pick the weapon (from derive().attacks, i.e. what is equipped) and the
+    target, then type the d20. It reports Hit / Miss vs AC, with nat 20 = crit and nat 1 =
+    miss.
+  - Damage: type each die the weapon uses (doubled on a crit). Rogues get optional Sneak
+    Attack d6s (`sneakAttackDice`), and the modifier is added automatically.
   - The arena camera uses OrbitControls: one finger turns, two fingers pinch-zoom and pan. The
     view resets for each new encounter.
   - The health-box columns scroll when they don't fit, and the boxes are kept compact.

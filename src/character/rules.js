@@ -77,12 +77,15 @@ export function derive(c) {
       name: w.name, type: w.type,
       toHit: m + prof + archery,
       damage: `${w.dice}${plus(dmg)}`,
+      dice: w.dice, bonus: dmg, // for the combat damage calculator
+      sneakable: has(w, 'finesse') || ranged,
       note: notes.join(' · '),
     };
   };
   const attacks = [main && attack(main, 'main'), off && attack(off, 'off')].filter(Boolean);
   if (!attacks.length) {
-    attacks.push({ name: 'Unarmed strike', type: 'bludgeoning', toHit: mod('str') + prof, damage: `${Math.max(1, 1 + mod('str'))}`, note: 'No weapon in hand' });
+    const fist = Math.max(1, 1 + mod('str'));
+    attacks.push({ name: 'Unarmed strike', type: 'bludgeoning', toHit: mod('str') + prof, damage: `${fist}`, dice: null, bonus: fist, note: 'No weapon in hand' });
   }
 
   const next = XP_FOR_LEVEL[c.level] ?? null;
@@ -99,3 +102,12 @@ export function derive(c) {
     xp: { current: c.xp, next, progress: next ? (c.xp - prev) / (next - prev) : 1 },
   };
 }
+
+// "2d6" -> { count: 2, sides: 6 }; null for no dice.
+export function parseDice(dice) {
+  const m = /^(\d+)d(\d+)$/.exec(String(dice ?? '').trim());
+  return m ? { count: Number(m[1]), sides: Number(m[2]) } : null;
+}
+
+// Rogues add Sneak Attack dice: 1d6 at level 1–2, 2d6 at 3–4, and so on.
+export const sneakAttackDice = (c) => (c.class === 'Rogue' ? Math.ceil(c.level / 2) : 0);

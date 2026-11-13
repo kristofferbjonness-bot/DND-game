@@ -659,7 +659,7 @@ body[data-role="dm"] .topnav__tab--dm { display: block; }
   height: 100%; max-width: 980px; margin: 0 auto;
   display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: minmax(0, 1fr) auto; gap: 16px 24px;
 }
-.combat__setup[hidden] { display: none; }
+.combat__setup[hidden], .combat__init[hidden] { display: none; }
 .combat__col { min-height: 0; overflow-y: auto; }
 .combat__h { display: flex; align-items: center; gap: 10px; margin: 0 0 10px; font: 700 20px var(--font-display); }
 .combat__h span {
@@ -760,4 +760,127 @@ body[data-role="dm"] .topnav__tab--dm { display: block; }
   .hpbox__top small { font-size: 10px; }
   .hpbox__btn { width: 20px; height: 20px; font-size: 13px; }
   .hpbox__nums { font-size: 11px; min-width: 32px; }
+}
+
+/* Initiative step */
+.combat__init { height: 100%; max-width: 640px; margin: 0 auto; display: flex; flex-direction: column; }
+.combat__init-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.combat__init-head .combat__h { margin: 0; }
+.combat__hint { margin: 6px 0 12px; color: var(--ink-soft); font-size: 14px; }
+.combat__roll-enemies, .combat__back {
+  font: 700 14px var(--font-display); color: var(--ink); background: rgba(251, 247, 238, 0.9);
+  border: 1.5px solid var(--parchment-edge); border-radius: 999px; padding: 8px 16px; cursor: pointer;
+}
+.combat__back { margin-right: auto; }
+.combat__begin {
+  font: 700 16px var(--font-display); letter-spacing: 0.05em; color: var(--parchment); background: var(--accent);
+  border: 0; border-radius: 999px; padding: 12px 28px; cursor: pointer;
+}
+.combat__begin:disabled { background: #b9a990; cursor: default; }
+.init-list { list-style: none; margin: 0 0 12px; padding: 0; display: grid; gap: 6px; overflow-y: auto; min-height: 0; flex: 1; align-content: start; }
+.init-row {
+  display: flex; align-items: center; gap: 12px;
+  background: rgba(251, 247, 238, 0.86); border-radius: 14px; padding: 6px 14px 6px 6px;
+}
+.init-row .pick__badge { width: 34px; height: 34px; font-size: 15px; border-radius: 9px; }
+.init-row__name { flex: 1; font: 700 15px var(--font-display); min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.init-row__roll { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--ink-soft); }
+.init-row__bonus { min-width: 28px; font-weight: 700; color: var(--ink-soft); }
+.init-row__total { min-width: 44px; font: 700 18px var(--font-display); }
+.init-row input, .attack__roll input, .die input {
+  width: 56px; font: 700 18px var(--font-display); text-align: center; color: var(--ink);
+  background: #fffaf0; border: 1.5px solid var(--parchment-edge); border-radius: 10px; padding: 5px 4px;
+  -moz-appearance: textfield;
+}
+.init-row input::-webkit-inner-spin-button, .attack__roll input::-webkit-inner-spin-button, .die input::-webkit-inner-spin-button { -webkit-appearance: none; }
+input.is-bad { border-color: var(--accent); background: #fbe7e2; }
+
+/* Battle: turn order strip (top), whose turn + actions (bottom). */
+.turns {
+  position: absolute; left: 50%; transform: translateX(-50%);
+  top: calc(max(16px, var(--safe-t)) + 58px); max-width: min(560px, calc(100% - 480px));
+  display: flex; align-items: center; gap: 6px; margin: 0; padding: 5px 8px; list-style: none;
+  background: rgba(251, 247, 238, 0.9); border-radius: 999px; box-shadow: var(--shadow);
+  overflow-x: auto; scrollbar-width: none;
+}
+.turns::-webkit-scrollbar { display: none; }
+.turns__round { font: 700 11px var(--font-display); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-soft); white-space: nowrap; padding: 0 4px; }
+.turns__chip { display: flex; flex-direction: column; align-items: center; flex-shrink: 0; }
+.turns__chip i {
+  min-width: 26px; height: 26px; border-radius: 8px; padding: 0 4px; display: grid; place-items: center;
+  font: 700 12px var(--font-display); font-style: normal; color: #fff8ec;
+}
+.turns__chip small { font-size: 10px; color: var(--ink-soft); line-height: 1.1; }
+.turns__chip.is-now i { outline: 2.5px solid #e0b440; outline-offset: 1px; }
+.turns__chip.is-down { opacity: 0.35; }
+.hpbox.is-turn { border-color: #d9a520; box-shadow: 0 0 0 2px #f2c94c, 0 4px 12px rgba(40, 30, 15, 0.16); }
+
+.turnbar {
+  position: absolute; left: 50%; transform: translateX(-50%); bottom: max(16px, var(--safe-b));
+  display: flex; align-items: center; gap: 8px; white-space: nowrap;
+  background: rgba(251, 247, 238, 0.94); border-radius: 999px; padding: 5px 5px 5px 16px; box-shadow: var(--shadow);
+}
+.turnbar__who { font-size: 14px; color: var(--ink-soft); }
+.turnbar__who b { font-family: var(--font-display); color: var(--ink); }
+.turnbar__attack, .turnbar__next {
+  font: 700 14px var(--font-display); border: 0; border-radius: 999px; padding: 8px 16px; cursor: pointer;
+}
+.turnbar__attack { color: var(--parchment); background: var(--accent); }
+.turnbar__next { color: var(--parchment); background: var(--ink); }
+
+/* Attack calculator card */
+.attack { position: absolute; inset: calc(max(16px, var(--safe-t)) + 52px) 0 0; z-index: 3; display: grid; place-items: center; background: rgba(40, 30, 20, 0.25); padding: 12px; }
+.attack[hidden] { display: none; }
+.attack__card {
+  width: min(520px, 100%); max-height: calc(100% - 20px); overflow-y: auto; overscroll-behavior: contain;
+  background: var(--parchment); border-radius: 18px; box-shadow: 0 16px 40px rgba(40, 30, 15, 0.3); padding: 14px 18px 18px;
+}
+.attack__head { display: flex; align-items: center; justify-content: space-between; }
+.attack__head b { font: 700 20px var(--font-display); }
+.attack__close { width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--parchment-edge); background: #fffaf0; font-size: 20px; cursor: pointer; }
+.attack__label { margin: 12px 0 6px; font: 700 11px var(--font-display); letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-soft); }
+.attack__options { display: flex; flex-wrap: wrap; gap: 6px; }
+.opt {
+  display: flex; flex-direction: column; align-items: flex-start; text-align: left;
+  font: inherit; color: var(--ink); background: #fffaf0; cursor: pointer;
+  border: 1.5px solid var(--parchment-edge); border-radius: 12px; padding: 6px 12px;
+}
+.opt b { font-size: 14px; }
+.opt small { font-size: 12px; color: var(--ink-soft); }
+.opt.is-on { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+.attack__roll { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-weight: 700; }
+.attack__roll label { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--ink-soft); }
+.attack__result { font-size: 15px; color: var(--ink-soft); }
+.attack__result b { font-family: var(--font-display); font-size: 18px; color: var(--ink); }
+.attack__result.is-hit { color: #3f8a3b; }
+.attack__result.is-miss { color: var(--accent); }
+.attack__sneak { display: flex; align-items: center; gap: 8px; margin-top: 10px; font-size: 14px; }
+.attack__dice { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px; }
+.die { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.die small { font-size: 11px; color: var(--ink-soft); }
+.die--bonus b { font: 700 18px var(--font-display); padding: 6px 4px; }
+.attack__apply {
+  display: block; width: 100%; margin-top: 14px;
+  font: 700 16px var(--font-display); color: var(--parchment); background: var(--accent);
+  border: 0; border-radius: 12px; padding: 12px; cursor: pointer;
+}
+.attack__apply[data-action="miss"] { background: var(--ink); }
+.attack__apply:disabled { background: #b9a990; cursor: default; }
+
+@media (max-height: 500px) and (orientation: landscape) {
+  .combat__hint { display: none; }
+  .init-row { padding: 4px 10px 4px 4px; }
+  .init-row .pick__badge { width: 28px; height: 28px; font-size: 13px; }
+  .init-row input { width: 48px; font-size: 16px; padding: 3px; }
+  .combat__begin { padding: 9px 22px; font-size: 14px; }
+  .turns { top: 50px; max-width: calc(100% - 360px); padding: 3px 6px; }
+  .turns__chip i { min-width: 22px; height: 22px; font-size: 11px; }
+  .turnbar { bottom: max(8px, var(--safe-b)); padding: 3px 3px 3px 12px; }
+  .turnbar__who { font-size: 12px; }
+  .turnbar__attack, .turnbar__next { padding: 6px 12px; font-size: 12px; }
+  .attack { top: 46px; padding: 6px 12px 8px; }
+  .attack__card { padding: 10px 14px 14px; max-height: 100%; }
+  .attack__head b { font-size: 17px; }
+  .attack__label { margin: 8px 0 4px; }
+  .attack__apply { padding: 9px; margin-top: 10px; }
 }
