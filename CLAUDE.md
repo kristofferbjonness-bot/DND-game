@@ -48,7 +48,9 @@ The original assets (hand-drawn world map, location art, character art, lore doc
   - Players land on Status locked to their own hero (the ‹ › arrows are hidden). The DM lands on
     the map and can flip through every hero.
   - The role chip at the top right shows who you are; tapping it returns to the start screen.
-  - There are no real accounts or passwords yet. That comes with Supabase (roadmap step 3).
+  - The DM side asks for a code (`DM_CODE` in main.js). It only keeps players out casually,
+    because the code is visible in the app's source. Real accounts come with Supabase
+    (roadmap step 3).
 
 - The top nav has three screens: **Map · Status · Party**. The map only renders while it is showing.
 - **Status** (`src/status/statusScreen.js`) has the character sheet on the left and a 3D figure

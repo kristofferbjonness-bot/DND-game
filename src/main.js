@@ -516,8 +516,31 @@ function logIn(next) {
   showScreen(role.kind === 'player' ? 'status' : 'map');
 }
 
+// The Dungeon Master needs a code. It keeps players out of the DM view, but it
+// is not real security: anyone reading the app's code could find it. Proper
+// logins come with online accounts.
+const DM_CODE = '160';
+const codeForm = start.querySelector('.start__code');
+const codeInput = start.querySelector('.start__input');
+const codeError = start.querySelector('.start__error');
+codeForm.addEventListener('submit', (e) => {
+  e.preventDefault();
+  if (codeInput.value.trim() === DM_CODE) {
+    codeInput.value = '';
+    codeError.hidden = true;
+    logIn({ kind: 'dm' });
+    return;
+  }
+  codeError.hidden = false;
+  codeForm.classList.remove('is-wrong');
+  void codeForm.offsetWidth; // restart the shake
+  codeForm.classList.add('is-wrong');
+  codeInput.value = '';
+  codeInput.focus();
+});
+codeInput.addEventListener('input', () => { codeError.hidden = true; });
+
 start.addEventListener('click', (e) => {
-  if (e.target.closest('.start__dm')) logIn({ kind: 'dm' });
   const pick = e.target.closest('.hero-pick');
   if (pick) logIn({ kind: 'player', id: pick.dataset.id });
 });

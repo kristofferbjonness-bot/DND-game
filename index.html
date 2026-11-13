@@ -32,7 +32,12 @@
         <p class="start__kicker">Run the world</p>
         <h1 class="start__title">Dungeon Master</h1>
         <p class="start__text">See every hero, the whole map and everything behind the curtain.</p>
-        <button type="button" class="start__dm" data-role="dm">Log in as Dungeon Master</button>
+        <form class="start__code" autocomplete="off">
+          <input class="start__input" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="8"
+            placeholder="Code" aria-label="Dungeon Master code" />
+          <button type="submit" class="start__dm">Log in</button>
+        </form>
+        <p class="start__error" role="alert" hidden>Wrong code. Try again.</p>
       </div></div>
       <div class="start__half start__half--player"><div class="start__inner">
         <p class="start__kicker">Join the party</p>
