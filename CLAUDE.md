@@ -65,6 +65,10 @@ The original assets (hand-drawn world map, location art, character art, lore doc
   - The login session is remembered, so the app skips the start screen next time. The role
     chip at the top right logs out.
   - Players land on Status locked to their hero; the DM lands on the map.
+  - The name badge opens a menu. The DM can "See the app as" any hero, a preview that sets
+    `body[data-role=player]` and locks Status to that hero, with a banner to return. Every
+    player-only filtering added later (fog of war, secrets) must follow the previewed hero, so
+    the DM sees exactly what that player sees.
 - **Status** (`src/status/statusScreen.js`) has the character sheet on the left and a 3D figure
   on the right, with ‹ › arrows to switch hero.
   - The sheet is a trimmed-down 5e sheet: level, XP, HP, AC, initiative, speed, proficiency and

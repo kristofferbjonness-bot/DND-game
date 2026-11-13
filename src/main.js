@@ -541,25 +541,69 @@ async function enter() {
 
   watching ??= watchCharacters(applyRow);
   startScreen.hide();
-  const dm = profile.role === 'dm';
-  document.body.dataset.role = dm ? 'dm' : 'player';
-  roleChip.textContent = dm ? 'Dungeon Master' : mine.data.name;
-  roleChip.style.setProperty('--badge', dm ? '#3b2f22' : mine.data.colour);
-  roleChip.hidden = false;
-  statusScreen.setPlayer(dm ? null : mine.id);
-  showScreen(dm ? 'map' : 'status');
+  me = { dm: profile.role === 'dm', heroId: mine?.id ?? null };
+  viewAs = null;
+  applyView();
+  showScreen(me.dm ? 'map' : 'status');
 }
 
-roleChip.addEventListener('click', async () => {
-  if (!confirm('Log out?')) return;
+// --- Who the app is showing things for -------------------------------------------------------
+// A player always sees the app as their own hero. The Dungeon Master sees
+// everything, but can preview the app exactly as one of the players sees it.
+let me = null;      // { dm, heroId } for the logged-in person
+let viewAs = null;  // hero id the DM is previewing as, or null
+const roleMenu = document.getElementById('role-menu');
+const previewBar = document.getElementById('preview-bar');
+
+function applyView() {
+  const heroId = me.dm ? viewAs : me.heroId;
+  const hero = party.find((c) => c.id === heroId);
+  document.body.dataset.role = heroId ? 'player' : 'dm';
+  roleChip.textContent = me.dm ? 'Dungeon Master' : hero.name;
+  roleChip.style.setProperty('--badge', me.dm ? '#3b2f22' : hero.colour);
+  roleChip.hidden = false;
+  statusScreen.setPlayer(heroId);
+  previewBar.hidden = !viewAs;
+  if (viewAs) previewBar.querySelector('b').textContent = hero.name;
+}
+
+function previewAs(heroId) {
+  viewAs = heroId;
+  applyView();
+  showScreen(heroId ? 'status' : 'map');
+}
+
+roleChip.addEventListener('click', (e) => {
+  e.stopPropagation();
+  roleMenu.innerHTML = `
+    ${me.dm ? `
+      <p class="role-menu__h">See the app as</p>
+      ${party.map((c) => `<button type="button" data-view="${c.id}"${c.id === viewAs ? ' class="is-on"' : ''}><i style="background:${c.colour}"></i>${c.name}</button>`).join('')}
+      <hr />` : ''}
+    <button type="button" data-action="logout">Log out</button>`;
+  roleMenu.hidden = !roleMenu.hidden;
+});
+roleMenu.addEventListener('click', async (e) => {
+  const btn = e.target.closest('button');
+  if (!btn) return;
+  roleMenu.hidden = true;
+  if (btn.dataset.view) { previewAs(btn.dataset.view); return; }
+  if (btn.dataset.action !== 'logout') return;
   await signOut();
   supabase.removeAllChannels();
   watching = null;
+  me = null;
+  viewAs = null;
+  previewBar.hidden = true;
   roleChip.hidden = true;
   delete document.body.dataset.role;
   showScreen('map');
   startScreen.show();
 });
+document.addEventListener('click', (e) => {
+  if (!roleMenu.hidden && !roleMenu.contains(e.target)) roleMenu.hidden = true;
+});
+previewBar.querySelector('button').addEventListener('click', () => previewAs(null));
 
 // A short message at the bottom of the screen.
 function toast(message) {
