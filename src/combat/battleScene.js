@@ -7,6 +7,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { bevelBox } from '../fx/bevelBox.js';
 import { hash } from '../city/vox.js';
 import { buildFigure, buildMonsterFigure } from '../character/model.js';
+import { disposeTree } from '../fx/dispose.js';
 
 const TOUCH = window.matchMedia('(pointer: coarse)').matches;
 
@@ -59,13 +60,21 @@ function voxels(cells) {
 }
 
 export function createBattleScene(container) {
-  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, TOUCH ? 1.5 : 2));
-  renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-  renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.05;
-  container.appendChild(renderer.domElement);
+  // The renderer and camera controls are made the first time a fight is shown.
+  let renderer = null, controls = null, touching = false;
+  function ensureRenderer() {
+    if (renderer) return;
+    renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, TOUCH ? 1.5 : 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.05;
+    container.appendChild(renderer.domElement);
+    makeControls();
+    container.addEventListener('pointerdown', () => { touching = true; });
+    window.addEventListener('pointerup', () => { touching = false; });
+  }
 
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(30, 1, 1, 600);
@@ -106,6 +115,7 @@ export function createBattleScene(container) {
 
   // heroes: character objects; enemies: [{ uid, type }].
   function setFighters(heroes, enemies) {
+    for (const old of [...fighters.children, ...fx.children]) disposeTree(old);
     fighters.clear();
     actors = [];
     effects.length = 0;
@@ -165,6 +175,8 @@ export function createBattleScene(container) {
   scene.add(fx);
   const glow = (colour, opacity = 1) => new THREE.MeshBasicMaterial({ color: colour, transparent: true, opacity, toneMapped: false, depthWrite: false });
   const ease = (t) => t * t * (3 - 2 * t);
+  const SPARK = new THREE.IcosahedronGeometry(0.5, 0);
+  SPARK.userData.shared = true;
   const worldPos = (a, up = 0.55) => a.holder.position.clone().add(a.mover.position).setY(a.height * up);
 
   function play(dur, step, end) { effects.push({ age: 0, dur, step, end }); }
@@ -184,7 +196,7 @@ export function createBattleScene(container) {
     fx.add(burst);
     const size = crit ? 9 : 5;
     play(crit ? 0.5 : 0.35, (t) => { burst.scale.setScalar(1 + size * ease(t)); burst.material.opacity = 0.85 * (1 - t); },
-      () => { fx.remove(burst); burst.geometry.dispose(); });
+      () => { fx.remove(burst); disposeTree(burst); });
   }
 
   function slash(attacker, dir, crit) {
@@ -198,7 +210,7 @@ export function createBattleScene(container) {
     if (crit) holder.scale.setScalar(1.5);
     fx.add(holder);
     play(0.36, (t) => { arc.rotation.z = -1.6 + 2.6 * ease(t); arc.material.opacity = 0.95 * (1 - t * t); },
-      () => { fx.remove(holder); arc.geometry.dispose(); });
+      () => { fx.remove(holder); disposeTree(holder); });
   }
 
   function projectile(style, colour) {
@@ -276,7 +288,7 @@ export function createBattleScene(container) {
         if (m.userData.halo) {
           m.userData.halo.scale.setScalar(1 + Math.sin(t * 40) * 0.15);
           if (Math.random() < 0.7) { // sparkling trail
-            const s = new THREE.Mesh(new THREE.IcosahedronGeometry(0.5, 0), glow(evt.colour ?? '#b98cff', 0.8));
+            const s = new THREE.Mesh(SPARK, glow(evt.colour ?? '#b98cff', 0.8));
             s.position.copy(p);
             fx.add(s);
             trail.push({ s, life: 1 });
@@ -285,6 +297,7 @@ export function createBattleScene(container) {
         if (!landed && evt.hit && t >= 1) { landed = true; impact(to, evt, target); }
       }, () => {
         fx.remove(m);
+        disposeTree(m);
         if (!landed) impact(to, evt, target);
       });
     }, 180);
@@ -294,19 +307,21 @@ export function createBattleScene(container) {
         p.s.scale.setScalar(Math.max(0.01, p.life));
         p.s.material.opacity = Math.max(0, p.life) * 0.8;
       }
-    }, () => { for (const p of trail) fx.remove(p.s); });
+    }, () => { for (const p of trail) { fx.remove(p.s); p.s.material.dispose(); } });
   }
 
   // Look around: drag (one finger) to turn, pinch or scroll to zoom,
   // right-drag (two fingers) to move. The view resets for each new encounter.
-  const controls = new OrbitControls(camera, renderer.domElement);
-  controls.enableDamping = true;
-  controls.dampingFactor = 0.08;
-  controls.minDistance = 40;
-  controls.maxDistance = 260;
-  controls.minPolarAngle = 0.25;
-  controls.maxPolarAngle = 1.35;
-  controls.touches = { ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_PAN };
+  function makeControls() {
+    controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.08;
+    controls.minDistance = 40;
+    controls.maxDistance = 260;
+    controls.minPolarAngle = 0.25;
+    controls.maxPolarAngle = 1.35;
+    controls.touches = { ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_PAN };
+  }
 
   let upright = false;
   function resetView() {
@@ -320,13 +335,14 @@ export function createBattleScene(container) {
       const fit = Math.max(1, 2 / (camera.aspect || 1));
       camera.position.set(-6 * fit, 62 * fit, 128 * fit);
     }
-    controls.update();
+    controls?.update();
   }
 
   function resize() {
     const w = container.clientWidth, h = container.clientHeight;
     if (!w || !h) return;
     const first = !camera.userData.sized;
+    if (!renderer) return;
     renderer.setSize(w, h);
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
@@ -336,7 +352,11 @@ export function createBattleScene(container) {
   new ResizeObserver(resize).observe(container);
 
   const clock = new THREE.Clock();
-  function frame() {
+  let lastDraw = 0;
+  function frame(now) {
+    // 60 frames a second during attacks or while the camera is moved, 30 otherwise.
+    if (!effects.length && !touching && now - lastDraw < 31) return;
+    lastDraw = now;
     const dt = Math.min(clock.getDelta(), 0.05);
     controls.update();
     const t = clock.elapsedTime;
@@ -365,7 +385,7 @@ export function createBattleScene(container) {
 
   return {
     setFighters, setDown, hit, attack, setActive,
-    start() { clock.getDelta(); resize(); renderer.setAnimationLoop(frame); },
-    stop() { renderer.setAnimationLoop(null); },
+    start() { ensureRenderer(); clock.getDelta(); resize(); renderer.setAnimationLoop(frame); },
+    stop() { renderer?.setAnimationLoop(null); },
   };
 }

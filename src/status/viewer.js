@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import { bevelBox } from '../fx/bevelBox.js';
 import { hash } from '../city/vox.js';
 import { buildFigure, buildMonsterFigure } from '../character/model.js';
+import { disposeTree } from '../fx/dispose.js';
 
 const TOUCH = window.matchMedia('(pointer: coarse)').matches;
 
@@ -29,13 +30,19 @@ function plinth(r = 6) {
 }
 
 export function createCharacterViewer(container) {
-  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, TOUCH ? 1.5 : 2));
-  renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-  renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.05;
-  container.appendChild(renderer.domElement);
+  // The renderer is only made the first time the stage is shown, so screens
+  // nobody opens cost nothing.
+  let renderer = null;
+  function ensureRenderer() {
+    if (renderer) return;
+    renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, TOUCH ? 1.5 : 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.05;
+    container.appendChild(renderer.domElement);
+  }
 
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(28, 1, 1, 400);
@@ -60,6 +67,7 @@ export function createCharacterViewer(container) {
   // Shows a character dressed in their current gear; call again after a change.
   // `{ monster: model }` shows an enemy instead.
   function show(character) {
+    for (const old of [...turntable.children]) disposeTree(old);
     turntable.clear();
     figure = character?.monster ? buildMonsterFigure(character.monster) : buildFigure(character);
     stage = plinth(figure?.stage ?? 6);
@@ -71,7 +79,7 @@ export function createCharacterViewer(container) {
   function resize() {
     const w = container.clientWidth, h = container.clientHeight;
     if (!w || !h) return;
-    renderer.setSize(w, h);
+    renderer?.setSize(w, h);
     camera.aspect = w / h;
     // Keep the whole figure in frame whatever the shape of the stage.
     const fit = Math.max(1, 0.75 / camera.aspect) * (figure?.zoom ?? 1);
@@ -90,8 +98,11 @@ export function createCharacterViewer(container) {
   container.addEventListener('pointercancel', release);
 
   const clock = new THREE.Clock();
-  let running = false;
-  function frame() {
+  let running = false, lastDraw = 0;
+  function frame(now) {
+    // 30 frames a second for the gentle idle sway, 60 while being turned by hand.
+    if (!dragging && now - lastDraw < 31) return;
+    lastDraw = now;
     const dt = Math.min(clock.getDelta(), 0.05);
     if (!dragging) swayT += dt;
     turntable.rotation.y = base + Math.sin(swayT * 0.35) * 0.3;
@@ -101,7 +112,7 @@ export function createCharacterViewer(container) {
 
   return {
     show,
-    start() { if (running) return; running = true; clock.getDelta(); resize(); renderer.setAnimationLoop(frame); },
-    stop() { running = false; renderer.setAnimationLoop(null); },
+    start() { if (running) return; running = true; ensureRenderer(); clock.getDelta(); resize(); renderer.setAnimationLoop(frame); },
+    stop() { running = false; renderer?.setAnimationLoop(null); },
   };
 }

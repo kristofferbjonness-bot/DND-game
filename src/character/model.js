@@ -14,6 +14,7 @@ import { ITEMS, has } from '../data/items.js';
 
 const solidMat = new THREE.MeshStandardMaterial({ roughness: 0.85 });
 const glowMat = new THREE.MeshBasicMaterial({ toneMapped: false });
+solidMat.userData.shared = glowMat.userData.shared = true; // used by every figure
 
 class Part {
   constructor(pivot = [0, 0, 0]) {

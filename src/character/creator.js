@@ -242,7 +242,6 @@ const slug = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g
 export function buildCharacter(c, look) {
   const cls = CLASSES[c.cls], race = RACES[c.race];
   const abilities = finalScores(c.base, c.race);
-  const mod = (id) => modifier(abilities[id]);
   const features = [...cls.features.slice(0, c.level).flat(), ...race.features].map((f) => featureFor(f, abilities));
   if (c.style) features.unshift({ name: `Fighting Style: ${STYLES[c.style].name}`, text: STYLES[c.style].text });
   if (cls.expertise) features.push({ name: 'Expertise', text: `Double proficiency in ${c.expertise.map((id) => id.replace(/-/g, ' ')).join(' and ')}.` });

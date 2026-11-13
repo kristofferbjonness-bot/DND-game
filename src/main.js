@@ -12,6 +12,7 @@ import { buildLandmark } from './world/landmarks.js';
 import { LOCATIONS } from './world/locations.js';
 import { CITIES } from './city/cities.js';
 import { createTiltShiftPasses } from './fx/tiltShift.js';
+import { mergeStatic } from './fx/mergeStatic.js';
 import { createAtmosphere, DEFAULT_SKY } from './world/atmosphere.js';
 import { createSkyPanel } from './world/skyPanel.js';
 import { createPartyMarker, groundAt } from './world/partyMarker.js';
@@ -56,6 +57,8 @@ renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.05;
 app.appendChild(renderer.domElement);
 
+let labelScale = '', labelKey = ''; // see updateLabels
+let lastActive = 0; // when the map last moved or was touched (see the loop)
 const labelRenderer = new CSS2DRenderer();
 labelRenderer.domElement.className = 'labels';
 app.appendChild(labelRenderer.domElement);
@@ -115,7 +118,8 @@ function addLabels(view, labelHeight) {
 function buildWorldView() {
   const scene = new THREE.Scene();
   const lights = addSun(scene, { extent: grid.cols * 0.62 });
-  scene.add(buildTerrain());
+  const terrain = buildTerrain();
+  scene.add(terrain);
 
   const places = LOCATIONS.map((loc) => {
     let [cx, cz] = pixelToCell(loc.px);
@@ -126,19 +130,25 @@ function buildWorldView() {
     return { ...loc, cx, cz, x, z, ground, hasTown };
   });
   const towns = places.filter((p) => p.hasTown);
-  scene.add(buildPlants((x, z) => towns.some((p) => Math.abs(p.cx - x) <= 3 && Math.abs(p.cz - z) <= 3)));
+  const plants = buildPlants((x, z) => towns.some((p) => Math.abs(p.cx - x) <= 3 && Math.abs(p.cz - z) <= 3));
+  scene.add(plants);
   const clouds = buildClouds();
   scene.add(clouds);
   const atmosphere = createAtmosphere(scene, { lights, daySky: '#cfe9f0', fog: [160, 620], clouds, touch: TOUCH });
 
+  // All the little towns become one mesh (windmill sails keep turning on their own).
   const spinners = [];
+  const townGroup = new THREE.Group();
   for (const p of towns) {
     const town = buildLandmark(p.style);
     town.scale.setScalar(p.tier === 'city' ? 1.5 : 1.2);
     town.position.set(p.x, p.ground, p.z);
-    scene.add(town);
+    townGroup.add(town);
     if (town.userData.spin) spinners.push(town.userData.spin);
   }
+  const mergedTowns = mergeStatic(townGroup, { keep: spinners });
+  if (mergedTowns) scene.add(mergedTowns);
+  scene.add(townGroup); // what is left: the turning sails
 
   const camera = new THREE.PerspectiveCamera(35, 1, 1, 1200);
   const view = {
@@ -150,8 +160,10 @@ function buildWorldView() {
     bounds: [grid.cols / 2, grid.rows / 2],
     focusDistance: (p) => ({ continent: 200, region: 70, water: 60 }[p.tier] ?? 38),
     listTiers: ['city', 'local', 'region', 'water', 'continent'],
-    shadowEvery: 4, // drifting clouds cast shadows
+    shadowEvery: TOUCH ? 8 : 4, // drifting clouds cast shadows
     update(dt) {
+      terrain.userData.lod(camera);
+      plants.userData.lod(camera.position.distanceTo(view.controls.target));
       clouds.userData.update(dt);
       for (const s of spinners) s.rotation.z += dt * 1.6;
     },
@@ -179,7 +191,7 @@ function buildCityView(id) {
   const scene = new THREE.Scene();
   const lights = addSun(scene, { ...def.sun, extent: size * 0.75 });
   const atmosphere = createAtmosphere(scene, { lights, daySky: def.sky, fog: [160, 560], touch: TOUCH });
-  vox.render(scene);
+  const lod = vox.render(scene);
 
   // Voxel positions -> world positions (the slab is centred on the origin).
   const half = size / 2;
@@ -197,7 +209,7 @@ function buildCityView(id) {
     bounds: [half, half],
     focusDistance: (p) => (p.tier === 'district' ? 60 : 46),
     listTiers: ['district', 'spot'],
-    update() {},
+    update() { lod(camera.position.distanceTo(view.controls.target)); },
     labelVisible: (p, dist) => p.tier === 'district' || dist < 170,
   };
   addLabels(view, () => 2.5);
@@ -385,6 +397,7 @@ const knows = (p) => !isSecretable(p) || seesAll() || revealed.has(p.id);
 const questFor = (p) => quests.find((q) => q.data.place === p.id && (q.data.status ?? 'active') === 'active' && (seesAll() || q.data.shown !== false));
 
 function applyFog() {
+  labelKey = ''; // names changed: re-check which ones overlap
   for (const p of views.world.places) p.label.classList.toggle('is-quest', Boolean(questFor(p)));
   for (const p of views.world.places) {
     if (!isSecretable(p)) continue;
@@ -611,10 +624,20 @@ applyFog(); // nothing is known until someone logs in
 const LABEL_PRIORITY = ['city', 'district', 'continent', 'local', 'spot', 'region', 'water', 'unnamed'];
 const labelOrder = (p) => (p.label.classList.contains('is-selected') ? -1 : LABEL_PRIORITY.indexOf(p.tier));
 
-function updateLabels(dist) {
+// Measuring labels makes the browser lay out the page, so this only runs when
+// the view has changed, not on every frame.
+function updateLabels(dist, force = false) {
+  const cam = view.camera.position, t = view.controls.target;
+  const key = `${view.id}|${cam.x.toFixed(1)},${cam.y.toFixed(1)},${cam.z.toFixed(1)}|${t.x.toFixed(1)},${t.z.toFixed(1)}|${selected?.id ?? ''}`;
+  if (key === labelKey && !force) return;
+  labelKey = key;
+  lastActive = performance.now(); // the view moved: keep the frame rate up
   // Names grow a little as you zoom in and shrink when far away (phones shrink more).
-  const scale = THREE.MathUtils.clamp((TOUCH ? 95 : 130) / dist, TOUCH ? 0.7 : 0.8, 1.1);
-  document.documentElement.style.setProperty('--label-scale', scale.toFixed(3));
+  const scale = THREE.MathUtils.clamp((TOUCH ? 95 : 130) / dist, TOUCH ? 0.7 : 0.8, 1.1).toFixed(2);
+  if (scale !== labelScale) {
+    labelScale = scale;
+    labelRenderer.domElement.style.setProperty('--label-scale', scale);
+  }
 
   const wanted = view.places
     .filter((p) => p.label.classList.contains('is-selected') || view.labelVisible(p, dist))
@@ -1002,7 +1025,7 @@ async function loadJournal() {
 
 // The little rulebook, always one tap away. Its weapons page shows the player's
 // own hero, or for the Dungeon Master the hero last opened on Status.
-const rulebook = createRulebook({
+createRulebook({
   button: document.getElementById('rulebook-toggle'),
   root: document.getElementById('rulebook'),
   getHero: () => party.find((c) => c.id === (me && !me.dm ? me.heroId : viewAs ?? statusScreen.current())) ?? null,
@@ -1059,9 +1082,19 @@ enter();
 const clock = new THREE.Clock();
 let frame = 0;
 
-renderer.setAnimationLoop(() => {
+// At most 60 frames a second while the map moves (newer iPhones would otherwise
+// draw 120), and 30 while it stands still: drifting clouds and rain look the
+// same, and the phone stays cool.
+let lastDraw = 0, lastCompass = '';
+const wakeUp = () => { lastActive = performance.now(); };
+for (const type of ['pointerdown', 'pointermove', 'wheel', 'touchstart', 'keydown']) window.addEventListener(type, wakeUp, { passive: true });
+
+renderer.setAnimationLoop((now) => {
+  if (screen !== 'map') { clock.getDelta(); return; }
+  const idle = now - lastActive > 700 && !flight && !spin;
+  if (now - lastDraw < (idle ? 31 : 14)) return;
+  lastDraw = now;
   const dt = Math.min(clock.getDelta(), 0.05);
-  if (screen !== 'map') return;
   applyKeys(dt);
   updateFlight(dt);
   updateSpin(dt);
@@ -1079,7 +1112,8 @@ renderer.setAnimationLoop(() => {
   composer.render();
   labelRenderer.render(view.scene, view.camera);
   updateLabels(dist);
-  compassNeedle.style.transform = `rotate(${azimuth()}rad)`;
+  const needle = `rotate(${azimuth().toFixed(3)}rad)`;
+  if (needle !== lastCompass) { lastCompass = needle; compassNeedle.style.transform = needle; }
 });
 
 if (import.meta.env.DEV) window.__debug = { renderer, get view() { return view; } };

@@ -1,5 +1,6 @@
 // Builds the voxel terrain: one rounded block per visible layer of each land
 // column, one flat block per sea cell, a water surface and a distant ocean floor.
+// Blocks are grouped in chunks so the parts off-screen are not drawn at all.
 import * as THREE from 'three';
 import { bevelBox } from '../fx/bevelBox.js';
 import {
@@ -24,6 +25,18 @@ const SNOWCAP = C('#f7f9fb');
 const SEA = [C('#8fd8d6'), C('#5cbcc9'), C('#3c9bbd'), C('#2d7fa8')];
 
 const MOUNTAIN_FROM = 7; // layers; above this a column is bare rock
+const CHUNK = 32;          // cells per side of a chunk; off-screen chunks are skipped
+const LOD_DISTANCE = 80;   // beyond this, chunks use plain blocks (a bevel is under a pixel there)
+
+// A second instanced mesh drawing the same blocks with another shape.
+function twin(mesh, geometry) {
+  const t = new THREE.InstancedMesh(geometry, mesh.material, mesh.count);
+  t.instanceMatrix = mesh.instanceMatrix;
+  t.instanceColor = mesh.instanceColor;
+  mesh.computeBoundingSphere();
+  t.boundingSphere = mesh.boundingSphere;
+  return t;
+}
 const SNOWCAP_FROM = 14;
 
 function cubeColor(k, x, z, layer, top, out) {
@@ -70,35 +83,61 @@ export function buildTerrain() {
 
   const m = new THREE.Matrix4();
   const col = new THREE.Color();
+  const chunkOf = (x, z) => `${Math.floor(x / CHUNK)},${Math.floor(z / CHUNK)}`;
+  const chunks = []; // { centre, near: [meshes], far: [meshes] }
 
-  // Land: softly rounded blocks.
-  const landGeo = bevelBox(1, LAYER, 1, 0.05);
+  // Land: softly rounded blocks near the camera, plain blocks further away
+  // (the bevels are too small to see from there). Both share one set of
+  // positions and colours per chunk, and each casts the shadows while shown.
+  const byChunk = new Map();
+  for (const b of landBlocks) {
+    const key = chunkOf(b[1], b[2]);
+    if (!byChunk.has(key)) byChunk.set(key, []);
+    byChunk.get(key).push(b);
+  }
+  const landNear = bevelBox(1, LAYER, 1, 0.05, { open: true });
+  const landFar = new THREE.BoxGeometry(1, LAYER, 1);
   const landMat = new THREE.MeshStandardMaterial({ roughness: 0.9, metalness: 0 });
-  const land = new THREE.InstancedMesh(landGeo, landMat, landBlocks.length);
-  landBlocks.forEach(([k, x, z, layer, h], i) => {
-    const [wx, wz] = cellToWorld(x, z);
-    m.makeTranslation(wx, (layer - 0.5) * LAYER, wz);
-    land.setMatrixAt(i, m);
-    land.setColorAt(i, cubeColor(k, x, z, layer, h, col));
-  });
-  land.castShadow = true;
-  land.receiveShadow = true;
-  group.add(land);
+  for (const list of byChunk.values()) {
+    const near = new THREE.InstancedMesh(landNear, landMat, list.length);
+    list.forEach(([k, x, z, layer, h], i) => {
+      const [wx, wz] = cellToWorld(x, z);
+      near.setMatrixAt(i, m.makeTranslation(wx, (layer - 0.5) * LAYER, wz));
+      near.setColorAt(i, cubeColor(k, x, z, layer, h, col));
+    });
+    near.castShadow = near.receiveShadow = true;
+    const far = twin(near, landFar);
+    far.castShadow = far.receiveShadow = true;
+    group.add(near, far);
+    chunks.push({ centre: near.boundingSphere.center, near, far });
+  }
 
-  // Sea floor: plain blocks, coloured by depth, seen through the water.
-  const seaGeo = new THREE.BoxGeometry(1, LAYER, 1);
+  // Sea floor, coloured by depth, seen through the water. Only the tops can be
+  // seen, so each cell is a flat tile at the height of its top.
+  const seaGeo = new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2);
   const seaMat = new THREE.MeshStandardMaterial({ roughness: 1 });
-  const sea = new THREE.InstancedMesh(seaGeo, seaMat, seaCells.length);
-  seaCells.forEach((k, i) => {
-    const x = k % cols, z = (k / cols) | 0, h = grid.heights[k];
-    const [wx, wz] = cellToWorld(x, z);
-    m.makeTranslation(wx, (h - 0.5) * LAYER, wz);
-    sea.setMatrixAt(i, m);
-    col.copy(SEA[Math.min(-h - 1, 3)]).multiplyScalar(0.97 + hash(x, z, 9) * 0.06);
-    sea.setColorAt(i, col);
-  });
-  sea.receiveShadow = true;
-  group.add(sea);
+  {
+    const sea = new THREE.InstancedMesh(seaGeo, seaMat, seaCells.length);
+    seaCells.forEach((k, i) => {
+      const x = k % cols, z = (k / cols) | 0, h = grid.heights[k];
+      const [wx, wz] = cellToWorld(x, z);
+      sea.setMatrixAt(i, m.makeTranslation(wx, h * LAYER, wz));
+      col.copy(SEA[Math.min(-h - 1, 3)]).multiplyScalar(0.97 + hash(x, z, 9) * 0.06);
+      sea.setColorAt(i, col);
+    });
+    sea.computeBoundingSphere();
+    sea.receiveShadow = true;
+    group.add(sea);
+  }
+
+  // Each frame: rounded blocks for chunks near the camera, plain ones further off.
+  group.userData.lod = (camera) => {
+    for (const c of chunks) {
+      const isNear = camera.position.distanceTo(c.centre) < LOD_DISTANCE;
+      c.near.visible = isNear;
+      c.far.visible = !isNear;
+    }
+  };
 
   // Deep ocean beyond the edges of the drawn map.
   const floor = new THREE.Mesh(

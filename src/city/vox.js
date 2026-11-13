@@ -129,7 +129,20 @@ export class Vox {
     const jitter = (target, c, x, y, z) =>
       target.set(c).multiplyScalar(0.93 + hash(x, y, z) * 0.12);
 
-    build(this.solid, solidGeo, new THREE.MeshStandardMaterial({ roughness: 0.88 }), jitter);
+    // Solid blocks: rounded when the camera is close, plain when it is far (a
+    // bevel is smaller than a pixel there). Whichever is shown casts the shadows.
+    const solid = build(this.solid, solidGeo, new THREE.MeshStandardMaterial({ roughness: 0.88 }), jitter);
+    const plain = new THREE.BoxGeometry(1, 1, 1);
+    const twin = () => {
+      const t = new THREE.InstancedMesh(plain, solid.material, solid.count);
+      t.instanceMatrix = solid.instanceMatrix;
+      t.instanceColor = solid.instanceColor;
+      scene.add(t);
+      return t;
+    };
+    const far = twin();
+    far.castShadow = far.receiveShadow = true;
+    far.visible = false;
     build(this.glow, solidGeo, new THREE.MeshBasicMaterial({ toneMapped: false }), (t, c) => t.set(c), false);
     if (this.water.size) {
       build(this.water, new THREE.BoxGeometry(1, 1, 1), new THREE.MeshStandardMaterial({
@@ -143,6 +156,12 @@ export class Vox {
       build(this.mist, bevelBox(1, 1, 1, 0.3), mistMat,
         (t, c, x, y, z) => t.set(this.mistColour ?? '#eef1f4').multiplyScalar(0.95 + hash(x, y, z) * 0.05), false);
     }
+    // Call with the camera's distance from what it looks at.
+    return (distance) => {
+      const near = distance < 110;
+      solid.visible = near;
+      far.visible = !near;
+    };
   }
 }
 

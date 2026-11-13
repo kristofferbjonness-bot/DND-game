@@ -67,6 +67,7 @@ export function buildPlants(avoid) {
 
   const group = new THREE.Group();
   const mat = new THREE.MeshStandardMaterial({ roughness: 0.85 });
+  const lods = []; // [mesh, rounded shape, plain shape]
   const m = new THREE.Matrix4();
   const q = new THREE.Quaternion();
   const up = new THREE.Vector3(0, 1, 0);
@@ -75,9 +76,11 @@ export function buildPlants(avoid) {
     const list = spots[kind];
     if (!list.length) continue;
     for (const [w, h, d, y, colour] of parts) {
-      const geo = bevelBox(w, h, d, Math.min(w, h, d) * 0.18).clone();
+      const geo = bevelBox(w, h, d, Math.min(w, h, d) * 0.18, { open: true }).clone();
       geo.translate(0, y, 0);
+      const plain = new THREE.BoxGeometry(w, h, d).translate(0, y, 0);
       const mesh = new THREE.InstancedMesh(geo, mat, list.length);
+      lods.push([mesh, geo, plain]);
       const c = new THREE.Color(colour);
       const tint = new THREE.Color();
       list.forEach((p, i) => {
@@ -91,27 +94,37 @@ export function buildPlants(avoid) {
       group.add(mesh);
     }
   }
+  // Zoomed out, the trees' rounded edges are too small to see: use plain boxes.
+  let rounded = true;
+  group.userData.lod = (distance) => {
+    const want = distance < 110;
+    if (want === rounded) return;
+    rounded = want;
+    for (const [mesh, geo, plain] of lods) mesh.geometry = want ? geo : plain;
+  };
   return group;
 }
 
+// Drifting clouds. Each cloud is a few flattened puffs; all puffs are drawn as
+// one instanced mesh, moved along each frame.
 export function buildClouds() {
   const { cols, rows } = grid;
   const group = new THREE.Group();
   const mat = new THREE.MeshStandardMaterial({
     color: '#ffffff', roughness: 1, transparent: true, opacity: 0.92,
   });
-  const geo = bevelBox(1, 1, 1, 0.2);
   const clouds = [];
+  const puffs = [];
   for (let i = 0; i < 14; i++) {
-    const cloud = new THREE.Group();
-    const puffs = 3 + Math.floor(hash(i, 0, 7) * 4);
-    for (let p = 0; p < puffs; p++) {
-      const puff = new THREE.Mesh(geo, mat);
+    const cloud = new THREE.Object3D();
+    const n = 3 + Math.floor(hash(i, 0, 7) * 4);
+    for (let p = 0; p < n; p++) {
+      const puff = new THREE.Object3D();
       const s = 2.5 + hash(i, p, 8) * 3;
       puff.scale.set(s * 1.4, s * 0.55, s);
-      puff.position.set(p * 2.6 - puffs * 1.3, hash(i, p, 9) * 0.8, (hash(i, p, 10) - 0.5) * 2.5);
-      puff.castShadow = true;
+      puff.position.set(p * 2.6 - n * 1.3, hash(i, p, 9) * 0.8, (hash(i, p, 10) - 0.5) * 2.5);
       cloud.add(puff);
+      puffs.push(puff);
     }
     cloud.position.set(
       (hash(i, 1, 11) - 0.5) * cols * 1.2,
@@ -120,8 +133,18 @@ export function buildClouds() {
     );
     cloud.userData.speed = 0.6 + hash(i, 1, 14) * 0.8;
     clouds.push(cloud);
-    group.add(cloud);
   }
+  const mesh = new THREE.InstancedMesh(bevelBox(1, 1, 1, 0.2), mat, puffs.length);
+  mesh.castShadow = true;
+  mesh.frustumCulled = false; // the puffs move about
+  group.add(mesh);
+  const place = () => {
+    clouds.forEach((c) => c.updateMatrixWorld(true));
+    puffs.forEach((p, i) => mesh.setMatrixAt(i, p.matrixWorld));
+    mesh.instanceMatrix.needsUpdate = true;
+  };
+  place();
+
   const span = cols * 1.3;
   let windSpeed = 1;
   group.userData.update = (dt) => {
@@ -129,6 +152,7 @@ export function buildClouds() {
       c.position.x += c.userData.speed * windSpeed * dt;
       if (c.position.x > span / 2) c.position.x -= span;
     }
+    place();
   };
   // The weather changes the clouds: bigger and greyer in rain and storms,
   // dark at night, and faster in the wind (see world/atmosphere.js).
@@ -137,7 +161,7 @@ export function buildClouds() {
     windSpeed = wind;
     mat.color.copy(white).lerp(grey, g).lerp(dark, night * 0.7);
     mat.opacity = Math.min(0.97, 0.88 + g * 0.1);
-    for (const c of clouds) c.scale.setScalar(scale);
+    if (clouds[0].scale.x !== scale) { for (const c of clouds) c.scale.setScalar(scale); place(); }
   };
   return group;
 }

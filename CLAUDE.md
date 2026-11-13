@@ -291,18 +291,40 @@ The original assets (hand-drawn world map, location art, character art, lore doc
     the phone turns (battleScene.js).
   - The world view's opening shot steps back to fit (`fitScale`).
   - Landscape phones use the `(max-height: 500px) and (orientation: landscape)` rules.
-- Performance:
-  - Voxels use `src/fx/bevelBox.js`, a 44-triangle bevelled box. The earlier RoundedBoxGeometry
-    took 300 triangles per voxel, and there are about 65k instances.
-  - The shadow map only updates when needed: on view switch, and every `view.shadowEvery`
-    frames on the world view because of the clouds.
+- Performance (an optimisation pass on 2026-11-13; measure with `tools/*.tmp.mjs`-style
+  headless runs before changing these):
+  - Voxels use `src/fx/bevelBox.js`, a 44-triangle bevelled box (`{ open: true }` drops the
+    underside, used for terrain and trees).
+  - Terrain (`terrain.js`):
+    - Built in 32-cell chunks, so off-screen chunks are frustum-culled.
+    - Each chunk has a rounded and a plain-box InstancedMesh sharing the same instance buffers
+      (`twin`). Chunks beyond `LOD_DISTANCE` (80) use the plain boxes, since a bevel is under a
+      pixel there.
+    - The sea floor is flat tiles.
+  - Trees switch to plain boxes when zoomed out (`plants.userData.lod`). Razz does the same,
+    rounded under 110 units and plain beyond (`vox.render` returns the lod function).
+  - Shadows come from whatever is shown. Note: three.js only draws shadow casters that the main
+    camera's layers include, so shadow-only proxy layers do NOT work.
+  - The towns are merged into one vertex-coloured mesh (`fx/mergeStatic.js`); only the windmill
+    sails stay separate. The clouds are one InstancedMesh.
+  - Results: about 2M → 0.5–0.7M triangles per frame, and 150–320 → 30–50 draw calls; the
+    shadow pass is about 3.6M → 0.9M triangles.
+  - Map loop: at most 60 fps while moving and 30 fps when idle (`lastActive`). The label
+    overlap check and the `--label-scale` update (scoped to the labels layer) only run when the
+    camera moved, so an idle map does no layout.
+  - The shadow map only updates when needed: on view switch, every `view.shadowEvery` frames on
+    the world view (4, or 8 on phones) because of the clouds, and when the sun moves.
+  - 3D stages (viewer.js, battleScene.js) create their WebGL renderer on first `start()`, so
+    startup makes 1 context instead of 6. They run at 30 fps when idle and 60 while dragging or
+    during attack effects.
+  - Rebuilt figures and finished attack effects are freed with `fx/dispose.js` (`disposeTree`).
+    Shared geometry and materials carry `userData.shared` so they are never freed.
   - In dev, `window.__debug` exposes the renderer and the current view.
 
 ## Roadmap (agreed order)
 
-1. Performance and app shell. The cheap voxels and on-demand shadows are done.
-   - Merge the voxels into chunked meshes with face culling, instead of one instance per cube.
-   - Render on demand instead of every frame, and use lighter shadows on phones.
+1. Performance and app shell. Cheap voxels, on-demand shadows, terrain chunks with distance
+   detail, merged towns, frame caps and lazy 3D stages are done.
    - Add a home screen with tabs (World Map · Characters · later Party, Journal, DM tools),
      where the non-3D screens never load three.js.
 2. Character creator and character sheet: stats, equipment and inventory. Save to the device

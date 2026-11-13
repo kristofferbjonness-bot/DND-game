@@ -5,6 +5,7 @@ import { CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
 import { buildFigure } from '../character/model.js';
 import { worldToCell, inBounds, WATER_LEVEL } from './grid.js';
 import { surfaceY } from './terrain.js';
+import { disposeTree } from '../fx/dispose.js';
 
 const SCALE = 0.12; // a 24-voxel hero becomes about 3 map units tall
 
@@ -39,6 +40,7 @@ export function createPartyMarker(scene, { onTap } = {}) {
       const key = JSON.stringify(heroes.map((c) => [c.id, c.equipped, Boolean(c.figure)]));
       if (key === cast) return;
       cast = key;
+      for (const old of [...crowd.children]) disposeTree(old);
       crowd.clear();
       figures = [];
       heroes.forEach((c, i) => {
