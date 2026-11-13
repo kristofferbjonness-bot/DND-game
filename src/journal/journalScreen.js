@@ -404,7 +404,7 @@ export function createJournalScreen(root, { entries, canEdit, mapPlaces, heroes 
       <form class="jr-form" data-kind="item">
         <h3 class="jr-name">${isNew ? 'New item' : 'Edit item'}</h3>
         <div class="field-row">
-          <label class="field"><span>Name</span><input class="field__input" name="title" maxlength="80" required value="${esc(d.title)}" placeholder="e.g. A water-stained hymnal" /></label>
+          <label class="field"><span>Name</span><input class="field__input" name="title" maxlength="80" required value="${esc(d.title)}" placeholder="e.g. An old diary" /></label>
           <label class="field"><span>Kind</span><select class="field__input" name="type">${Object.entries(ITEM_TYPE).map(([k, v]) => `<option value="${k}"${k === (d.type ?? 'book') ? ' selected' : ''}>${v.label}</option>`).join('')}</select></label>
         </div>
         <div class="field-row">
