@@ -12,6 +12,9 @@ import { buildLandmark } from './world/landmarks.js';
 import { LOCATIONS } from './world/locations.js';
 import { CITIES } from './city/cities.js';
 import { createTiltShiftPasses } from './fx/tiltShift.js';
+import { createAtmosphere, DEFAULT_SKY } from './world/atmosphere.js';
+import { createSkyPanel } from './world/skyPanel.js';
+import { createPartyMarker, groundAt } from './world/partyMarker.js';
 import { attachTouchGestures } from './fx/touchGestures.js';
 import { createStatusScreen } from './status/statusScreen.js';
 import { renderParty } from './status/partyScreen.js';
@@ -25,7 +28,7 @@ import { createStartScreen } from './start/startScreen.js';
 import { createCreatorScreen } from './creator/creatorScreen.js';
 import { createHeroManager } from './status/heroManager.js';
 import { shortRest, longRest, readyToLevel } from './character/progress.js';
-import { loadRevealed, setRevealed, watchRevealed } from './net/backend.js';
+import { loadRevealed, setRevealed, watchRevealed, loadWorld, saveWorld, watchWorld } from './net/backend.js';
 import { supabase, myProfile, loadCharacters, seedCharacters, saveCharacter, deleteCharacter, watchCharacters, signOut, explain, encounterChannel, loadMonsters, watchMonsters } from './net/backend.js';
 import './style.css';
 
@@ -54,8 +57,10 @@ const labelRenderer = new CSS2DRenderer();
 labelRenderer.domElement.className = 'labels';
 app.appendChild(labelRenderer.domElement);
 
+// Returns the lights, so the weather and time of day can change them.
 function addSun(scene, { color = '#fff0d4', intensity = 2.3, position = [-70, 110, 50], extent = 130, hemi = 1.5 }) {
-  scene.add(new THREE.HemisphereLight('#fff7e8', '#8d7c62', hemi));
+  const hemiLight = new THREE.HemisphereLight('#fff7e8', '#8d7c62', hemi);
+  scene.add(hemiLight);
   const sun = new THREE.DirectionalLight(color, intensity);
   sun.position.set(...position);
   sun.castShadow = true;
@@ -65,6 +70,8 @@ function addSun(scene, { color = '#fff0d4', intensity = 2.3, position = [-70, 11
   sun.shadow.normalBias = 0.03;
   sun.shadow.radius = 3;
   scene.add(sun);
+  scene.add(sun.target);
+  return { sun, hemi: hemiLight };
 }
 
 function makeControls(camera, { min, max }) {
@@ -104,10 +111,7 @@ function addLabels(view, labelHeight) {
 // --- World view ------------------------------------------------------------------
 function buildWorldView() {
   const scene = new THREE.Scene();
-  const sky = new THREE.Color('#cfe9f0');
-  scene.background = sky;
-  scene.fog = new THREE.Fog(sky, 260, 520);
-  addSun(scene, { extent: grid.cols * 0.62 });
+  const lights = addSun(scene, { extent: grid.cols * 0.62 });
   scene.add(buildTerrain());
 
   const places = LOCATIONS.map((loc) => {
@@ -122,6 +126,7 @@ function buildWorldView() {
   scene.add(buildPlants((x, z) => towns.some((p) => Math.abs(p.cx - x) <= 3 && Math.abs(p.cz - z) <= 3)));
   const clouds = buildClouds();
   scene.add(clouds);
+  const atmosphere = createAtmosphere(scene, { lights, daySky: '#cfe9f0', fog: [160, 620], clouds, touch: TOUCH });
 
   const spinners = [];
   for (const p of towns) {
@@ -136,7 +141,7 @@ function buildWorldView() {
   const view = {
     id: 'world',
     title: 'World Map',
-    scene, camera, places,
+    scene, camera, places, atmosphere,
     controls: makeControls(camera, { min: 18, max: 420 }),
     start: { target: new THREE.Vector3(0, 0, 8), offset: new THREE.Vector3(0, 175, 120) },
     bounds: [grid.cols / 2, grid.rows / 2],
@@ -169,9 +174,8 @@ function buildCityView(id) {
   const def = CITIES[id];
   const { vox, places: raw, size } = def.build();
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(def.sky);
-  scene.fog = new THREE.Fog(def.sky, 240, 480);
-  addSun(scene, { ...def.sun, extent: size * 0.75 });
+  const lights = addSun(scene, { ...def.sun, extent: size * 0.75 });
+  const atmosphere = createAtmosphere(scene, { lights, daySky: def.sky, fog: [160, 560], touch: TOUCH });
   vox.render(scene);
 
   // Voxel positions -> world positions (the slab is centred on the origin).
@@ -184,7 +188,7 @@ function buildCityView(id) {
   const view = {
     id,
     title: def.name,
-    scene, camera, places,
+    scene, camera, places, atmosphere,
     controls: makeControls(camera, { min: 14, max: 360 }),
     start: { target: new THREE.Vector3(4, 6, 4), offset: new THREE.Vector3(70, 105, 95) },
     bounds: [half, half],
@@ -335,6 +339,7 @@ const panelAction = panel.querySelector('.panel__action');
 panel.querySelector('.panel__close').addEventListener('click', () => select(null));
 
 const panelReveal = panel.querySelector('.panel__reveal');
+const panelParty = panel.querySelector('.panel__party');
 
 let selected = null;
 function select(p, { fly = true } = {}) {
@@ -355,6 +360,7 @@ function select(p, { fly = true } = {}) {
   const hideable = seesAll() && isSecretable(p);
   panelReveal.hidden = !hideable;
   if (hideable) panelReveal.textContent = revealed.has(p.id) ? 'Hide from players' : 'Reveal to players';
+  panelParty.hidden = !(seesAll() && views.world.places.includes(p));
   panel.hidden = false;
   if (fly) flyTo(new THREE.Vector3(p.x, p.ground, p.z), view.focusDistance(p) * fitScale(view));
 }
@@ -381,6 +387,7 @@ function applyFog() {
   }
   buildPlacesList();
   if (selected) select(selected, { fly: false });
+  skyPanel?.render();
 }
 
 panelReveal.addEventListener('click', async () => {
@@ -393,6 +400,95 @@ panelReveal.addEventListener('click', async () => {
     applyFog();
     toast(on ? `The players now know ${p.name}.` : `${p.name} is hidden from the players.`);
   } catch (err) { toast(`Could not change it: ${explain(err)}`); }
+});
+
+// --- Weather, time of day and the party on the world map ------------------------------------
+// Kept in the Supabase table `world` (supabase/world.sql). The Dungeon Master
+// changes it from the weather button; every device draws the same sky.
+let sky = { ...DEFAULT_SKY };
+const razz = views.world.places.find((p) => p.id === 'razz');
+let partyAt = { x: razz.x + 2, z: razz.z + 2, shown: true };
+const party3d = createPartyMarker(views.world.scene, { onTap: () => showScreen('party') });
+
+function applyParty() {
+  party3d.setHeroes(party);
+  party3d.place(partyAt.x, partyAt.z);
+  party3d.show(partyAt.shown !== false && party.length > 0);
+}
+
+let lastLocalChange = 0, saveTimer = null;
+function saveWorldSoon() {
+  lastLocalChange = Date.now();
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => saveWorld({ sky, party: partyAt }).catch((err) => toast(explain(err))), 400);
+}
+
+const skyPanel = createSkyPanel({
+  button: document.getElementById('sky-toggle'),
+  panel: document.getElementById('sky'),
+  world: () => ({ sky, party: partyAt }),
+  canEdit: () => seesAll(),
+  onSky(changes) { sky = { ...sky, ...changes }; saveWorldSoon(); },
+  onParty(changes) { partyAt = { ...partyAt, ...changes }; applyParty(); saveWorldSoon(); },
+  onMoveParty: startPlacingParty,
+});
+
+// Someone (the DM, on another device) changed the world. Our own recent
+// changes win for a moment, so a slider being dragged does not jump back.
+function useWorld(data) {
+  if (Date.now() - lastLocalChange < 2500) return;
+  if (data.sky) sky = { ...DEFAULT_SKY, ...data.sky };
+  if (data.party) partyAt = { ...partyAt, ...data.party };
+  applyParty();
+  skyPanel.render();
+}
+let watchingWorld = null;
+async function loadWorldState() {
+  try { useWorld(await loadWorld()); } catch (err) { console.warn('World state not available yet:', err.message); }
+  watchingWorld ??= watchWorld(useWorld);
+}
+
+// Moving the party: the DM taps the world map where they are.
+let placingParty = false, tapStart = null;
+const raycaster = new THREE.Raycaster();
+function startPlacingParty() {
+  if (view.id !== 'world') backToWorld();
+  select(null);
+  placingParty = true;
+  document.body.classList.add('is-placing');
+  toast('Tap the map where the party is.');
+}
+function mapPoint(clientX, clientY) {
+  const r = labelRenderer.domElement.getBoundingClientRect();
+  raycaster.setFromCamera(new THREE.Vector2(((clientX - r.left) / r.width) * 2 - 1, -((clientY - r.top) / r.height) * 2 + 1), views.world.camera);
+  const hit = new THREE.Vector3();
+  let y = 1;
+  for (let i = 0; i < 3; i++) { // step onto the ground under the finger
+    if (!raycaster.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 1, 0), -y), hit)) return null;
+    y = groundAt(hit.x, hit.z);
+  }
+  return Math.abs(hit.x) < grid.cols / 2 && Math.abs(hit.z) < grid.rows / 2 ? hit : null;
+}
+labelRenderer.domElement.addEventListener('pointerdown', (e) => { if (placingParty) tapStart = { x: e.clientX, y: e.clientY }; });
+labelRenderer.domElement.addEventListener('pointerup', (e) => {
+  if (!placingParty || !tapStart || Math.hypot(e.clientX - tapStart.x, e.clientY - tapStart.y) > 10) return;
+  tapStart = null;
+  const hit = mapPoint(e.clientX, e.clientY);
+  if (!hit) return;
+  placingParty = false;
+  document.body.classList.remove('is-placing');
+  partyAt = { ...partyAt, x: hit.x, z: hit.z, shown: true };
+  applyParty();
+  saveWorldSoon();
+  toast('The party is here now.');
+});
+panelParty.addEventListener('click', () => {
+  const p = selected;
+  if (!p) return;
+  partyAt = { ...partyAt, x: p.x + 1.5, z: p.z + 1.5, shown: true };
+  applyParty();
+  saveWorldSoon();
+  toast(`The party is at ${p.name}.`);
 });
 
 let watchingPlaces = null;
@@ -614,6 +710,7 @@ function everyone(what, amount) {
 }
 // Redraws whatever shows a hero after a change made here.
 function heroChanged(id) {
+  applyParty();
   statusScreen.refresh(id);
   combatScreen.refresh();
   combatView.refresh();
@@ -754,6 +851,8 @@ async function enter() {
   viewAs = null;
   applyView();
   await loadFog(me.dm);
+  applyParty();
+  await loadWorldState();
   openFightChannel();
   showScreen(me.dm ? 'map' : combatView.active ? 'fight' : 'status');
 }
@@ -810,6 +909,7 @@ roleMenu.addEventListener('click', async (e) => {
   fightChannel = null;
   watchingMonsters = null;
   watchingPlaces = null;
+  watchingWorld = null;
   combatView.show({ active: false });
   document.body.dataset.fight = '';
   me = null;
@@ -852,6 +952,11 @@ renderer.setAnimationLoop(() => {
   frame++;
   if (view.shadowEvery && frame % view.shadowEvery === 0) renderer.shadowMap.needsUpdate = true;
   const dist = view.camera.position.distanceTo(view.controls.target);
+  // Weather and time of day, as the Dungeon Master set them.
+  const air = view.atmosphere.update(sky, dt, { target: view.controls.target, distance: dist });
+  renderer.toneMappingExposure = air.exposure;
+  if (air.moved) renderer.shadowMap.needsUpdate = true;
+  party3d.update(clock.elapsedTime);
   composer.render();
   labelRenderer.render(view.scene, view.camera);
   updateLabels(dist);

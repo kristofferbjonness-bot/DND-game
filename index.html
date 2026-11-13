@@ -96,10 +96,12 @@
         <p class="panel__text"></p>
         <button type="button" class="panel__action" hidden>Explore the city →</button>
         <button type="button" class="panel__reveal" hidden></button>
+        <button type="button" class="panel__party" hidden>Move the party here</button>
       </div>
     </aside>
 
     <div class="hud-stack">
+      <button id="sky-toggle" type="button" class="hud round sky-toggle" aria-label="Weather and time">☀️</button>
       <button id="home" type="button" class="hud round" aria-label="Show the whole map" title="Show the whole map">
         <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" />
@@ -113,6 +115,8 @@
         </svg>
       </button>
     </div>
+
+    <div id="sky" class="hud sky" hidden></div>
 
     <button id="help-toggle" type="button" class="hud round" aria-label="Controls and settings" aria-expanded="false">?</button>
     <div id="help" class="hud help" hidden>

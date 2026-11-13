@@ -124,6 +124,31 @@ export function watchRevealed(onChange) {
     .subscribe();
 }
 
+// --- The world: weather, time of day and where the party is ---------------------------------
+// One row (id 1) holding { sky: {...}, party: { x, z, shown } }. Everyone reads it; the
+// Dungeon Master changes it (supabase/world.sql).
+
+export async function loadWorld() {
+  const { data, error } = await supabase.from('world').select('data').eq('id', 1).maybeSingle();
+  if (error) throw error;
+  return data?.data ?? {};
+}
+
+export async function saveWorld(data) {
+  const { error } = await supabase.from('world').upsert({ id: 1, data });
+  if (error) {
+    if (/relation|world/.test(error.message)) throw new Error('Run supabase/world.sql in Supabase first, so everyone sees the weather and the party.');
+    throw error;
+  }
+}
+
+export function watchWorld(onChange) {
+  return supabase
+    .channel('world')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'world' }, (msg) => { if (msg.new?.data) onChange(msg.new.data); })
+    .subscribe();
+}
+
 // --- Live encounter ------------------------------------------------------------------------
 // The Dungeon Master broadcasts what players may see of a fight; players who join
 // late say hello and the DM answers with the current state. Nothing is stored.

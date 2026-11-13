@@ -123,11 +123,21 @@ export function buildClouds() {
     group.add(cloud);
   }
   const span = cols * 1.3;
+  let windSpeed = 1;
   group.userData.update = (dt) => {
     for (const c of clouds) {
-      c.position.x += c.userData.speed * dt;
+      c.position.x += c.userData.speed * windSpeed * dt;
       if (c.position.x > span / 2) c.position.x -= span;
     }
+  };
+  // The weather changes the clouds: bigger and greyer in rain and storms,
+  // dark at night, and faster in the wind (see world/atmosphere.js).
+  const white = new THREE.Color('#ffffff'), grey = new THREE.Color('#6f7580'), dark = new THREE.Color('#3a4060');
+  group.userData.setLook = ({ scale = 1, grey: g = 0, night = 0, wind = 1 }) => {
+    windSpeed = wind;
+    mat.color.copy(white).lerp(grey, g).lerp(dark, night * 0.7);
+    mat.opacity = Math.min(0.97, 0.88 + g * 0.1);
+    for (const c of clouds) c.scale.setScalar(scale);
   };
   return group;
 }

@@ -186,6 +186,22 @@ The original assets (hand-drawn world map, location art, character art, lore doc
     table empty, reveals razz, tine and bartedalen (`FIRST_KNOWN`).
   - "View as" a hero shows the player's version.
   - The lore text is still inside the app's code, so a curious player could find it.
+- **Weather, time of day and the party on the map:**
+  - `src/world/atmosphere.js` (one per map view) lights the scene from the shared sky state
+    `{ weather, hour, running, setAt, speed }`:
+    - The sun or moon moves across the sky, with key colours through the day (`KEYS`).
+    - Each weather has its own mood (`MOODS`): grey sky, dimmer light, bigger and greyer clouds,
+      rain or snow particles that follow the camera target, wind streaks, and lightning in storms.
+    - Fog follows the camera distance, so zooming out stays clear.
+    - While `running`, the hour is worked out from `setAt`, so every device agrees.
+  - The weather button (`src/world/skyPanel.js`, top of the bottom-right HUD stack) shows the
+    weather and time to everyone. The DM also gets weather, a time slider, "Time passes" with a
+    speed, and the party controls.
+  - The party (`src/world/partyMarker.js`) appears as the heroes' figures at 0.12 scale with a
+    red tag. The DM moves them with "Move the party" (then taps the map, raycast onto the
+    ground) or with "Move the party here" on a place card. Tapping the tag opens Party.
+  - Stored in the Supabase table `world` (one row, `supabase/world.sql`) with realtime. A local
+    change wins over incoming updates for 2.5 s, so sliders don't jump back.
 - **Party** (`src/status/partyScreen.js`) shows a card per hero with HP, AC, initiative and
   passive perception. Tapping a card opens that hero on Status.
   - DM tools (hidden while previewing as a player):

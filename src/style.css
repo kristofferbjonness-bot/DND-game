@@ -1293,3 +1293,61 @@ textarea.field__input { resize: vertical; }
   .manage { padding: var(--top) 8px var(--nav); }
   .manage__card { padding: 12px 14px 14px; }
 }
+
+/* ---------- Weather, time and the party on the map ---------- */
+
+.sky-toggle { font-size: 21px; line-height: 1; }
+.sky {
+  right: calc(max(16px, var(--safe-r)) + 56px); bottom: max(16px, var(--safe-b));
+  width: min(320px, calc(100vw - 100px)); padding: 12px 14px; border-radius: 16px; display: grid; gap: 9px;
+  z-index: 3;
+  max-height: calc(100vh - 100px); overflow-y: auto;
+}
+.sky[hidden] { display: none; }
+.sky__head { display: flex; align-items: center; gap: 10px; }
+.sky__icon { font-size: 28px; line-height: 1; }
+.sky__head div { display: flex; flex-direction: column; }
+.sky__head b { font: 700 16px var(--font-display); }
+.sky__head small { font-size: 13px; color: var(--ink-soft); }
+.sky__weather { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
+.sky__weather button {
+  display: flex; flex-direction: column; align-items: center; gap: 1px;
+  font: 600 12px var(--font-body); color: var(--ink); background: #fffaf0;
+  border: 1.5px solid var(--parchment-edge); border-radius: 10px; padding: 5px 2px; cursor: pointer;
+}
+.sky__weather i { font-style: normal; font-size: 18px; }
+.sky__weather .is-on { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+.sky__label { display: flex; justify-content: space-between; font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-soft); }
+.sky__label b { font: 700 14px var(--font-display); color: var(--ink); letter-spacing: 0; }
+.sky__time { width: 100%; accent-color: var(--ink); margin: -4px 0 0; }
+.sky__row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px; }
+.sky__row .toggle { margin: 0; font-size: 14px; }
+.sky__speed { font: 13px var(--font-body); color: var(--ink); background: #fffaf0; border: 1.5px solid var(--parchment-edge); border-radius: 8px; padding: 4px 6px; max-width: 100%; }
+.sky__party { padding-top: 8px; border-top: 1px solid rgba(217, 199, 160, 0.6); }
+.sky__move {
+  font: 700 13px var(--font-display); color: var(--parchment); background: var(--ink);
+  border: 0; border-radius: 999px; padding: 7px 14px; cursor: pointer;
+}
+
+.label--party {
+  font: 700 calc(12px * var(--ls)) var(--font-display); letter-spacing: 0.04em;
+  color: #fff8ec; background: var(--accent); border: 1.5px solid #7a2c2c; border-radius: 999px;
+  padding: 0.25em 0.8em 0.17em; box-shadow: var(--shadow);
+}
+.label--party { translate: 0 calc(20px * var(--ls)); }
+.label--party[hidden] { display: none; }
+.panel__party {
+  margin-top: 8px; width: 100%; font: 700 14px var(--font-display); color: var(--parchment);
+  background: var(--accent); border: 0; border-radius: 10px; padding: 9px 14px; cursor: pointer;
+}
+.panel__party[hidden] { display: none; }
+body.is-placing .labels { cursor: crosshair; }
+body.is-placing .hud-stack, body.is-placing .hud-corner { opacity: 0.4; }
+
+@media (max-height: 500px) and (orientation: landscape) {
+  .sky { right: calc(max(10px, var(--safe-r)) + 50px); bottom: max(8px, var(--safe-b)); padding: 8px 12px; gap: 6px; max-height: calc(100vh - 60px); }
+  .sky__weather button { padding: 3px 2px; }
+}
+@media (orientation: portrait) and (max-width: 600px) {
+  .sky { right: 10px; left: 10px; width: auto; bottom: calc(var(--nav) + 10px); }
+}
