@@ -192,6 +192,36 @@ export function watchRolls(onChange) {
     .subscribe();
 }
 
+// --- Journal: quests (supabase/session.sql) ------------------------------------------------------
+// A row is { id, data: { title, body, status, place, steps, shown }, shown }.
+
+export async function loadQuests() {
+  const { data, error } = await supabase.from('quests').select('id, data, created_at').order('created_at');
+  if (error) throw error;
+  return data;
+}
+
+// Saves a quest; a new one (no id) gets its id back from the database.
+export async function saveQuest(quest) {
+  const row = { data: quest.data, shown: quest.data.shown !== false, ...(quest.id ? { id: quest.id } : {}) };
+  const { data, error } = await supabase.from('quests').upsert(row).select('id, data, created_at').single();
+  if (error) throw error;
+  return data;
+}
+
+export async function deleteQuest(id) {
+  const { error } = await supabase.from('quests').delete().eq('id', id);
+  if (error) throw error;
+}
+
+// Calls back with ('INSERT' | 'UPDATE', row) or ('DELETE', { id }).
+export function watchQuests(onChange) {
+  return supabase
+    .channel('quests')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'quests' }, (msg) => onChange(msg.eventType, msg.eventType === 'DELETE' ? msg.old : msg.new))
+    .subscribe();
+}
+
 // --- Live encounter ------------------------------------------------------------------------
 // The Dungeon Master broadcasts what players may see of a fight; players who join
 // late say hello and the DM answers with the current state. Nothing is stored.

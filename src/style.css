@@ -1570,3 +1570,85 @@ body.is-placing .hud-stack, body.is-placing .hud-corner { opacity: 0.4; }
   .dt { left: 8px; right: 8px; width: auto; top: var(--top); bottom: calc(var(--nav) + 8px); transform: none; max-height: none; }
   .roll-pop { left: 44px; top: auto; bottom: calc(var(--nav) + 120px); }
 }
+
+/* ---------- Journal ---------- */
+
+.journal { display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr); gap: 20px; max-width: 1100px; margin: 0 auto; width: 100%; }
+.journal__side, .journal__page {
+  min-height: 0; overflow-y: auto; overscroll-behavior: contain;
+  background: rgba(251, 247, 238, 0.86); border-radius: 20px; box-shadow: 0 10px 30px rgba(60, 40, 20, 0.12);
+}
+.journal__side { padding: 16px 18px; }
+.journal__page { padding: 22px 26px; background: linear-gradient(180deg, #fbf5e6, #f4e9cf); }
+.journal__head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 6px; }
+.journal__head h2 { margin: 0; font: 700 22px var(--font-display); }
+.journal__new {
+  font: 700 13px var(--font-display); color: var(--parchment); background: var(--accent);
+  border: 0; border-radius: 999px; padding: 8px 14px; cursor: pointer;
+}
+.journal__new[hidden] { display: none; }
+.journal__group { margin: 12px 0 6px; font: 700 11px var(--font-display); letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-soft); }
+.journal__list ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.journal__empty { color: var(--ink-soft); font-size: 15px; }
+.quest-pick {
+  width: 100%; display: flex; align-items: center; gap: 10px; text-align: left; font: inherit; color: var(--ink);
+  background: #fffaf0; border: 1.5px solid transparent; border-radius: 14px; padding: 8px 12px; cursor: pointer;
+}
+.quest-pick.is-on { border-color: var(--ink); }
+.quest-pick.is-hidden { opacity: 0.65; border-style: dashed; border-color: var(--parchment-edge); }
+.quest-pick.is-hidden.is-on { border-color: var(--ink); }
+.quest-pick__icon { font-size: 20px; }
+.quest-pick__who { display: flex; flex-direction: column; min-width: 0; }
+.quest-pick__who b { font: 700 15px var(--font-display); }
+.quest-pick__who small { font-size: 12px; color: var(--ink-soft); }
+
+.quest { display: grid; gap: 12px; align-content: start; }
+.quest__kicker { margin: 0; font-size: 12px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--ink-soft); }
+.quest__title { margin: 0; font: 700 28px/1.15 var(--font-display); }
+.quest__place {
+  justify-self: start; font: 700 14px var(--font-body); color: var(--ink); background: #fffaf0;
+  border: 1.5px solid var(--parchment-edge); border-radius: 999px; padding: 7px 14px; cursor: pointer;
+}
+.quest__body { margin: 0; font-size: 17px; line-height: 1.55; }
+.quest__steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.quest__steps li { display: flex; align-items: center; gap: 10px; font-size: 16px; }
+.quest__steps li.is-done span:last-child { text-decoration: line-through; color: var(--ink-soft); }
+.quest__tick {
+  width: 24px; height: 24px; flex-shrink: 0; border-radius: 7px; border: 2px solid var(--ink-soft); background: #fffaf0;
+  display: grid; place-items: center; font: 700 14px/1 var(--font-body); color: #3f8a3b; padding: 0;
+}
+button.quest__tick { cursor: pointer; }
+.quest__tools { display: flex; flex-wrap: wrap; gap: 6px; padding-top: 10px; border-top: 1px solid rgba(217, 199, 160, 0.7); }
+.quest__tools button {
+  font: 600 13px var(--font-body); color: var(--ink); background: #fffaf0;
+  border: 1.5px solid var(--parchment-edge); border-radius: 999px; padding: 6px 12px; cursor: pointer;
+}
+.quest__tools .quest__delete { color: var(--accent); margin-left: auto; }
+.quest__tools .quest__save { color: var(--parchment); background: var(--ink); border-color: var(--ink); font-weight: 700; }
+.quest__error { margin: 0; color: var(--accent); font-size: 14px; }
+.quest__error:empty { display: none; }
+
+/* Places a quest leads to get a scroll on the map. */
+.label.is-quest::before { content: '📜 '; }
+
+@media (max-height: 500px) and (orientation: landscape) {
+  .journal { gap: 10px; }
+  .journal__side { padding: 10px 12px; border-radius: 16px; }
+  .journal__page { padding: 14px 18px; border-radius: 16px; }
+  .journal__head h2 { font-size: 17px; }
+  .quest { gap: 8px; }
+  .quest__title { font-size: 22px; }
+  .quest__body { font-size: 15px; }
+  .topnav__tab { padding: 6px 10px; font-size: 12px; }
+}
+@media (orientation: portrait) and (max-width: 600px) {
+  .journal { grid-template-columns: 1fr; grid-template-rows: auto minmax(0, 1fr); gap: 8px; }
+  .journal__side { max-height: 34vh; padding: 10px 12px; border-radius: 16px; }
+  .journal__page { padding: 16px 16px; border-radius: 16px; }
+  .quest__title { font-size: 22px; }
+  .topnav__tab { font-size: 11px; letter-spacing: 0; }
+}
+@media (orientation: portrait) and (max-width: 600px) {
+  /* The place card uses the full width: tuck the book and dice tabs away meanwhile. */
+  body:has(#panel:not([hidden])) .rb-toggle { display: none; }
+}

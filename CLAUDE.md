@@ -239,6 +239,18 @@ The original assets (hand-drawn world map, location art, character art, lore doc
   - The DM can make hidden rolls (RLS lets only the DM read them) and clear the log.
   - Others' rolls pop up next to the tab while the tray is closed (`rollPop`).
   - Roll values come from the roller's own app, so trust among friends is assumed.
+- **Journal** (`src/journal/journalScreen.js`, a top tab for everyone) holds the party's quests.
+  - Stored in the Supabase table `quests` (`{ id, data: { title, body, status, place, steps,
+    shown }, shown }`) in session.sql. `session.sql` seeds the first quest, "Reach Bartedalen".
+  - Players see quests with `shown` (RLS). The DM creates, edits, ticks steps, completes, hides
+    and deletes quests.
+  - A quest's `place` (a world-map id) gives "Show on map". Places of active visible quests
+    get a 📜 before their label (`.label.is-quest`, `questFor` in main.js), plus a line on the
+    place card.
+  - Players get a toast for new quests. Caveat: when the DM hides a shown quest, players keep
+    seeing it until they reload, because RLS stops the realtime update from reaching them.
+- The SQL files (`world.sql`, `session.sql`) are safe to run again: `drop policy if exists`,
+  and the publication changes are guarded.
 - **Party** (`src/status/partyScreen.js`) shows a card per hero with HP, AC, initiative and
   passive perception. Tapping a card opens that hero on Status.
   - DM tools (hidden while previewing as a player):

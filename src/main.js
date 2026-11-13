@@ -27,10 +27,11 @@ import { CHARACTERS as STARTING_HEROES } from './data/characters.js';
 import { createStartScreen } from './start/startScreen.js';
 import { createCreatorScreen } from './creator/creatorScreen.js';
 import { createRulebook } from './rulebook/rulebook.js';
+import { createJournalScreen } from './journal/journalScreen.js';
 import { createDiceTray } from './dice/diceTray.js';
 import { createHeroManager } from './status/heroManager.js';
 import { shortRest, longRest, readyToLevel } from './character/progress.js';
-import { loadRevealed, setRevealed, watchRevealed, loadWorld, saveWorld, watchWorld, loadEncounter, saveEncounter, loadRolls, addRoll, clearRolls, watchRolls } from './net/backend.js';
+import { loadRevealed, setRevealed, watchRevealed, loadWorld, saveWorld, watchWorld, loadEncounter, saveEncounter, loadRolls, addRoll, clearRolls, watchRolls, loadQuests, saveQuest, deleteQuest, watchQuests } from './net/backend.js';
 import { supabase, myProfile, loadCharacters, seedCharacters, saveCharacter, deleteCharacter, watchCharacters, signOut, explain, encounterChannel, loadMonsters, watchMonsters } from './net/backend.js';
 import './style.css';
 
@@ -351,7 +352,8 @@ function select(p, { fly = true } = {}) {
   p.label.classList.add('is-selected');
   const known = knows(p);
   panelTitle.textContent = !known ? 'Unknown place' : p.tier === 'unnamed' ? 'Unnamed place' : p.name;
-  panelSub.textContent = !known ? 'Not discovered yet' : p.subtitle || 'Marked on your world map';
+  const quest = views.world.places.includes(p) && questFor(p);
+  panelSub.textContent = `${quest ? `📜 Quest: ${quest.data.title} · ` : ''}${!known ? 'Not discovered yet' : p.subtitle || 'Marked on your world map'}`;
   panelText.textContent = !known ? 'Nobody in the party knows what lies here yet.' : p.text || 'No lore written yet.';
   panelText.classList.toggle('is-empty', !known || !p.text);
   if (known && p.image) { panelImg.src = p.image; panelImg.alt = p.name; panelImg.hidden = false; }
@@ -373,12 +375,17 @@ function select(p, { fly = true } = {}) {
 // faintly. Previewing as a player shows exactly what that player sees.
 // City maps (Razz) are not hidden: a city's map only opens once it is known.
 const FIRST_KNOWN = ['razz', 'tine', 'bartedalen'];
+const quests = []; // the journal's quests ({ id, data }), loaded after logging in
 const revealed = new Set();
 const seesAll = () => document.body.dataset.role === 'dm';
 const isSecretable = (p) => views.world.places.includes(p) && p.tier !== 'unnamed';
 const knows = (p) => !isSecretable(p) || seesAll() || revealed.has(p.id);
 
+// Places an active quest leads to (that this viewer can see) get a scroll on the map.
+const questFor = (p) => quests.find((q) => q.data.place === p.id && (q.data.status ?? 'active') === 'active' && (seesAll() || q.data.shown !== false));
+
 function applyFog() {
+  for (const p of views.world.places) p.label.classList.toggle('is-quest', Boolean(questFor(p)));
   for (const p of views.world.places) {
     if (!isSecretable(p)) continue;
     const known = knows(p);
@@ -639,6 +646,7 @@ const screens = {
   status: document.getElementById('status'), party: document.getElementById('party'),
   combat: document.getElementById('combat'), fight: document.getElementById('fight'),
   bestiary: document.getElementById('bestiary'),
+  journal: document.getElementById('journal'),
 };
 let bestiaryScreen = null;
 let combatScreen = null; // the DM's controls
@@ -659,6 +667,7 @@ function showScreen(id) {
     statusScreen?.stop();
   }
   if (id === 'party') drawParty(); // re-rendered each time, so AC and HP follow gear changes
+  if (id === 'journal') journalScreen.render();
   if (id === 'combat') combatScreen.start(); else combatScreen?.stop();
   if (id === 'fight') combatView.start(); else combatView?.stop();
   if (id === 'bestiary') bestiaryScreen.start(); else bestiaryScreen?.stop();
@@ -878,6 +887,7 @@ async function enter() {
   openFightChannel();
   if (me.dm) await restoreFight();
   loadDiceLog();
+  loadJournal();
   showScreen(me.dm ? 'map' : combatView.active ? 'fight' : 'status');
 }
 
@@ -900,6 +910,7 @@ function applyView() {
   statusScreen.setDm(me.dm);
   statusScreen.setPlayer(heroId);
   applyFog();
+  journalScreen.refresh();
   if (screen === 'party') drawParty();
 }
 
@@ -935,6 +946,8 @@ roleMenu.addEventListener('click', async (e) => {
   watchingPlaces = null;
   watchingWorld = null;
   watchingRolls = null;
+  watchingQuests = null;
+  quests.length = 0;
   combatView.show({ active: false });
   document.body.dataset.fight = '';
   me = null;
@@ -949,6 +962,43 @@ roleMenu.addEventListener('click', async (e) => {
 document.addEventListener('click', (e) => {
   if (!roleMenu.hidden && !roleMenu.contains(e.target)) roleMenu.hidden = true;
 });
+
+// --- Journal ----------------------------------------------------------------------------------------
+const journalScreen = createJournalScreen(screens.journal, {
+  quests,
+  canEdit: () => seesAll(),
+  places: () => views.world.places.filter((p) => p.tier !== 'unnamed').map((p) => ({ id: p.id, name: p.name })),
+  placeName(id) {
+    const p = views.world.places.find((x) => x.id === id);
+    return p ? (knows(p) ? p.name : 'An unknown place') : null;
+  },
+  onSave: (q) => saveQuest(q).catch((err) => {
+    throw new Error(/quests/.test(err.message) ? 'Run supabase/session.sql in Supabase first.' : explain(err));
+  }).finally(() => applyFog()),
+  onDelete: (id) => deleteQuest(id).finally(() => applyFog()),
+  onShowPlace(id) {
+    const p = views.world.places.find((x) => x.id === id);
+    if (!p) return;
+    showScreen('map');
+    if (view.id !== 'world') backToWorld();
+    select(p);
+  },
+});
+let watchingQuests = null;
+async function loadJournal() {
+  try {
+    quests.splice(0, quests.length, ...(await loadQuests()));
+  } catch (err) { console.warn('Journal not available yet:', err.message); return; }
+  watchingQuests ??= watchQuests((event, row) => {
+    const i = quests.findIndex((q) => q.id === row.id);
+    if (event === 'DELETE') { if (i >= 0) quests.splice(i, 1); } else if (i >= 0) quests[i] = row; else quests.push(row);
+    if (event === 'INSERT' && me && !seesAll() && row.data.shown !== false) toast(`📜 New quest: ${row.data.title}`);
+    journalScreen.refresh();
+    applyFog();
+  });
+  journalScreen.refresh();
+  applyFog();
+}
 
 // The little rulebook, always one tap away. Its weapons page shows the player's
 // own hero, or for the Dungeon Master the hero last opened on Status.
