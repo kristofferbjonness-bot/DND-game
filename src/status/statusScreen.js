@@ -7,7 +7,7 @@ import { createCharacterViewer } from './viewer.js';
 import { ITEMS } from '../data/items.js';
 import { SLOTS, companionLoad, optionsFor, equip } from '../character/equipment.js';
 import { itemInfo, spendAbilityPoints, MAX_SCORE } from '../character/progress.js';
-import { icon } from '../ui/icons.js';
+import { icon, weaponIcon, attackNameIcon } from '../ui/icons.js';
 import { heroPortrait, portraitImg } from '../ui/portraits.js';
 
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
@@ -30,9 +30,7 @@ const USE = {
 };
 
 const SLOT_ICON = { mainHand: 'sword', offHand: 'ac', armour: 'armour' };
-const ATTACK_ICON = { melee: 'sword', arrow: 'bow', thrown: 'dagger', magic: 'magic' };
-const itemIcon = (it) => (it.kind === 'weapon' ? (it.props?.includes('ammunition') ? 'bow'
-    : /knife|knives|dagger|dart/i.test(it.name ?? '') ? 'dagger' : it.model === 'longsword' || it.props?.includes('versatile') ? 'longsword' : 'sword')
+const itemIcon = (it) => (it.kind === 'weapon' ? weaponIcon(it)
   : it.kind === 'armour' ? 'armour' : it.kind === 'shield' ? 'ac' : it.gem ? 'gem'
   : /potion|elixir|flask/i.test(it.name ?? '') ? 'potion' : /\bmap\b/i.test(it.name ?? '') ? 'chart'
   : /condom/i.test(it.name ?? '') ? 'protection' : 'bag');
@@ -76,7 +74,7 @@ function sheet(c, tab, editable, dm, pending) {
     <ul class="atks">
       ${d.attacks.map((a) => `
         <li class="atk">
-          <span class="atk__icon">${icon(ATTACK_ICON[a.throwFirst ? 'thrown' : a.style] ?? 'sword')}</span>
+          <span class="atk__icon">${icon(a.weapon ? weaponIcon(a.weapon) : a.style === 'magic' ? 'magic' : attackNameIcon(a.name, a.type))}</span>
           <span class="atk__main"><b>${esc(a.name)}</b>${a.note ? `<small>${esc(a.note)}</small>` : ''}</span>
           <span class="atk__num"><small>To hit</small><b>${signed(a.toHit)}</b></span>
           <span class="atk__num atk__num--dmg"><small>${esc(a.type)}</small><b>${esc(a.damage)}</b></span>
@@ -120,7 +118,7 @@ function sheet(c, tab, editable, dm, pending) {
         const current = slot.id === 'companion' ? companionLoad(c) : c.equipped[slot.id];
         return `
         <label class="slot">
-          <span class="slot__icon">${icon(SLOT_ICON[slot.id] ?? 'bag')}</span>
+          <span class="slot__icon">${icon(ITEMS[current] && ITEMS[current].kind !== 'passenger' ? itemIcon(ITEMS[current]) : SLOT_ICON[slot.id] ?? 'bag')}</span>
           <span class="slot__label">${slot.label}</span>
           <select class="slot__select" data-slot="${slot.id}"${!editable || (!ids.length && !current) ? ' disabled' : ''}>
             <option value="">${reason && !current ? esc(reason) : 'Nothing'}</option>

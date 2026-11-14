@@ -79,7 +79,7 @@ export function derive(c) {
       w.range && `Range ${w.range}`, twoHands && `Two hands: ${w.versatile}${plus(m)}`,
     ].filter(Boolean);
     return {
-      name: w.name, type: w.type,
+      name: w.name, type: w.type, weapon: w,
       toHit: m + prof + archery,
       damage: `${w.dice}${plus(dmg)}`,
       dice: w.dice, bonus: dmg, // for the combat damage calculator

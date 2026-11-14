@@ -3,7 +3,7 @@
 // a name without a painted icon falls back to the flat drawings below.
 const PAINTED = new Set(['ac', 'armour', 'bag', 'bestiary', 'bow', 'cha', 'chart', 'check', 'cloud', 'coin', 'combat', 'con',
   'crown', 'dagger', 'dex', 'gem', 'hero', 'hp', 'init', 'int', 'journal', 'lock', 'longsword', 'magic', 'map', 'moon', 'party',
-  'pen', 'pin', 'plus', 'potion', 'prof', 'protection', 'rain', 'scene', 'scroll', 'snow', 'speed', 'storm', 'str', 'sun', 'sword',
+  'pen', 'pin', 'plus', 'potion', 'prof', 'protection', 'rain', 'scene', 'katana', 'tanto', 'bane', 'longblade', 'rapier', 'handaxe', 'greataxe', 'mace', 'staff', 'spear', 'longbow', 'flamebow', 'crossbow', 'scroll', 'snow', 'speed', 'storm', 'str', 'sun', 'sword',
   'windy', 'wis', 'xp']);
 const BASE = `${import.meta.env.BASE_URL}art/icons/`;
 
@@ -69,4 +69,38 @@ export function icon(name, cls = '') {
   const url = PAINTED.has(name) ? `${BASE}${name}.webp` : null;
   if (url) return `<img class="ic${cls ? ` ${cls}` : ''}" src="${url}" alt="" draggable="false" />`;
   return `<svg class="ic${cls ? ` ${cls}` : ''}" viewBox="0 0 24 24" stroke="${INK}" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true">${ART[name] ?? ''}</svg>`;
+}
+
+// The icon for a weapon (an item from data/items.js), by its look.
+const WEAPON_ICON = {
+  katana: 'katana', tanto: 'tanto', longsword: 'longsword', shortsword: 'sword', rapier: 'rapier', dagger: 'dagger',
+  handaxe: 'handaxe', greataxe: 'greataxe', mace: 'mace', staff: 'staff', spear: 'spear',
+  shortbow: 'bow', longbow: 'longbow', crossbow: 'crossbow',
+};
+export function weaponIcon(w) {
+  if (!w) return 'sword';
+  if (w.gem) return 'bane';
+  if (w.arrows === 'flame') return 'flamebow';
+  if (/throwing knives/i.test(w.name ?? '')) return 'dagger';
+  return WEAPON_ICON[w.model] ?? 'sword';
+}
+// The icon for an attack known only by its name (monsters, spells).
+export function attackNameIcon(name = '', type = '') {
+  const n = `${name} ${type}`.toLowerCase();
+  if (/crossbow/.test(n)) return 'crossbow';
+  if (/longbow/.test(n)) return 'longbow';
+  if (/bow|arrow|shot|sling/.test(n)) return 'bow';
+  if (/bolt|ray|breath|spell|curse|magic|blast|flaming|fire/.test(n)) return 'magic';
+  if (/cocktail|bottle|beer|mojito|potion/.test(n)) return 'potion';
+  if (/katana/.test(n)) return 'katana';
+  if (/rapier/.test(n)) return 'rapier';
+  if (/greataxe/.test(n)) return 'greataxe';
+  if (/axe/.test(n)) return 'handaxe';
+  if (/knife|dagger|tant|throw/.test(n)) return 'dagger';
+  if (/mace|club|hammer|dumbbell/.test(n)) return 'mace';
+  if (/spear|javelin|trident/.test(n)) return 'spear';
+  if (/staff/.test(n)) return 'staff';
+  if (/fist|punch|slam|shove|headbutt|unarmed|grapple|wrestl/.test(n)) return 'str';
+  if (/longsword/.test(n)) return 'longsword';
+  return 'sword';
 }

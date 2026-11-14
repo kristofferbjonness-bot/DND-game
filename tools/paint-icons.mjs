@@ -132,6 +132,45 @@ const ART = {
   scene: LN('M24 4v8', 2.4) + S('M24.5 4.5l9 3-9 3z', 'red')
     + S('M24 11L6 40h36z', 'parch') + S('M24 11L15 40h18z', 'red') + S('M24 11l-3.5 29h7z', 'parch')
     + F('M24 26l-4.5 14h9z', INK) + LN('M3 41h42', 2.6) + HI('M21 15l-9 18', 1.6, 0.6),
+  // --- Weapons: each drawn handle bottom-left, point top-right. ---
+  // The rune-marked katana: a curved blade, a round gold guard, a wrapped hilt, blue runes.
+  katana: S('M15 33C24 26 33 17 43 4c-6 12-14 22-25 32z', 'steel') + LN('M17 31C26 24 34 15 41 7', 1, '#8a96a2')
+    + LN('M13 36L5 44', 7) + LN('M13 36L5 44', 4, '#2f3a5a') + LN('M11 38l2 1M9 40l2 1M7 42l2 1', 1.2, '#e8e2d6')
+    + C(15, 34, 3.4, 'gold') + F('M27 22l2-1M32 16l2-1M36 11l1-1', '#000') + LN('M27 22l1.5-1.2M32 16.5l1.5-1.2M36.5 11.5l1.2-1', 1.6, '#5ac8ff'),
+  // The tantō: a short curved knife.
+  tanto: S('M19 29C25 25 30 20 35 12c-1 8-6 14-13 20z', 'steel') + LN('M21 28c5-3 9-8 12-13', 1, '#8a96a2')
+    + LN('M17 32L9 40', 7) + LN('M17 32L9 40', 4, '#2f3a5a') + LN('M15 34l2 1M12 37l2 1', 1.2, '#e8e2d6') + C(19, 30, 2.8, 'gold'),
+  // Bane of Fredrikstad: a longsword with a red gem in its guard.
+  bane: S('M15 29L40 4h5v5L20 34z', 'steel') + LN('M18 31L42 7', 1.4, '#8a96a2') + HI('M20 25L38 7', 1.6, 0.8)
+    + LN('M8 22l18 18', 8) + LN('M8 22l18 18', 5, '#e1b04a') + LN('M14 36L6 44', 7) + LN('M14 36L6 44', 4, '#5f3818')
+    + C(5, 45, 3.2, 'gold') + C(17, 31, 4.6, 'gold') + C(17, 31, 3.2, 'red') + HI('M15.5 29.5l1.2-0.8', 1.6, 0.9),
+  // A longsword (plain).
+  longblade: S('M18 27L39 6h4v4L22 31z', 'steel') + LN('M21 28L41 8', 1.2, '#8a96a2')
+    + LN('M12 23l13 13', 7) + LN('M12 23l13 13', 4, '#9a6235') + LN('M15 33L7 41', 6) + LN('M15 33L7 41', 3.4, '#5f3818') + C(6, 42, 3, 'steel') + HI('M23 23l12-12', 1.4, 0.8),
+  // A rapier: a thin blade and a swept gold hilt.
+  rapier: LN('M19 29L44 4', 5) + LN('M19 29L44 4', 2.6, '#e8edf1') + LN('M13 25c-5 6 1 14 9 9', 4.5) + LN('M13 25c-5 6 1 14 9 9', 2.4, '#e1b04a')
+    + LN('M14 27l8 8', 5) + LN('M14 27l8 8', 2.6, '#e1b04a') + LN('M16 32l-7 7', 6) + LN('M16 32l-7 7', 3.4, '#5f3818') + C(8, 40, 2.6, 'gold'),
+  // A hand axe: a short wooden haft, one steel blade.
+  handaxe: LN('M10 42L31 13', 7) + LN('M10 42L31 13', 4, '#9a6235') + S('M27 9c6-3 13 0 15 7l-8 7-9-9z', 'steel') + LN('M31 11l-4 5', 1.6, '#4a3020') + HI('M30 10c3-1 7 0 9 3', 1.6),
+  // A greataxe: a long haft and a big double blade.
+  greataxe: LN('M6 44L36 10', 7) + LN('M6 44L36 10', 4, '#9a6235') + S('M30 6c-6 4-6 12 0 16l6-7zM36 22c6 1 11-4 10-11l-7 3z', 'steel') + C(34, 13, 2.6, 'gold') + HI('M29 10c-2 3-2 6 0 8', 1.6),
+  // A mace: a haft and a flanged steel head.
+  mace: LN('M8 42L28 18', 7) + LN('M8 42L28 18', 4, '#9a6235') + C(32, 14, 8.5, 'steel')
+    + S('M32 3l3 4h-6zM43 14l-4 3v-6zM32 25l-3-4h6zM21 14l4-3v6z', 'steel') + HI('M28 10a5 5 0 0 1 4-2', 2) + C(7, 43, 2.4, 'gold'),
+  // A quarterstaff: a long knotted staff.
+  staff: LN('M6 44L42 6', 7) + LN('M6 44L42 6', 4, '#a8784a') + LN('M14 35l3 3M27 21l3 3', 2.4, '#5f3818') + HI('M10 39L38 9', 1.2, 0.5) + C(42, 6, 3, 'wood'),
+  // A spear: a long shaft, a leaf-shaped head and a red tassel.
+  spear: LN('M5 45L32 18', 6) + LN('M5 45L32 18', 3.4, '#9a6235') + S('M31 17c2-7 7-12 13-13-1 6-6 11-13 13z', 'steel') + LN('M33 15l9-9', 1, '#8a96a2')
+    + S('M29 20c-3 1-6 4-5 7 3 0 6-3 5-7z', 'red'),
+  // A longbow: a tall arc of yew with a string.
+  longbow: LN('M10 3c20 8 30 24 34 42', 7) + LN('M10 3c20 8 30 24 34 42', 4, '#b8793f') + LN('M10 3L44 45', 1.4, '#efe5d2') + LN('M24 18l3 3', 2.2, '#3e2412'),
+  // A shortbow with a flaming arrow.
+  flamebow: LN('M9 6c13 3 25 15 28 28', 7) + LN('M9 6c13 3 25 15 28 28', 4, '#b8793f') + LN('M9 6L37 34', 1.3, '#efe5d2')
+    + LN('M7 41L33 15', 4.5) + LN('M7 41L33 15', 2.4, '#c79a63') + S('M34 14c2-6 7-9 11-9-1 4-3 8-9 11z', 'gold') + S('M36 13c1-3 3-5 6-6-1 3-2 5-6 6z', 'red') + S('M7 41l-3 1 1-4 4-1z', 'parch'),
+  // A light crossbow: a wooden stock, a steel bow across it, a bolt.
+  crossbow: LN('M8 40L34 14', 8) + LN('M8 40L34 14', 5, '#9a6235') + LN('M20 8c4 8 12 16 20 20', 6) + LN('M20 8c4 8 12 16 20 20', 3.4, '#b9c0c6')
+    + LN('M20 8L40 28', 1.2, '#efe5d2') + LN('M14 34L38 10', 2.6, '#5f3818') + S('M38 10l5-3-2 5z', 'steel') + LN('M14 36l-4 4', 3, '#3e2412'),
+
   // A plus.
   plus: LN('M24 9v30M9 24h30', 9) + LN('M24 9v30M9 24h30', 5, '#f4ead8'),
 };

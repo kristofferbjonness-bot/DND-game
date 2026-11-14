@@ -5,7 +5,7 @@ import { MONSTERS, addMonster, removeMonster } from '../data/monsters.js';
 import { registerRecipe, sanitizeRecipe } from '../character/model.js';
 import { signed } from '../character/rules.js';
 import { createCharacterViewer } from '../status/viewer.js';
-import { icon } from '../ui/icons.js';
+import { icon, attackNameIcon } from '../ui/icons.js';
 import { monsterPortrait, portraitImg } from '../ui/portraits.js';
 import { generateMonster, saveMonster, deleteMonster, explain } from '../net/backend.js';
 
@@ -95,9 +95,7 @@ export function createBestiaryScreen(root, { onChanged } = {}) {
   }
 
   // A guess at how an attack is made, for its icon.
-  const attackIcon = (a) => (/bow|arrow|shot|sling|crossbow/i.test(a.name) ? 'bow'
-    : /spit|bolt|ray|breath|spell|curse|magic|blast/i.test(`${a.name} ${a.type}`) ? 'magic'
-    : /throw|knife|dagger|javelin/i.test(a.name) ? 'dagger' : 'sword');
+  const attackIcon = (a) => attackNameIcon(a.name, a.type);
 
   function renderStats(m, id) {
     nameEl.textContent = m?.name ?? '';

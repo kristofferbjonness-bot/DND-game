@@ -378,7 +378,8 @@ The original assets (hand-drawn world map, location art, character art, lore doc
   - Icons are painted (`public/art/icons/*.webp`, 96px). `node tools/paint-icons.mjs` builds them: the owner's
     painted pack (`hero-sheet-design-pack/public/art/all-icons/`, not in git) for tabs and gear, and SVG drawings
     in the same style (ink outline, muted shaded colours) for the rest. `icon(name)` in `src/ui/icons.js`
-    (`PAINTED` lists the names), with flat SVGs as a fallback. To add one: draw it in `ART` in paint-icons.mjs
+    (`PAINTED` lists the names), with flat SVGs as a fallback. Weapons have their own icons (`weaponIcon(item)` by model,
+  `attackNameIcon(name)` for monster attacks). To add one: draw it in `ART` in paint-icons.mjs
     or map a pack PNG in `FROM_PACK`, re-run, and add the name to `PAINTED`.
   - Portraits of heroes and monsters are small renders of their figures (`src/ui/portraits.js`,
     one shared offscreen renderer, cached by gear/look).
