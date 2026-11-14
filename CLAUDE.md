@@ -250,7 +250,7 @@ The original assets (hand-drawn world map, location art, character art, lore doc
   - The DM can delete a hero from the Story tab on Status.
 - **NPC figures** (`src/character/npcFigures.js`): voxel people drawn after the owner's character art (Lord Wolf
   and the Man Who Makes Himself Known big and muscular, Habibi, a Silk Sister, Findus, Lord Eggen, and Sirivik's
-  Per Hul Øye, Three-Fingered Paul and the hostel owner). Recipes built with small helpers (`slim`, `stout`,
+  Per Hul Øye, Three-Fingered Paul and the hostel owner; Ytterhavn's Olemann, Bobby and Bob; Razz's Sand Nug). Recipes built with small helpers (`slim`, `stout`,
   `huge` builds), registered as `npc-<id>` monster models. Journal people show the figure (round face in the
   list, full body on the page): `data.figure`, or by name (`match`); the person form has a "3D figure" picker.
   Lord Wolf and Silk Sister are also Bestiary enemies (monsters.js).

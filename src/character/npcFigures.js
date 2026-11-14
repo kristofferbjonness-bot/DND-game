@@ -293,6 +293,70 @@ function hostelOwner() {
   return s.done();
 }
 
+// --- Ytterhavn and Razz -------------------------------------------------------------------------------
+
+// Olemann, a captain of Ytterhavn: short, blond, handsome and muscular, and proud of it. A navy
+// captain's coat with gold buttons over an open white shirt, a bicorne hat, tall boots, bare forearms.
+function olemann() {
+  const p = { skin: '#e4b48c', hair: '#f0d070', coat: '#2a3a5e', coatDark: '#1e2c4a', gold: '#d9a63a', shirt: '#f2ece0', trousers: '#e8dcc0', boot: '#3a2a20', hat: '#1e2238' };
+  const s = stout(p, { skin: 'skin', torso: 'coat', belly: 'coat', legs: 'trousers', feet: 'boot', sleeve: 'coat' });
+  s.box('body', -2, 9, -1, 2, 15, -1, 'coatDark');
+  s.box('body', 0, 12, 2, 0, 15, 2, 'shirt'); s.box('body', -1, 15, 2, 1, 15, 2, 'shirt'); s.box('body', 0, 15, 2, 0, 15, 2, 'skin'); // open shirt
+  for (const y of [10, 12, 14]) { s.box('body', -1, y, 2, -1, y, 2, 'gold'); s.box('body', 1, y, 2, 1, y, 2, 'gold'); }
+  s.pair('body', 2, 15, -1, 3, 15, 1, 'gold'); // epaulettes
+  s.pair('legs', 1, 1, 0, 1, 5, 0, 'boot');
+  for (const side of [-1, 1]) s.box(s.arm(side), side * 3, 11, 0, side * 3, 12, 0, 'skin'); // sleeves rolled to show the arms
+  s.box('head', -1, 19, -1, 1, 19, 1, 'hair'); s.box('head', -1, 18, -1, 1, 18, -1, 'hair'); s.box('head', 1, 18, 0, 1, 18, 1, 'hair');
+  s.box('head', -3, 20, 0, 3, 20, 0, 'hat'); s.box('head', -2, 21, 0, 2, 21, 0, 'hat'); s.box('head', -1, 22, 0, 1, 22, 0, 'hat'); s.box('head', -3, 20, -1, 3, 20, 1, 'hat');
+  s.box('head', 0, 21, 1, 0, 21, 1, 'gold');
+  return s.done();
+}
+
+// Bobby, the barman of Ytterhavn's finest bar: well dressed in a white shirt, black waistcoat and
+// a red bow tie, black hair slicked back, a moustache, a towel over one arm and a cocktail in hand
+// (its faint glow hints at his secret menu).
+function bobby() {
+  const p = { skin: '#e0b090', hair: '#1e1a1a', shirt: '#f4f0e8', vest: '#1f1d22', tie: '#b02a2a', trousers: '#2a2a30', shoe: '#141316', towel: '#e8e4dc', glass: '#c9e6ef', drink: '#b98cd9' };
+  const s = slim(p, { skin: 'skin', torso: 'shirt', legs: 'trousers', feet: 'shoe', sleeve: 'shirt', belt: 'vest' });
+  s.box('body', -1, 11, -1, 1, 15, -1, 'vest'); s.pair('body', 1, 11, 0, 1, 15, 1, 'vest'); // the waistcoat
+  s.box('body', 0, 16, 1, 0, 16, 1, 'tie'); s.box('body', -1, 16, 2, 1, 16, 2, 'tie');
+  s.box('head', -1, 20, -1, 1, 21, 1, 'hair'); s.box('head', -1, 18, -1, 1, 19, -1, 'hair');
+  s.box('head', -1, 17, 2, 1, 17, 2, 'hair'); // the moustache
+  s.box('armL', 2, 12, 1, 2, 14, 1, 'towel');
+  s.box('armR', -2, 10, 1, -2, 10, 1, 'glass'); s.box('armR', -2, 11, 1, -2, 11, 1, 'drink'); s.box('armR', -2, 12, 1, -2, 12, 1, 'glass');
+  s.parts.armR.glow.push('drink');
+  return s.done();
+}
+
+// Bob, Bobby's younger brother, who keeps a fish shop: messy black hair under a knitted cap, a
+// blue-and-white striped shirt, a fishmonger's apron, and a swordfish dagger.
+function bob() {
+  const p = { skin: '#e4b896', hair: '#1e1a1a', cap: '#3f7a5a', stripe: '#3f6fa8', white: '#f2ece0', apron: '#e8e2d6', apronDark: '#cfc6b6', trousers: '#5a4a38', boot: '#3a3a40', blade: '#a8c4d4', grip: '#5a3a22' };
+  const s = slim(p, { skin: 'skin', torso: 'white', legs: 'trousers', feet: 'boot', sleeve: 'stripe' });
+  for (let y = 11; y <= 16; y += 2) s.box('body', -1, y, -1, 1, y, 1, 'stripe');
+  s.box('body', -1, 11, 2, 1, 15, 2, 'apron'); s.box('legs', -1, 6, 1, 1, 10, 1, 'apron'); s.box('body', 0, 13, 2, 0, 13, 2, 'stripe'); // apron with a little fish
+  s.pair('legs', 1, 1, 0, 1, 3, 0, 'boot');
+  s.box('head', -1, 20, -1, 1, 21, 1, 'cap'); s.box('head', 0, 22, 0, 0, 22, 0, 'cap');
+  s.box('head', -1, 19, 1, -1, 19, 1, 'hair'); s.box('head', 1, 19, -1, 1, 19, -1, 'hair'); // messy hair under the cap
+  s.box('armR', -2, 10, 1, -2, 10, 1, 'grip'); s.box('armR', -2, 10, 2, -2, 10, 5, 'blade'); // the swordfish dagger
+  return s.done();
+}
+
+// The Sand Nug: a Razz bandit disguised as a street seller, wrapped in sandy robes with only his
+// eyes showing, a tray of mojitos and warm beer hung from his neck, a knife hidden at his back.
+function sandNug() {
+  const p = { skin: '#b07a52', robe: '#d8bf8a', robeDark: '#bfa470', wrap: '#e8d8b0', eye: '#1e1a1a', tray: '#8a6440', glass: '#c9e6ef', mint: '#5aa86a', beer: '#d9a03a', strap: '#5a3a22', steel: '#d4dadf' };
+  const s = slim(p, { skin: 'skin', torso: 'robe', legs: 'robe', skirtLow: 'robeDark', feet: 'strap', sleeve: 'robe' }, { skirt: true });
+  s.box('body', -1, 11, -1, 1, 16, -1, 'robeDark');
+  s.box('head', -1, 17, -1, 1, 21, 1, 'wrap'); s.box('head', -1, 19, 2, 1, 19, 2, 'eye'); s.box('head', 0, 19, 2, 0, 19, 2, 'skin');
+  s.box('head', -1, 21, -2, 1, 21, -2, 'wrap'); s.box('head', 0, 20, -3, 0, 18, -3, 'wrap'); // the tail of the head wrap
+  s.box('body', -1, 13, 2, 1, 16, 2, 'strap'); // the neck strap
+  s.box('body', -3, 12, 3, 3, 12, 5, 'tray');
+  for (const [x, z, c] of [[-2, 4, 'mint'], [0, 3, 'beer'], [2, 4, 'mint'], [-1, 5, 'beer'], [1, 5, 'mint']]) { s.box('body', x, 13, z, x, 13, z, 'glass'); s.box('body', x, 14, z, x, 14, z, c); }
+  s.box('body', 1, 10, -2, 1, 12, -2, 'steel'); // the hidden knife
+  return s.done();
+}
+
 // id → { name, match (for journal titles), recipe }.
 export const NPC_FIGURES = {
   'lord-wolf': { name: 'Lord Wolf', match: /lord wolf|toucher of girls/i, build: lordWolf },
@@ -304,6 +368,10 @@ export const NPC_FIGURES = {
   'per-hul-oye': { name: 'Per Hul Øye', match: /per hul/i, build: perHulOye },
   paul: { name: 'Three-Fingered Paul', match: /three.fingered paul/i, build: threeFingeredPaul },
   'hostel-owner': { name: 'The hostel owner', match: /hostel owner/i, build: hostelOwner },
+  olemann: { name: 'Olemann (captain)', match: /^olemann$/i, build: olemann },
+  bobby: { name: 'Bobby (barman)', match: /^bobby$/i, build: bobby },
+  bob: { name: 'Bob (fish shop)', match: /^bob$/i, build: bob },
+  'sand-nug': { name: 'The Sand Nug', match: /sand nug/i, build: sandNug },
   varg: { name: 'Varg (Edbart’s wolf)', match: /^varg$/i, build: null }, // built in model.js (MONSTER_LOOKS)
 };
 
