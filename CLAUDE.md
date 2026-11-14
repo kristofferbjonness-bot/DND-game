@@ -161,6 +161,9 @@ The original assets (hand-drawn world map, location art, character art, lore doc
   while one is on; End / "Back to the scene" return to the scene (`onLeave`).
 - The names switch (`setLabelsHidden`, body.no-labels) hides map labels, scene name tags and fight health boxes; on the map
   it is `#labels-toggle`, in fights `#tags-toggle`, in scenes the button on the name note.
+- **Who is online** (DM): `presenceChannel` (backend.js, Supabase Realtime presence, channel 'online', nothing stored); each
+  app tracks its hero id. The DM sees a green dot on the bar's portraits and "Online now / Last seen / Not online / No player
+  yet" on the Party cards (`online`, `lastSeen` in main.js; last seen only for this session).
 - **Parties**: a hero's sheet has `party` (a name; none = "The party"). `everyone` holds all heroes; `party` (in
   main.js) is only the current party: a player's own hero's party, the previewed hero's, or the one the DM picked
   in the Party screen's title dropdown (remembered in localStorage, "＋ New party…" makes one). Heroes move

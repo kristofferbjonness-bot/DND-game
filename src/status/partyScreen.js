@@ -11,7 +11,8 @@ import { heroPortrait, portraitImg } from '../ui/portraits.js';
 
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
 
-export function renderParty(root, characters, onOpen, { onNew, onManage, onEveryone, parties, current, onSwitch, title } = {}) {
+// `online(id)` (DM): { on, text, claimed } for a hero's player.
+export function renderParty(root, characters, onOpen, { onNew, onManage, onEveryone, parties, current, onSwitch, title, online } = {}) {
   root.innerHTML = `
     <div class="party__inner">
       <header class="screen-head">
@@ -46,6 +47,7 @@ export function renderParty(root, characters, onOpen, { onNew, onManage, onEvery
               <span class="party__who">
                 <b>${esc(c.name)}</b>
                 <small>${esc(c.class)} · ${esc(c.race)}</small>
+                ${online ? (() => { const o = online(c.id); return `<span class="party__online${o.on ? ' is-on' : ''}">${o.claimed ? esc(o.text) : 'No player yet'}</span>`; })() : ''}
               </span>
               <span class="party__hp">
                 <span class="hpbar">

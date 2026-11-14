@@ -2406,3 +2406,11 @@ body[data-screen="combat"]:not(:has(#combat.is-battle)) .tags-toggle { display: 
 .jr-gen__face img, .jr-gen__face span { width: 100%; height: 100%; display: block; }
 .jr-gen__out > span:last-child { display: flex; flex-direction: column; font-size: 13px; }
 .jr-gen__out small { color: var(--pp-soft); }
+
+/* Who is online (the DM sees it): a green dot on the bar's portraits, a line on the Party cards. */
+.bar__mate.is-online .bar__face { box-shadow: 0 0 0 2.5px var(--paper-line), 0 0 0 4.5px #4caf50, 0 0 0 6.5px var(--paper-line); }
+.bar__mate.is-online::after { content: ''; position: absolute; top: -2px; right: -2px; width: 9px; height: 9px; border-radius: 50%; background: #4caf50; box-shadow: 0 0 0 2px #f4e6c6; }
+.party__online { display: flex; align-items: center; gap: 5px; font-size: 12.5px; color: var(--pp-soft); }
+.party__online::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: #b8a888; }
+.party__online.is-on { color: #3a7a3a; font-weight: 700; }
+.party__online.is-on::before { background: #4caf50; box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.25); }

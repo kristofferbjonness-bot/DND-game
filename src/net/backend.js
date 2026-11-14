@@ -243,6 +243,20 @@ export function encounterChannel({ onState, onHello }) {
   };
 }
 
+// --- Who is online (Supabase Realtime presence; nothing is stored) ----------------------------------
+// Every logged-in app announces itself with its hero id (or as the DM). `onChange(heroIds)` gets the
+// set of heroes whose players have the app open now.
+export function presenceChannel({ uid, hero, dm }, onChange) {
+  const ch = supabase.channel('online', { config: { presence: { key: uid } } });
+  ch.on('presence', { event: 'sync' }, () => {
+    const ids = new Set();
+    for (const metas of Object.values(ch.presenceState())) for (const m of metas) if (m.hero) ids.add(m.hero);
+    onChange(ids);
+  });
+  ch.subscribe((status) => { if (status === 'SUBSCRIBED') ch.track({ hero: hero ?? null, dm: Boolean(dm), at: Date.now() }); });
+  return { leave() { supabase.removeChannel(ch); } };
+}
+
 // --- Bestiary ---------------------------------------------------------------------------------
 // Generated monsters: { id, data } where data holds the stats and the figure recipe.
 

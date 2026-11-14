@@ -40,7 +40,7 @@ import { shortRest, longRest, readyToLevel } from './character/progress.js';
 import { icon } from './ui/icons.js';
 import { heroPortrait, portraitImg } from './ui/portraits.js';
 import { loadRevealed, setRevealed, watchRevealed, loadWorld, saveWorld, watchWorld, loadEncounter, saveEncounter, loadRolls, addRoll, clearRolls, watchRolls, loadQuests, saveQuest, deleteQuest, watchQuests } from './net/backend.js';
-import { supabase, myProfile, loadCharacters, seedCharacters, saveCharacter, deleteCharacter, watchCharacters, signOut, explain, encounterChannel, loadMonsters, watchMonsters } from './net/backend.js';
+import { supabase, myProfile, loadCharacters, seedCharacters, saveCharacter, deleteCharacter, watchCharacters, signOut, explain, encounterChannel, presenceChannel, loadMonsters, watchMonsters } from './net/backend.js';
 import './style.css';
 
 // The app shows one "view" at a time: the world map, or a city map. Each view
@@ -954,11 +954,26 @@ function drawBar() {
     </span>`
     : `<span class="bar__face bar__face--dm">${icon('crown')}</span><span class="bar__me-text"><b title="Dungeon Master">DM</b></span>`;
   barParty.innerHTML = party.filter((c) => c.id !== heroId).map((c) => `
-    <button type="button" class="bar__mate${hpTone(c)}" data-hero="${escHtml(c.id)}" title="${escHtml(c.name)}: ${c.hp.current} of ${c.hp.max} HP" style="--hero:${escHtml(c.colour)}">
+    <button type="button" class="bar__mate${hpTone(c)}${me?.dm && online.has(c.id) ? ' is-online' : ''}" data-hero="${escHtml(c.id)}" title="${escHtml(c.name)}: ${c.hp.current} of ${c.hp.max} HP${me?.dm ? ` · ${onlineText(c.id)}` : ''}" style="--hero:${escHtml(c.colour)}">
       <span class="bar__face">${portraitImg(heroPortrait(c), { name: c.name, colour: c.colour })}</span>
       <em>${c.hp.current}</em>
     </button>`).join('');
 }
+// Who has the app open right now (heroes' ids), and when the ones who left were last seen.
+const online = new Set(), lastSeen = new Map();
+let presence = null;
+function watchOnline() {
+  if (presence) return;
+  presence = presenceChannel({ uid: me.uid, hero: me.dm ? null : me.heroId, dm: me.dm }, (ids) => {
+    for (const id of online) if (!ids.has(id)) lastSeen.set(id, new Date());
+    online.clear();
+    ids.forEach((id) => online.add(id));
+    drawBar();
+    if (screen === 'party') drawParty();
+  });
+}
+const onlineText = (id) => (online.has(id) ? 'Online now' : lastSeen.has(id) ? `Last seen ${lastSeen.get(id).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : 'Not online');
+
 barParty.addEventListener('click', (e) => {
   const b = e.target.closest('[data-hero]');
   if (!b) return;
@@ -989,6 +1004,7 @@ function drawParty() {
   renderParty(screens.party, party, open, dm ? {
     onNew: () => creator.open(), onManage: (id) => manager.open(id), onEveryone: everyoneDoes,
     parties: partyNames(), current: currentParty(), onSwitch: switchParty,
+    online: (id) => ({ on: online.has(id), text: onlineText(id), claimed: Boolean(owners.get(id)) }),
   } : { title: partyNames().length > 1 ? currentParty() : null });
 }
 
@@ -1203,6 +1219,7 @@ async function enter() {
   applyParty();
   await loadWorldState();
   openFightChannel();
+  watchOnline();
   if (me.dm) await restoreFight();
   loadDiceLog();
   loadJournal();
