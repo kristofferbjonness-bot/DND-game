@@ -12,7 +12,7 @@ const SIZE = 96;
 
 // Icon name → painted PNG from the pack.
 const FROM_PACK = {
-  map: 'tabs/map', hero: 'tabs/hero', journal: 'tabs/journal', combat: 'tabs/fight', bestiary: 'tabs/bestiary',
+  map: 'tabs/map', journal: 'tabs/journal', bestiary: 'tabs/bestiary',
   armour: 'gear/armour', potion: 'gear/health-potion', sword: 'gear/sword', longsword: 'gear/longsword',
   ac: 'gear/shield', bow: 'gear/shortbow', dagger: 'gear/throwing-knives', chart: 'gear/map-item',
   protection: 'gear/magnum-protection',
@@ -52,9 +52,20 @@ const ART = {
   prof: S('M24 4l6 12.4 13.6 2-9.8 9.5 2.3 13.5L24 35l-12.1 6.4 2.3-13.5-9.8-9.5 13.6-2z', 'gold') + HI('M20.5 17.5l3.5-7', 1.8),
   // A gold diamond.
   xp: S('M24 4l15 20-15 20L9 24z', 'gold') + LN('M9 24h30M24 4v40', 1.3, '#7a5418') + HI('M14 22.5l8-11', 1.8),
-  // Strength: a flexed arm.
-  str: S('M8 42c-1.5-6.5.8-13 5.3-17l4.6-9c1.3-2.8 4.5-4 7-2.6l2.2 1.2-2.6 7.4 4.9-.8c5.6-.8 10.8 3.2 10.8 9.6 0 7.2-6.4 11-12.8 11z', 'skin')
-    + LN('M22 27c3-1.6 7-1.6 10 .4', 1.6, '#8a5432') + HI('M13 30c.5-3 1.8-5.5 3.5-7.5', 1.8, 0.6),
+  // Strength: a clenched fist seen from the front, with a leather cuff.
+  str: S('M15 36h18v9H15z', 'wood') + LN('M15 40h18', 1.4, '#3e2412')
+    + S('M10 20a4 4 0 0 1 4-4h20a4 4 0 0 1 4 4v12c0 4-3 6-7 6H17c-4 0-7-2-7-6z', 'skin')
+    + [10, 17, 24, 31].map((x) => S(`M${x + 3.5} 9a3.5 3.5 0 0 1 3.5 3.5V21a3.5 3.5 0 0 1-7 0v-8.5A3.5 3.5 0 0 1 ${x + 3.5} 9z`, 'skin')).join('')
+    + S('M9 27.5a4 4 0 0 1 4-4h12.5a4 4 0 0 1 0 8H13a4 4 0 0 1-4-4z', 'skin')
+    + [12, 19, 26, 33].map((x) => HI(`M${x} 12.5v3`, 1.6, 0.7)).join('') + HI('M13 26h9', 1.6, 0.6),
+  // The Hero tab: a plain knight's helm with a red plume.
+  hero: S('M24 3c4 0 8 2 8.5 6-3-1.5-5.5-1.8-8.5-1.8S18.5 7.5 15.5 9C16 5 20 3 24 3z', 'red')
+    + S('M11 42V23a13 13 0 0 1 26 0v19c-4 2.5-8.5 3.5-13 3.5S15 44.5 11 42z', 'steel')
+    + F('M14.5 24h19v4.5h-7V38h-5v-9.5h-7z', INK) + LN('M24 10.5v12', 1.6, '#6f7a84')
+    + S('M11 39c4 2.5 8.5 3.5 13 3.5s9-1 13-3.5v3c-4 2.5-8.5 3.5-13 3.5S15 44.5 11 42z', 'gold') + HI('M15 17a10 10 0 0 1 5-4.5', 2.2, 0.85),
+  // The Fight tab: two crossed swords.
+  combat: [40, -40].map((r) => `<g transform="rotate(${r} 24 24)">${S('M21.8 31V9L24 3.5 26.2 9v22z', 'steel') + LN('M24 8v22', 1, '#6f7a84')
+    + S('M16 30.5h16a2 2 0 0 1 0 4H16a2 2 0 0 1 0-4z', 'gold') + S('M22 34.5h4v7h-4z', 'wood') + C(24, 43.5, 2.6, 'gold')}</g>`).join(''),
   // Dexterity: an arrow.
   dex: LN('M9 39L35 13', 6) + LN('M9 39L35 13', 3, '#c79a63') + S('M35 13l-1.5-7 9.5-1.5-1.5 9.5z', 'steel')
     + S('M9 39l-3-6 4.5-2.5 4.5 3.5zM12.5 35.5L10 30l4.5-2.5 4 3.5', 'red'),
