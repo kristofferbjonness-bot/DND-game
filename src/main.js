@@ -10,6 +10,7 @@ import { grid, WATER_LEVEL, pixelToCell, nearestLand, cellToWorld } from './worl
 import { buildTerrain, surfaceY } from './world/terrain.js';
 import { buildPlants, buildClouds } from './world/scatter.js';
 import { buildLandmark } from './world/landmarks.js';
+import { buildLighthouse, buildShadowMist } from './world/features.js';
 import { LOCATIONS } from './world/locations.js';
 import { CITIES } from './city/cities.js';
 import { createTiltShiftPasses } from './fx/tiltShift.js';
@@ -154,6 +155,13 @@ function buildWorldView() {
   if (mergedTowns) scene.add(mergedTowns);
   scene.add(townGroup); // what is left: the turning sails
 
+  // A lighthouse on a rock in Siri's Gap, and the shadowy mist over Sortland.
+  const features = [];
+  const gap = places.find((p) => p.id === 'siris-gap');
+  if (gap) { const lh = buildLighthouse(); lh.position.set(gap.x, WATER_LEVEL, gap.z); lh.scale.setScalar(1.2); scene.add(lh); features.push(lh); }
+  const sortland = places.find((p) => p.id === 'sortland');
+  if (sortland) { const mist = buildShadowMist(9); mist.position.set(sortland.x, sortland.ground, sortland.z); scene.add(mist); features.push(mist); }
+
   const camera = new THREE.PerspectiveCamera(35, 1, 1, 1200);
   const view = {
     id: 'world',
@@ -170,6 +178,7 @@ function buildWorldView() {
       plants.userData.lod(camera.position.distanceTo(view.controls.target));
       clouds.userData.update(dt);
       for (const s of spinners) s.rotation.z += dt * 1.6;
+      for (const f of features) f.userData.update(dt);
     },
     // Zoomed out you see the continents and main cities; smaller places,
     // mountains and seas appear as you zoom in on an area.

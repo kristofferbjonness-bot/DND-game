@@ -141,6 +141,26 @@ for (let cy = 0; cy < H; cy++) {
   }
 }
 
+// Sea channels cut by hand, where the painting's coastlines nearly touch and would
+// merge into one landmass. Polylines in source-image pixels, with a width in pixels.
+//   - the snowy island north of Bartedalen, cut off from the green peninsula below it;
+//   - that peninsula, cut off from the mainland at its neck (Bartedalen stays on the mainland).
+const SEA_CUTS = [
+  { width: 16, points: [[890, 400], [935, 378], [980, 357], [1025, 343], [1065, 333]] },
+  { width: 14, points: [[890, 432], [912, 450], [935, 465], [962, 480]] },
+];
+for (const { width, points } of SEA_CUTS) {
+  for (let i = 0; i < points.length - 1; i++) {
+    const [ax, ay] = points[i].map((v) => v / CELL), [bx, by] = points[i + 1].map((v) => v / CELL);
+    const r = width / CELL / 2;
+    for (let y = Math.floor(Math.min(ay, by) - r - 1); y <= Math.max(ay, by) + r + 1; y++) for (let x = Math.floor(Math.min(ax, bx) - r - 1); x <= Math.max(ax, bx) + r + 1; x++) {
+      if (x < 0 || y < 0 || x >= W || y >= H) continue;
+      const t = Math.max(0, Math.min(1, ((x + 0.5 - ax) * (bx - ax) + (y + 0.5 - ay) * (by - ay)) / ((bx - ax) ** 2 + (by - ay) ** 2)));
+      if (Math.hypot(x + 0.5 - (ax + t * (bx - ax)), y + 0.5 - (ay + t * (by - ay))) <= r) { const k = y * W + x; land[k] = 0; river[k] = 0; mtn[k] = 0; }
+    }
+  }
+}
+
 // Mountain icons always have a black outline; darker watercolour near some
 // coasts doesn't. Drop ink that has no black stroke nearby.
 {
