@@ -151,8 +151,136 @@ The original assets (hand-drawn world map, location art, character art, lore doc
     - Held weapons appear in the hand (bows in the left hand).
     - Swords not in hand hang at the left hip, with an empty scabbard when drawn.
     - Axes hang at the right hip, and bows go on the back next to the quiver.
-- **Fights happen in the Scene tab** (there is no Fight tab any more, by request). The DM presses "Fight!" on the
-  scene's note (saves a scene still being written first) or the swords button in the list; with heroes and
+- **Fights happen in the Scene tab** (there is no Fight tab any more, by request). The DM presses "Fight!" in the scene
+  panel's header; with heroes and
+  enemies picked it goes straight to initiative, with the scene still showing behind (`showSceneBehind`): `combatScreen.prepare()` opens the setup with the scene's heroes and fighters picked
+  (Bestiary creatures, and NPC figures that have a Bestiary entry with model `npc-<id>`), "Where" set to its area,
+  and the scene put live. The battle uses that area (`battleScene.setArena`; heroes at the area's hero spots,
+  enemies at its NPC spots, camera from the front). "Where" can also be "The open field" (the old round arena).
+  `showScreen('scene')` shows the DM's fight controls while `combatScreen.busy()`, and players the fight view
+  while one is on; End / "Back to the scene" return to the scene (`onLeave`).
+- The names switch (`setLabelsHidden`, body.no-labels) hides map labels, scene name tags and fight health boxes; on the map
+  it is `#labels-toggle`, in fights `#tags-toggle`, in scenes the button on the name note.
+- **Who is online** (DM): `presenceChannel` (backend.js, Supabase Realtime presence, channel 'online', nothing stored); each
+  app tracks its hero id. The DM sees a green dot on the bar's portraits and "Online now / Last seen / Not online / No player
+  yet" on the Party cards (`online`, `lastSeen` in main.js; last seen only for this session).
+- **Parties**: a hero's sheet has `party` (a name; none = "The party"). `everyone` holds all heroes; `party` (in
+  main.js) is only the current party: a player's own hero's party, the previewed hero's, or the one the DM picked
+  in the Party screen's title dropdown (remembered in localStorage, "＋ New party…" makes one). Heroes move
+  between parties in Manage → Party. Everything that lists heroes (bar, Party, Hero picker, scenes, fights, map
+  marker) uses `party`; the DM's "View the app as" lists everyone.
+- **Combat** (`src/combat/`, DM only):
+  - Setup: pick the heroes and the number of each enemy (max 6). Enemy types are in
+    `src/data/monsters.js` (only the Hooknose cutthroat for now; its figure is
+    `buildMonsterFigure` in model.js).
+  - Battle: a Pokémon-style 3D field (`battleScene.js`) with heroes on the left and enemies
+    on the right, each on a pad.
+  - Health boxes have −/+ buttons. Hero HP is saved to the character (players see it live),
+    while enemy HP only lives in the encounter.
+  - At 0 HP a fighter falls over.
+  - Initiative step: type each d20 (or roll for enemies). Total = roll + Dex mod (monsters:
+    `initiative`). Order: total, then bonus, then roll. Fighters at 0 HP are skipped.
+  - Turn strip at the top, a gold marker over the active fighter, and a bottom bar with
+    Attack / Next turn.
+  - Attack calculator: pick the weapon (from derive().attacks, i.e. what is equipped) and the
+    target, then type the d20. It reports Hit / Miss vs AC, with nat 20 = crit and nat 1 =
+    miss.
+  - Damage: type each die the weapon uses (doubled on a crit). Rogues get optional Sneak
+    Attack d6s (`sneakAttackDice`), and the modifier is added automatically.
+  - Players see the fight live, read-only (`src/combat/combatView.js`, screen `#fight`).
+    - The DM's app broadcasts `publicState()` over the Supabase Realtime broadcast channel
+      `encounter` (`encounterChannel` in backend.js). Nothing is stored.
+    - Late joiners send `hello`, and the DM answers with the current state.
+    - The public state has no rolls or stats. Enemy HP is included only if "Players can see
+      enemy health" was ticked at setup.
+    - Players get a Combat tab while a fight is on, and are switched to it when one starts.
+    - The DM's "view as" preview is fed locally with the same state.
+    - Caveat: broadcast isn't locked down, so any logged-in user could send fake state. That's
+      fine among friends; use a table with RLS if needed.
+  - Attack animations (`attack()` in battleScene.js) play when the DM applies a hit or a miss,
+    and players get the same animation through `anim` in the public state.
+    - Styles:
+      - `melee`: a dash, a lean and a white slash arc.
+      - `arrow`: bows and crossbows.
+      - `thrown`: a spinning blade. The "Thrown" tick box in the attack card is shown for
+        thrown-capable weapons and is on by default for "Throwing …" items.
+      - `magic`: a glowing orb with a trail, coloured by damage type (`MAGIC`).
+    - Hero styles come from derive() (`style`, `canThrow`, `throwFirst`). Monster styles are
+      guessed from the attack's name and type (`monsterStyle`).
+    - A hit shakes the target and shows a burst (bigger on a crit); a miss makes it sidestep.
+      Falling to 0 HP waits until the blow lands (`incoming` / `downAfter`).
+    - Scene layers: holder (pad) > mover (dash/dodge) > body (facing, falling) > lean > figure.
+  - The arena camera uses OrbitControls: one finger turns, two fingers pinch-zoom and pan. The
+    view resets for each new encounter.
+  - The health-box columns scroll when they don't fit, and the boxes are kept compact.
+  - The running encounter is saved online:
+    - Every publish, setup and initiative change calls `onSave` → `saveFightSoon` in main.js,
+      a 0.6 s debounce writing to the Supabase table `encounters` (one row, DM only,
+      `supabase/session.sql`).
+    - On DM login `restoreFight()` loads it into `combatScreen.restore()` and re-broadcasts it.
+    - End (or Back from initiative) deletes it.
+- **Fight screens** use the same paper: setup and initiative are ledger sheets; over the battle, health boxes are
+  note-small notes, the turn order a rolled-scroll strip, the bottom bar a wide sheet, the attack card a tall note.
+- **Bestiary** (DM only, `src/bestiary/bestiaryScreen.js`) lists every enemy with its 3D figure
+  and stat block. "Generate new" has Claude design one from a text prompt.
+  - Server: `netlify/edge-functions/generate.js` at POST `/api/generate-monster`.
+    - It checks the caller's Supabase token and that their profile is the DM, then calls the
+      Claude API (`claude-sonnet-5-5`, streaming) with the system prompt that defines the JSON
+      format.
+    - The key is the Netlify environment variable `ANTHROPIC_API_KEY`.
+    - It's an edge function so the long stream isn't cut off by the 10-second limit on normal
+      functions.
+  - The client (`generateMonster` in backend.js) reads the SSE stream, shows progress, and
+    parses the JSON.
+  - `cleanMonster` and `sanitizeRecipe` clamp everything Claude sends.
+  - Figure recipe: palette plus parts, where each part has boxes, a pivot, a motion and glow
+    colours. Built by `buildRecipeFigure` in model.js.
+  - Saved in the Supabase table `monsters` (`supabase/monsters.sql`): everyone reads, the DM
+    writes, with realtime.
+  - At login, everyone loads the table into the MONSTERS registry (`addMonster`) and the recipe
+    registry (`registerRecipe`), so players can see generated enemies in fights.
+- **Character creator** (`src/creator/creatorScreen.js`, rules in `src/character/creator.js`):
+  - Opened by players from the hero-pick step ("Create my own hero") and by the DM from Party
+    ("New hero"). Four steps: Hero (name, race, class, level 1–2, alignment, background),
+    Abilities (27-point buy plus race bonus, "Suggested" = standard array in the class order),
+    Skills (class picks, 2 background picks plus race extras, Rogue expertise, fighting style),
+    Look (Design and Backstory boxes).
+  - 12 races and 12 classes with level 1–2 features, starting gear, HP, Unarmoured Defence and
+    attack cantrips (`extraAttacks` in the sheet, used by derive()).
+  - Claude designs the figure: POST `/api/generate-hero` in `netlify/edge-functions/generate.js`
+    (same function and key as monsters). Allowed for the DM, or a player with no hero yet.
+    Returns tagline, colour, goal and a recipe that follows the hero skeleton (parts named legs,
+    body, head, armR, armL). `buildRecipeHero` in model.js adds held weapons, shields, hip
+    swords and the quiver from the gear, so equipping still shows on the figure.
+  - Saving uses the `create_character` RPC (`supabase/creator.sql`): a player's new hero is
+    owned by them at once; the DM's hero is left free to claim.
+  - The DM can delete a hero from the Story tab on Status.
+- **NPC figures** (`src/character/npcFigures.js`): voxel people drawn after the owner's character art (Lord Wolf
+  and the Man Who Makes Himself Known big and muscular, Habibi, a Silk Sister, Findus, Lord Eggen, and Sirivik's
+  Per Hul Øye, Three-Fingered Paul, the hostel owner, Lasse, the Accordion and the God of Beauty; Ytterhavn's Olemann, Bobby, Bob and its guards; Razz's Sand Nug). Sirivik's people are Bestiary enemies too (not the god). Recipes built with small helpers (`slim`, `stout`,
+  `huge` builds), registered as `npc-<id>` monster models. Journal people show the figure (round face in the
+  list, full body on the page): `data.figure`, or by name (`match`); the person form has a "3D figure" picker.
+  Every NPC of Razz and Ytterhavn with a figure is also a Bestiary enemy (monsters.js: Lord Wolf, Silk Sister, Habibi,
+  the young Hooknose, the Man, the Sand Nug, Olemann, Bobby, Bob); stats other than the lore's are placeholders.
+  The bridge troll and the lighthouse keeper have figures and Bestiary entries; the bridge and the lighthouse are scene areas.
+  The Journal's person form can "Create with Claude" (same generator as the Bestiary, `cleanMonster`): saving adds the
+  creature to the Bestiary and sets the person's `figure` to 'monster:<id>' (any Bestiary creature can be a person's figure).
+  Never put DM secrets in monster names or notes (the repo is public; players read notes in the Journal).
+  Varg is a figure too (`npc-varg`, built by `vargAlone` in model.js, not a recipe). On Edbart he carries one thing:
+  the `companion` slot ("Varg carries" on the Gear tab; default the young Hooknose tied up across his back, `companionLoad`), a weapon
+  lashed on his back, or saddle bags for any other item.
+- **Scene** (`src/scene/`, a tab for everyone): a 3D place where the heroes stand with the people they meet.
+  - Areas (`areas.js`): voxel dioramas on a 60×60 slab at 2 world units per voxel: the Man's camp, The Wolf, the road Razz–Ytterhavn, Ytterhavn's centre and port, the guards' cellar (heroes start in the cells), an inn room (two heroes in bed), the bridge, the foggy lighthouse islet, the road past the dark forest, the road to Sirivik, Sirivik's town centre, Per Hul Øye's bar and the cliff edge, a small ship at sea, a sailors' bar, a street shop (`townhouse`/`row` build the gabled houses),
+    the port of Razz, Hooknose Alley, outside the city gates. Each has a `town` (lists are grouped by it: `TOWNS`, `areaOptions`) and a mood (light, background), hero spots at
+    the front and NPC spots further in; `standY` lifts everyone onto a deck (the ship). Add an area by writing a builder and listing it in `AREAS`.
+  - `sceneView.js`: renderer (made on first start), OrbitControls, name tags (HTML) over each figure, tap to pick.
+    `setInset` keeps the picture centred beside the DM's panel.
+  - `sceneScreen.js`: ONE scene, always live (by request: no list of scenes, no Go live). The DM's panel is the editor
+    (where, heroes here, who is here with a search, Fight!); each change shows at once and is saved ~0.5 s later (`changed`,
+    `push`) as a journal row (`quests`, `data.kind: 'scene'`) whose id is `scene` in the world row. Players see that scene and
+    follow every change live. Tapping someone shows a card with "Read in the journal" when they know them.
+- **Fights happen in the Scene tab** (there is no Fight tab any more, by request). The DM presses "Fight!" in the scene
+  panel's header; with heroes and
   enemies picked it goes straight to initiative, with the scene still showing behind (`showSceneBehind`): `combatScreen.prepare()` opens the setup with the scene's heroes and fighters picked
   (Bestiary creatures, and NPC figures that have a Bestiary entry with model `npc-<id>`), "Where" set to its area,
   and the scene put live. The battle uses that area (`battleScene.setArena`; heroes at the area's hero spots,

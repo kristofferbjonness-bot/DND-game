@@ -2414,3 +2414,11 @@ body[data-screen="combat"]:not(:has(#combat.is-battle)) .tags-toggle { display: 
 .party__online::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: #b8a888; }
 .party__online.is-on { color: #3a7a3a; font-weight: 700; }
 .party__online.is-on::before { background: #4caf50; box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.25); }
+/* The one live scene: the panel is the editor. */
+.scn__head .scn__live { margin: 0 0 0 auto; font-size: 10px; }
+.scn__head .scn__fight { padding: 4px 10px; font-size: 12px; min-height: 0; margin: 0; }
+.scn__head .scn__fight:disabled { opacity: 0.45; }
+.scn__search { padding: 5px 10px; font-size: 14px; }
+.scn__sep { height: 0; border-top: 1.5px solid var(--pp-line-dark); margin: 4px 0; }
+.scn__clear { background: none; border: 0; padding: 0; cursor: pointer; font: inherit; color: var(--pp-accent); text-decoration: underline; }
+.scn__panel.is-folded .scn__form { display: none; }

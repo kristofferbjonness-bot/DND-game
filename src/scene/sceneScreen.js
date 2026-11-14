@@ -8,7 +8,7 @@
 // where `fig` is 'npc:<NPC figure id>' or 'monster:<Bestiary id>'. Which scene is live is
 // shared through the world row (`scene` in main.js), so players switch with the DM.
 import { createSceneView } from './sceneView.js';
-import { AREAS, TOWNS, areaOptions } from './areas.js';
+import { AREAS, areaOptions } from './areas.js';
 import { NPC_FIGURES, npcFigureId } from '../character/npcFigures.js';
 import { monsterPortrait, heroPortrait, portraitImg } from '../ui/portraits.js';
 import { icon } from '../ui/icons.js';
@@ -31,15 +31,17 @@ export function createSceneScreen(root, { entries, heroes, monsters, canEdit, li
   const stage = $('.scn__stage'), plate = $('.scn__plate'), empty = $('.scn__empty'), panel = $('.scn__panel'), card = $('.scn__card');
   const view = createSceneView(stage, { onPick: pickPerson });
 
-  let viewing = null; // the scene the DM is looking at
-  let editing = null; // { id?, data } while the DM writes a scene
+  // There is one scene: the DM's panel edits it, and every change goes live to the players at once
+  // (saved after a moment). `draft` is the DM's copy while changes are being made.
+  let draft = null, saveTimer = null, saving = Promise.resolve();
   let folded = window.matchMedia('(max-width: 600px), (max-height: 500px)').matches; // the DM's panel folded away (at first on phones)
   let running = false;
   let shownKey = '';
 
-  const scenes = () => entries.filter((e) => e.data.kind === 'scene').sort((a, b) => String(a.created_at).localeCompare(String(b.created_at)));
+  const scenes = () => entries.filter((e) => e.data.kind === 'scene').sort((a, b) => String(b.updated_at ?? b.created_at).localeCompare(String(a.updated_at ?? a.created_at)));
   const byId = (id) => entries.find((e) => e.id === id && e.data.kind === 'scene') ?? null;
   const dm = () => canEdit();
+  const blank = () => ({ data: { kind: 'scene', area: 'port', people: [], shown: true } });
 
   // Everyone who can be put in a scene.
   function figures() {
@@ -66,9 +68,9 @@ export function createSceneScreen(root, { entries, heroes, monsters, canEdit, li
   const heroesIn = (data) => heroes().filter((c) => !data.heroes || data.heroes.includes(c.id));
 
   // --- Drawing --------------------------------------------------------------------------------------
+  // The scene: the DM's draft, else the live one (or for the DM, the last one there was).
   function current() {
-    if (editing) return { id: editing.id, data: editing.data };
-    if (dm()) return byId(viewing) ?? byId(liveId()) ?? scenes()[0] ?? null;
+    if (dm()) return draft ?? byId(liveId()) ?? scenes()[0] ?? blank();
     return byId(liveId());
   }
 
@@ -78,20 +80,15 @@ export function createSceneScreen(root, { entries, heroes, monsters, canEdit, li
     empty.hidden = Boolean(s);
     plate.hidden = !s;
     if (!s) {
-      empty.innerHTML = dm()
-        ? `<p class="scn__empty-title">No scenes yet</p><p>Make one with <b>New scene</b>: pick a place and who is there, then put it live for the players.</p>`
-        : `<p class="scn__empty-title">No scene right now</p><p>When the Dungeon Master sets a scene, you will see your heroes and the people you meet here.</p>`;
+      empty.innerHTML = `<p class="scn__empty-title">No scene right now</p><p>When the Dungeon Master sets a scene, you will see your heroes and the people you meet here.</p>`;
       view.clear();
       shownKey = '';
     } else {
       const area = AREAS[s.data.area] ?? AREAS.port;
-      const live = s.id && s.id === liveId();
       plate.innerHTML = `
-        ${s.data.title && s.data.title !== area.name ? `<small>${esc(area.name)}</small>` : ''}
-        <b>${esc(s.data.title || area.name)}</b>
-        <button type="button" class="scn__tags" title="Hide or show the names" aria-label="Hide or show the names"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h11l4 5-4 5H4z" /><path d="M8 12h5" /></svg></button>
-        ${dm() ? `<span class="scn__live${live ? ' is-on' : ''}">${live ? 'Live for the players' : editing ? 'Being written' : 'Not live'}</span>
-          <button type="button" class="btn btn--gold scn__fight">${icon('combat')}Fight!</button>` : ''}`;
+        <small>${esc(area.town)}</small>
+        <b>${esc(area.name)}</b>
+        <button type="button" class="scn__tags" title="Hide or show the names" aria-label="Hide or show the names"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h11l4 5-4 5H4z" /><path d="M8 12h5" /></svg></button>`;
       const people = cast(s.data), crew = heroesIn(s.data);
       const key = JSON.stringify([s.data.area, people.map((p) => p.key + p.model), crew.map((c) => `${c.id}|${JSON.stringify(c.equipped)}|${c.figure ? 1 : 0}`)]);
       if (key !== shownKey) { shownKey = key; view.show({ area: s.data.area, heroes: crew, npcs: people }); card.hidden = true; }
@@ -99,44 +96,17 @@ export function createSceneScreen(root, { entries, heroes, monsters, canEdit, li
     drawPanel();
   }
 
+  // The DM's panel: where, which heroes, who is here, and Fight!. Changes go live straight away.
   function drawPanel() {
     panel.hidden = !dm();
-    // On wide screens the panel stands at the side: centre the picture in the rest.
     const side = dm() && !folded && window.innerWidth > 700 && window.innerHeight > 500;
     view.setInset(side ? panel.offsetWidth + 50 : 0);
     if (!dm()) return;
     panel.classList.toggle('is-folded', folded);
-    if (editing) { panel.innerHTML = form(); return; }
-    const live = liveId(), list = scenes(), shown = current()?.id;
-    panel.innerHTML = `
-      <header class="scn__head">
-        <button type="button" class="scn__fold" aria-expanded="${!folded}">${icon('pin', 'inline')} Scenes <i>${folded ? '▸' : '▾'}</i></button>
-        <button type="button" class="btn btn--gold scn__new">${icon('plus')}New scene</button>
-      </header>
-      <ul class="scn__list">
-        ${list.length ? TOWNS.flatMap((t) => {
-          const here = list.filter((e) => (AREAS[e.data.area] ?? AREAS.port).town === t);
-          return here.length ? [`<li class="scn__town">${esc(t)}</li>`, ...here] : [];
-        }).map((e) => {
-          if (typeof e === 'string') return e;
-          const area = AREAS[e.data.area] ?? AREAS.port;
-          return `
-          <li class="scn__item${e.id === shown ? ' is-open' : ''}${e.id === live ? ' is-live' : ''}" data-id="${e.id}">
-            <button type="button" class="scn__pick" data-do="view"><b>${esc(e.data.title || area.name)}</b><small>${esc(area.short)} · ${cast(e.data).length} here${e.id === live ? ' · <em>live</em>' : ''}</small></button>
-            <span class="scn__tools">
-              <button type="button" data-do="${e.id === live ? 'end' : 'live'}" class="scn__go${e.id === live ? ' is-on' : ''}">${e.id === live ? 'End' : 'Go live'}</button>
-              <button type="button" data-do="fight" aria-label="Fight here" title="Start a fight here">${icon('combat')}</button>
-              <button type="button" data-do="edit" aria-label="Edit">${icon('pen')}</button>
-            </span>
-          </li>`;
-        }).join('') : '<li class="scn__none">No scenes yet.</li>'}
-      </ul>`;
-  }
-
-  function form() {
-    const d = editing.data, counts = Object.fromEntries((d.people ?? []).map((p) => [p.fig, p.n ?? 1]));
+    const s = current(), d = s.data;
+    const counts = Object.fromEntries((d.people ?? []).map((p) => [p.fig, p.n ?? 1]));
     const total = Object.values(counts).reduce((a, b) => a + b, 0);
-    const figs = figures();
+    const fighters = (d.people ?? []).some((p) => fightType(p.fig));
     const row = (f) => `
       <li class="scn__who${counts[f.fig] ? ' is-on' : ''}">
         ${portraitImg(monsterPortrait(f.model, f.generated ? f.id : ''), { name: f.name, colour: '#5c4a36', cls: 'scn__face' })}
@@ -147,24 +117,47 @@ export function createSceneScreen(root, { entries, heroes, monsters, canEdit, li
           <button type="button" data-fig="${f.fig}" data-d="1" aria-label="One more"${total >= MAX_PEOPLE ? ' disabled' : ''}>+</button>
         </span>
       </li>`;
-    return `
+    const here = figures().filter((f) => counts[f.fig]), rest = figures().filter((f) => !counts[f.fig]);
+    const scroll = panel.querySelector('.scn__whos')?.scrollTop ?? 0, top = panel.scrollTop;
+    panel.innerHTML = `
+      <header class="scn__head">
+        <button type="button" class="scn__fold" aria-expanded="${!folded}">${icon('scene', 'inline')} Scene <i>${folded ? '▸' : '▾'}</i></button>
+        <span class="scn__live is-on" title="Every change is shown to the players at once">Live</span>
+        <button type="button" class="btn btn--gold scn__fight"${fighters ? '' : ' disabled title="Add someone who can fight first"'}>${icon('combat')}Fight!</button>
+      </header>
       <form class="scn__form">
-        <h3 class="scn__title">${editing.id ? 'Edit scene' : 'New scene'}</h3>
-        <label class="field"><span>Name</span><input class="field__input" name="title" maxlength="60" value="${esc(d.title)}" placeholder="e.g. An audience with the Man" /></label>
         <label class="field"><span>Where</span><select class="field__input" name="area">${areaOptions(d.area, esc)}</select></label>
         <p class="scn__h">Heroes here</p>
         <div class="scn__heroes">${heroes().map((c) => `
           <label class="scn__hero"><input type="checkbox" name="hero" value="${esc(c.id)}"${!d.heroes || d.heroes.includes(c.id) ? ' checked' : ''} />${portraitImg(heroPortrait(c), { name: c.name, colour: c.colour, cls: 'scn__face' })}<span>${esc(c.name.split(' ')[0])}</span></label>`).join('')}
         </div>
-        <p class="scn__h">Who is here <small>${total} / ${MAX_PEOPLE}</small></p>
-        <ul class="scn__whos">${figs.map(row).join('')}</ul>
-        <div class="scn__actions">
-          ${editing.id ? '<button type="button" class="btn scn__delete" data-do="delete">Delete</button>' : ''}
-          <span></span>
-          <button type="button" class="btn" data-do="cancel">Cancel</button>
-          <button type="submit" class="btn btn--gold">Save</button>
-        </div>
+        <p class="scn__h">Who is here <small>${total} / ${MAX_PEOPLE}${total ? ' · <button type="button" class="scn__clear" data-do="clear">clear</button>' : ''}</small></p>
+        <input class="field__input scn__search" type="search" name="whosearch" placeholder="Find someone…" value="${esc(whoQuery)}" autocomplete="off" />
+        <ul class="scn__whos">${here.map(row).join('')}${here.length ? '<li class="scn__sep"></li>' : ''}${rest.filter((f) => !whoQuery || f.name.toLowerCase().includes(whoQuery.toLowerCase())).map(row).join('')}</ul>
       </form>`;
+    panel.scrollTop = top;
+    const list = panel.querySelector('.scn__whos'); if (list) list.scrollTop = scroll;
+  }
+  let whoQuery = '';
+
+  // A change by the DM: shown at once, saved (and made live) a moment later.
+  function changed(data) {
+    const s = current();
+    draft = { id: s.id, data: { ...s.data, ...data } };
+    draw();
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(push, 450);
+  }
+  function push() {
+    const d = draft;
+    if (!d) return saving;
+    saving = saving.then(async () => {
+      const row = await onSave({ id: d.id, data: { ...d.data, title: (AREAS[d.data.area] ?? AREAS.port).name } });
+      if (draft === d) draft = null; else if (draft && !draft.id) draft.id = row.id; // more changes came in meanwhile
+      if (liveId() !== row.id) await onLive(row.id, { quiet: true });
+      return row;
+    }).catch((err) => { alert(err.message); });
+    return saving;
   }
 
   // --- A tapped person -------------------------------------------------------------------------------
@@ -201,44 +194,22 @@ export function createSceneScreen(root, { entries, heroes, monsters, canEdit, li
     return null;
   }
 
-  // Straight into a fight in a scene: it is put live (so the players see where), and the fight
-  // starts with its heroes and everyone in it who can fight.
-  async function fightIn(row) {
-    if (!row) return;
-    const d = row.data, enemies = {};
-    // Who can fight: Bestiary creatures, and people who are also in the Bestiary (Lord Wolf…).
-    for (const p of d.people ?? []) {
-      const [kind, fid] = p.fig.split(':');
-      const type = kind === 'monster' ? fid : Object.entries(monsters()).find(([, m]) => m.model === `npc-${fid}`)?.[0];
-      if (type) enemies[type] = (enemies[type] ?? 0) + (p.n ?? 1);
-    }
-    viewing = row.id;
-    if (liveId() !== row.id) await onLive(row.id, { quiet: true });
-    onFight({ heroes: heroesIn(d).map((c) => c.id), enemies, area: d.area });
+  // Which Bestiary creature someone in the scene fights as (Bestiary creatures, and people who are
+  // also in the Bestiary, like Lord Wolf), or null.
+  function fightType(fig) {
+    const [kind, fid] = fig.split(':');
+    return kind === 'monster' ? fid : Object.entries(monsters()).find(([, m]) => m.model === `npc-${fid}`)?.[0] ?? null;
   }
-  // A scene still being written is saved first.
-  async function saveEditing() {
-    readForm(panel.querySelector('.scn__form'));
-    const row = await onSave({ id: editing.id, data: { ...editing.data, title: editing.data.title.trim() || AREAS[editing.data.area].name } });
-    viewing = row.id;
-    editing = null;
-    return row;
+  // Fight! in the scene as it is: saved and live first, then straight into the fight.
+  async function fight() {
+    clearTimeout(saveTimer);
+    if (draft) await push();
+    const s = current(), enemies = {};
+    for (const p of s.data.people ?? []) { const type = fightType(p.fig); if (type) enemies[type] = (enemies[type] ?? 0) + (p.n ?? 1); }
+    if (s.id && liveId() !== s.id) await onLive(s.id, { quiet: true });
+    onFight({ heroes: heroesIn(s.data).map((c) => c.id), enemies, area: s.data.area });
   }
   plate.addEventListener('click', (e) => { if (e.target.closest('.scn__tags')) document.getElementById('tags-toggle').click(); });
-  plate.addEventListener('click', async (e) => {
-    const b = e.target.closest('.scn__fight');
-    if (!b) return;
-    b.disabled = true;
-    try {
-      const row = editing ? await saveEditing() : current();
-      draw();
-      await fightIn(row);
-    } catch (err) {
-      alert(err.message);
-    } finally {
-      b.disabled = false;
-    }
-  });
 
   // --- Events ------------------------------------------------------------------------------------------
   card.addEventListener('click', (e) => {
@@ -247,71 +218,33 @@ export function createSceneScreen(root, { entries, heroes, monsters, canEdit, li
     if (l) onOpenJournal(l.dataset.type, l.dataset.id);
   });
 
-  panel.addEventListener('click', async (e) => {
+  panel.addEventListener('click', (e) => {
     const b = e.target.closest('button');
     if (!b) return;
     if (b.classList.contains('scn__fold')) { folded = !folded; drawPanel(); return; }
-    if (b.classList.contains('scn__new')) {
-      editing = { data: { kind: 'scene', title: '', area: 'port', people: [], shown: true } };
-      folded = false;
-      draw();
-      return;
-    }
+    if (b.classList.contains('scn__fight')) { fight(); return; }
+    if (b.dataset.do === 'clear') { changed({ people: [] }); return; }
     if (b.dataset.fig) {
-      const f = panel.querySelector('.scn__form');
-      readForm(f);
-      const people = editing.data.people.map((p) => ({ ...p }));
+      const people = (current().data.people ?? []).map((p) => ({ ...p }));
       const p = people.find((x) => x.fig === b.dataset.fig);
       if (p) p.n = (p.n ?? 1) + Number(b.dataset.d); else if (Number(b.dataset.d) > 0) people.push({ fig: b.dataset.fig, n: 1 });
-      editing.data.people = people.filter((x) => x.n > 0);
-      const scroll = panel.querySelector('.scn__whos')?.scrollTop ?? 0, top = panel.scrollTop;
-      draw();
-      panel.scrollTop = top;
-      const list = panel.querySelector('.scn__whos'); if (list) list.scrollTop = scroll;
-      return;
-    }
-    const id = b.closest('[data-id]')?.dataset.id;
-    switch (b.dataset.do) {
-      case 'view': viewing = id; draw(); break;
-      case 'live': viewing = id; await onLive(id); draw(); break;
-      case 'end': await onLive(null); draw(); break;
-      case 'fight': fightIn(byId(id)); break;
-      case 'edit': { const s = byId(id); editing = { id, data: structuredClone(s.data) }; viewing = id; draw(); break; }
-      case 'cancel': editing = null; draw(); break;
-      case 'delete':
-        if (!confirm('Delete this scene?')) return;
-        if (liveId() === editing.id) await onLive(null);
-        await onDelete(editing.id);
-        editing = null; viewing = null; draw();
-        break;
-      default:
+      changed({ people: people.filter((x) => x.n > 0) });
     }
   });
-  // Changing where the scene is shows the new place at once.
   panel.addEventListener('change', (e) => {
-    if (!editing) return;
-    readForm(e.target.form);
-    draw();
-  });
-  panel.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    readForm(e.target);
-    const btn = e.target.querySelector('[type=submit]');
-    btn.disabled = true;
-    try {
-      await saveEditing();
-      draw();
-    } catch (err) {
-      btn.disabled = false;
-      alert(err.message);
-    }
-  });
-  function readForm(f) {
-    if (!f) return;
+    const f = e.target.form;
+    if (!f || e.target.name === 'whosearch') return;
     const all = heroes().map((c) => c.id);
     const on = [...f.querySelectorAll('input[name=hero]:checked')].map((i) => i.value);
-    editing.data = { ...editing.data, title: f.title.value, area: f.area.value, heroes: on.length === all.length ? undefined : on };
-  }
+    changed({ area: f.area.value, heroes: on.length === all.length ? undefined : on });
+  });
+  panel.addEventListener('input', (e) => {
+    if (e.target.name !== 'whosearch') return;
+    whoQuery = e.target.value;
+    drawPanel();
+    const i = panel.querySelector('[name=whosearch]'); i.focus(); i.setSelectionRange(i.value.length, i.value.length);
+  });
+  panel.addEventListener('submit', (e) => e.preventDefault());
 
   return {
     start() { running = true; view.start(); draw(); },
