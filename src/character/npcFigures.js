@@ -357,6 +357,55 @@ function sandNug() {
   return s.done();
 }
 
+// --- Sirivik ----------------------------------------------------------------------------------------
+
+// Lasse, the drunk at Per Hul Øye's bar: a nervous, hunched wreck in a stained shirt, clutching his mug.
+function lasse() {
+  const p = { skin: '#cbb8a4', hair: '#7a6a58', shirt: '#9a9a86', stain: '#7a7a62', trousers: '#4a4640', shoe: '#2a2624', mug: '#7a5132', foam: '#efe8d8', nose: '#c98a7a' };
+  const s = slim(p, { skin: 'skin', torso: 'shirt', legs: 'trousers', feet: 'shoe', sleeve: 'shirt' });
+  s.box('body', 1, 12, 1, 1, 13, 1, 'stain'); s.box('body', -1, 15, 1, -1, 15, 1, 'stain');
+  s.parts.head.pivot = [0, 17, 1];
+  for (const b of s.parts.head.boxes) { b[2] += 1; b[5] += 1; b[1] -= 1; b[4] -= 1; } // the head hangs forward, low
+  s.box('head', -1, 20, -1 + 1, 1, 20, 1 + 1, 'hair'); s.box('head', 0, 18, 3, 0, 18, 3, 'nose');
+  s.parts.head.motion = 'sway'; // swaying, a little drunk
+  s.box('armR', -2, 9, 1, -2, 10, 1, 'mug'); s.box('armR', -2, 11, 1, -2, 11, 1, 'foam');
+  return s.done();
+}
+
+// The Accordion: the mangled thing in the hills that Sirivik worships. A great folded, pleated body
+// of grey-pink flesh that heaves like bellows, long spindly arms, and a cluster of eyes.
+function accordion() {
+  const p = { flesh: '#b89a98', fold: '#8a6a6a', dark: '#4a3438', bone: '#e2d8c8', eye: '#f2e6a0', pupil: '#1a1012', claw: '#2a2024' };
+  const s = sculpt(p);
+  s.part('legs', [0, 0, 0]);
+  for (const [x, z] of [[-4, -2], [4, -2], [-4, 3], [4, 3], [0, -4]]) { s.box('legs', x, 0, z, x, 7, z, 'dark'); s.box('legs', x, 0, z + 1, x, 0, z + 1, 'claw'); }
+  s.part('body', [0, 8, 0], 'breathe');
+  for (let i = 0; i < 9; i++) { const w = 5 - Math.abs(i - 4) * 0.5 | 0; s.box('body', -w, 8 + i * 2, -3, w, 9 + i * 2, 3, i % 2 ? 'fold' : 'flesh'); } // the pleated body
+  s.box('body', -1, 26, -1, 1, 27, 1, 'bone');
+  s.part('head', [0, 26, 2], 'nod');
+  for (const [x, y] of [[-2, 22], [1, 24], [2, 20], [-1, 19], [0, 26], [-3, 25], [3, 23]]) { s.box('head', x, y, 4, x, y, 4, 'eye'); s.box('head', x, y, 5, x, y, 5, 'pupil'); }
+  for (const side of [-1, 1]) {
+    const a = s.arm(side), x = side * 6;
+    s.part(a, [x, 22, 0], 'swing', side < 0 ? 0 : 2.1);
+    s.box(a, x, 14, 0, x, 22, 0, 'flesh'); s.box(a, x + side, 6, 1, x + side, 14, 1, 'fold');
+    for (const dz of [0, 1, 2]) s.box(a, x + side, 4, dz, x + side, 5, dz, 'claw');
+  }
+  return s.done();
+}
+
+// The God of Beauty: a tall, serene figure in pale gold and white, its face a perfect golden mask,
+// a soft glow and a halo behind its head.
+function godOfBeauty() {
+  const p = { robe: '#f4eee2', robeShade: '#e2d8c4', gold: '#e8c25a', mask: '#f2d27a', glow: '#fff4c8', hand: '#f2e6d4' };
+  const s = slim(p, { skin: 'hand', torso: 'robe', legs: 'robe', skirtLow: 'robeShade', feet: 'robeShade', sleeve: 'robe', belt: 'gold' }, { skirt: true });
+  s.box('legs', -3, 1, -2, 3, 2, 3, 'robeShade');
+  s.box('head', -1, 17, -1, 1, 20, 1, 'mask'); s.box('head', -1, 21, -1, 1, 21, 1, 'gold');
+  for (let a = 0; a < 16; a++) s.box('head', Math.round(Math.cos(a / 16 * 6.28) * 4), 19 + Math.round(Math.sin(a / 16 * 6.28) * 4), -3, Math.round(Math.cos(a / 16 * 6.28) * 4), 19 + Math.round(Math.sin(a / 16 * 6.28) * 4), -3, 'glow');
+  s.parts.head.glow.push('glow');
+  s.parts.body.motion = 'hover'; s.parts.legs.motion = 'hover'; s.parts.head.motion = 'hover'; s.parts.armL.motion = 'hover'; s.parts.armR.motion = 'hover';
+  return s.done();
+}
+
 // id → { name, match (for journal titles), recipe }.
 export const NPC_FIGURES = {
   'lord-wolf': { name: 'Lord Wolf', match: /lord wolf|toucher of girls/i, build: lordWolf },
@@ -372,6 +421,9 @@ export const NPC_FIGURES = {
   bobby: { name: 'Bobby (barman)', match: /^bobby$/i, build: bobby },
   bob: { name: 'Bob (fish shop)', match: /^bob$/i, build: bob },
   'sand-nug': { name: 'The Sand Nug', match: /sand nug/i, build: sandNug },
+  lasse: { name: 'Lasse (bar drunk)', match: /^lasse$/i, build: lasse },
+  accordion: { name: 'The Accordion', match: /accordion/i, build: accordion },
+  'god-of-beauty': { name: 'The God of Beauty', match: /god of beauty/i, build: godOfBeauty },
   varg: { name: 'Varg (Edbart’s wolf)', match: /^varg$/i, build: null }, // built in model.js (MONSTER_LOOKS)
 };
 

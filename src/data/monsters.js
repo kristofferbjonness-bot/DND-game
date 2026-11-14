@@ -75,6 +75,32 @@ export const MONSTERS = {
     attacks: [{ name: 'Swordfish dagger', toHit: 3, dice: '1d4', bonus: 1, type: 'piercing' }],
     note: 'Bobby’s cheerful younger brother, who sells fish of every kind.', model: 'npc-bob',
   },
+  // Sirivik.
+  'per-hul-oye': {
+    name: 'Per Hul Øye', short: 'Per', kind: 'Humanoid · bar owner', ac: 11, hp: 14, initiative: 0, speed: 30,
+    attacks: [{ name: 'Heavy mug', toHit: 3, dice: '1d6', bonus: 1, type: 'bludgeoning' }],
+    note: 'The bar owner of Sirivik, with a hollow where one eye should be.', model: 'npc-per-hul-oye',
+  },
+  paul: {
+    name: 'Three-Fingered Paul', short: 'Paul', kind: 'Humanoid · shopkeeper', ac: 12, hp: 13, initiative: 1, speed: 30,
+    attacks: [{ name: 'Obsidian knife', toHit: 4, dice: '1d4', bonus: 2, type: 'slashing' }],
+    note: 'The shopkeeper of Sirivik. His lantern never shakes.', model: 'npc-paul',
+  },
+  'hostel-owner': {
+    name: 'The hostel owner', short: 'Hostel owner', kind: 'Humanoid · innkeeper', ac: 10, hp: 9, initiative: -1, speed: 25,
+    attacks: [{ name: 'Candlestick', toHit: 2, dice: '1d4', bonus: 0, type: 'bludgeoning' }],
+    note: 'Runs the hostel in Sirivik. Has no toes at all.', model: 'npc-hostel-owner',
+  },
+  lasse: {
+    name: 'Lasse', short: 'Lasse', kind: 'Humanoid · drunk', ac: 9, hp: 8, initiative: -1, speed: 30,
+    attacks: [{ name: 'Wild swing of the mug', toHit: 1, dice: '1d4', bonus: 0, type: 'bludgeoning' }],
+    note: 'A nervous regular at Per Hul Øye’s bar in Sirivik.', model: 'npc-lasse',
+  },
+  accordion: {
+    name: 'The Accordion', short: 'Accordion', kind: 'Monstrosity', ac: 14, hp: 85, initiative: 2, speed: 40,
+    attacks: [{ name: 'Crushing fold', toHit: 7, dice: '2d8', bonus: 4, type: 'bludgeoning' }, { name: 'Grasping claws', toHit: 7, dice: '1d10', bonus: 4, type: 'slashing' }],
+    note: 'A mangled thing from the foggy hills round Sirivik. Most say it is only a legend.', model: 'npc-accordion',
+  },
 };
 
 // Generated monsters from the bestiary (database) join the built-in ones here.

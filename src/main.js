@@ -1309,12 +1309,20 @@ async function loadJournal() {
     journalScreen.refresh();
     sceneScreen.refresh();
     applyFog();
+    dumpJournal();
   });
   journalScreen.refresh();
   sceneScreen.refresh();
   applyFog();
-  // On the dev server, the DM's journal is saved to the game folder for Claude (see vite.config.js).
-  if (import.meta.env.DEV && me?.dm) fetch('/__journal-dump', { method: 'POST', body: JSON.stringify(quests, null, 1) }).catch(() => {});
+  dumpJournal();
+}
+// On the dev server, the DM's journal is saved to the game folder for Claude (see vite.config.js),
+// when it loads and after every change.
+let dumpTimer = null;
+function dumpJournal() {
+  if (!import.meta.env.DEV || !me?.dm) return;
+  clearTimeout(dumpTimer);
+  dumpTimer = setTimeout(() => fetch('/__journal-dump', { method: 'POST', body: JSON.stringify(quests, null, 1) }).catch(() => {}), 1500);
 }
 
 // The little rulebook, always one tap away. Its weapons page shows the player's
