@@ -24,7 +24,9 @@ const COINS = { pp: 'Platinum', gp: 'Gold', sp: 'Silver', cp: 'Copper' };
 
 // `onSave(character)` saves a changed hero.
 // `loreItems()`: the Journal's items [{ id, title, type, given, holder }]; `onGiveLore(id, heroId)` gives one.
-export function createHeroManager(root, { party, onSave, parties = () => [], partyOf = (c) => c.party, loreItems = () => [], onGiveLore }) {
+// `onMakeItem(prompt)` → Claude designs an item, saved to the catalogue; resolves with its id.
+export function createHeroManager(root, { party, onSave, parties = () => [], partyOf = (c) => c.party, loreItems = () => [], onGiveLore, onMakeItem }) {
+  let making = false, makeError = '';
   let shelf = 'all', query = '', picked = null; // the item picker's state (picked: an item key, 'lore:<id>' or 'new')
   let id = null, said = '';
   const hero = () => party.find((c) => c.id === id);
@@ -154,7 +156,14 @@ export function createHeroManager(root, { party, onSave, parties = () => [], par
       last = i.group;
       return `${head}<li><button type="button" class="give__item${i.key === picked ? ' is-on' : ''}${i.given ? ' is-given' : ''}" data-pick="${esc(i.key)}">${icon(i.ic)}<span><b>${esc(i.name)}</b>${i.sub ? `<small>${esc(i.sub)}</small>` : ''}</span></button></li>`;
     }).join('') : '<li class="give__none">Nothing found.</li>';
-    list.insertAdjacentHTML('beforeend', `<li><button type="button" class="give__item give__item--new${picked === 'new' ? ' is-on' : ''}" data-pick="new">${icon('plus')}<span><b>Something new…</b><small>An item of your own</small></span></button></li>`);
+    list.insertAdjacentHTML('beforeend', `<li><button type="button" class="give__item give__item--new${picked === 'claude' ? ' is-on' : ''}" data-pick="claude">${icon('magic')}<span><b>Create with Claude…</b><small>Describe it and Claude makes it, with stats</small></span></button></li><li><button type="button" class="give__item give__item--new${picked === 'new' ? ' is-on' : ''}" data-pick="new">${icon('plus')}<span><b>Something new…</b><small>An item of your own, just a name</small></span></button></li>`);
+    if (picked === 'claude') {
+      chosen.innerHTML = `
+        <textarea class="manage__text give__prompt" name="itemprompt" rows="2" maxlength="600" placeholder="e.g. a set of balanced throwing stars from Hrimnir, or a bitter green potion that lets you breathe underwater"></textarea>
+        <div class="manage__row"><p class="give__hint">${making ? 'Claude is making it…' : makeError ? esc(makeError) : 'It goes into the item list for good, then you can give it.'}</p>
+        <button type="button" data-do="makeitem" class="manage__btn manage__btn--good"${making ? ' disabled' : ''}>Create</button></div>`;
+      return;
+    }
     if (!picked) { chosen.innerHTML = '<p class="give__hint">Pick an item above.</p>'; return; }
     const lore = picked.startsWith('lore:');
     const name = picked === 'new' ? '' : lore ? loreItems().find((l) => `lore:${l.id}` === picked)?.title : ITEMS[picked]?.name;
@@ -222,6 +231,14 @@ export function createHeroManager(root, { party, onSave, parties = () => [], par
         break;
       case 'point': change(`${n} got an attribute point to spend.`, (h) => giveAbilityPoint(h, 1)); break;
       case 'unpoint': change(`Took an attribute point back from ${n}.`, (h) => giveAbilityPoint(h, -1)); break;
+      case 'makeitem': {
+        const prompt = root.querySelector('[name=itemprompt]')?.value.trim();
+        if (!prompt || making) return;
+        making = true; makeError = ''; drawPicker();
+        Promise.resolve(onMakeItem?.(prompt)).then((newId) => { making = false; shelf = 'all'; query = ''; picked = newId; render(); })
+          .catch((err) => { making = false; makeError = err.message; drawPicker(); });
+        return;
+      }
       case 'give': {
         const key = picked;
         if (!key) return;

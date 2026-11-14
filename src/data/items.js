@@ -98,6 +98,13 @@ export const ITEMS = {
   'dried-fish': { name: 'Wind-dried fish', kind: 'gear', group: 'food', from: 'Bartedalen', note: 'A Bartedalen speciality' },
   'sea-salt': { name: 'Pouch of sea salt', kind: 'gear', group: 'food', from: 'Bartedalen' },
   'swordfish-dagger': { name: 'Swordfish dagger', kind: 'weapon', dice: '1d4', type: 'piercing', props: ['finesse', 'light', 'thrown'], range: '20/60 ft', model: 'dagger', from: 'Ytterhavn', note: 'From Bob’s shop' },
+  darts: { name: 'Darts', kind: 'weapon', dice: '1d4', type: 'piercing', props: ['finesse', 'thrown'], range: '20/60 ft', model: 'dagger', group: 'small' },
+  'light-hammer': { name: 'Light hammer', kind: 'weapon', dice: '1d4', type: 'bludgeoning', props: ['light', 'thrown'], range: '20/60 ft', model: 'mace' },
+  sickle: { name: 'Sickle', kind: 'weapon', dice: '1d4', type: 'slashing', props: ['light'], model: 'handaxe' },
+  club: { name: 'Club', kind: 'weapon', dice: '1d4', type: 'bludgeoning', props: ['light'], model: 'mace' },
+  javelin: { name: 'Javelin', kind: 'weapon', dice: '1d6', type: 'piercing', props: ['thrown'], range: '30/120 ft', model: 'spear' },
+  'throwing-axes': { name: 'Throwing axes', kind: 'weapon', dice: '1d6', type: 'slashing', props: ['light', 'thrown'], range: '20/60 ft', model: 'handaxe' },
+  'hidden-blade': { name: 'Hidden wrist blade', kind: 'weapon', dice: '1d4', type: 'piercing', props: ['finesse', 'light'], model: 'dagger' },
   cutlass: { name: 'Cutlass', kind: 'weapon', dice: '1d6', type: 'slashing', props: ['finesse', 'light'], model: 'shortsword', from: 'Ytterhavn' },
   'obsidian-knife': { name: 'Obsidian knife', kind: 'weapon', dice: '1d4', type: 'slashing', props: ['finesse', 'light'], model: 'dagger', from: 'Sirivik', note: 'Black glass, very sharp' },
   'curved-knife': { name: 'Hooknose curved knife', kind: 'weapon', dice: '1d4', type: 'slashing', props: ['finesse', 'light'], model: 'dagger', from: 'Razz of Mataz' },
@@ -123,3 +130,33 @@ export const ITEMS = {
 };
 
 export const has = (item, prop) => item?.props?.includes(prop) ?? false;
+
+// --- Items Claude made (saved as journal rows, kind 'catalog', and added here on every device) ---
+const LOOKS = ['sword', 'longsword', 'shortsword', 'dagger', 'rapier', 'katana', 'handaxe', 'greataxe', 'mace', 'staff', 'spear', 'shortbow', 'longbow', 'crossbow'];
+const PROPS = ['finesse', 'light', 'thrown', 'versatile', 'two-handed', 'ranged', 'heavy'];
+const DICE = /^\d{1,2}d\d{1,2}$/;
+// Turns Claude's answer into a safe catalogue item, or throws.
+export function sanitizeItem(raw) {
+  const kind = ['weapon', 'armour', 'shield', 'gear'].includes(raw?.kind) ? raw.kind : 'gear';
+  const it = { name: String(raw?.name ?? '').trim().slice(0, 40), kind, note: String(raw?.note ?? '').slice(0, 120) };
+  if (!it.name) throw new Error('Claude did not make an item. Try again.');
+  if (kind === 'weapon') {
+    it.dice = DICE.test(String(raw.dice)) ? raw.dice : '1d6';
+    it.type = String(raw.type ?? 'slashing').slice(0, 30);
+    it.props = (Array.isArray(raw.props) ? raw.props : []).filter((p) => PROPS.includes(p));
+    if (it.props.includes('ranged') || it.props.includes('thrown')) it.range = /^\d{1,3}\/\d{1,3} ft$/.test(String(raw.range)) ? raw.range : '20/60 ft';
+    if (it.props.includes('versatile')) it.versatile = DICE.test(String(raw.versatile)) ? raw.versatile : '1d8';
+    it.model = LOOKS.includes(raw.look) ? (raw.look === 'sword' ? 'shortsword' : raw.look) : 'shortsword';
+  } else if (kind === 'armour') {
+    it.category = ['Light', 'Medium', 'Heavy'].includes(raw.category) ? raw.category : 'Light';
+    it.ac = Math.min(18, Math.max(10, Math.round(Number(raw.ac) || 11)));
+    it.dexCap = it.category === 'Light' ? null : it.category === 'Medium' ? 2 : 0;
+    it.model = it.category === 'Heavy' ? 'chain' : it.category === 'Medium' ? 'scale' : 'leather';
+  } else if (kind === 'shield') {
+    it.ac = Math.min(3, Math.max(1, Math.round(Number(raw.ac) || 2))); it.model = 'shield';
+  } else {
+    it.group = ['potions', 'food', 'tools', 'treasure', 'curio'].includes(raw.group) ? raw.group : 'tools';
+  }
+  return it;
+}
+export function registerItem(id, it) { ITEMS[id] = { ...it, generated: true }; }

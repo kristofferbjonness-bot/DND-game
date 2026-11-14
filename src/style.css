@@ -2497,3 +2497,17 @@ body[data-screen="combat"]:not(:has(#combat.is-battle)) .tags-toggle { display: 
 @media (min-width: 601px) and (min-height: 501px) {
   .screen:not(.scn):not(.combat) { padding-left: calc(max(20px, var(--safe-l)) + 58px); }
 }
+.give__prompt { width: 100%; resize: vertical; }
+
+/* Tab names stay visible on small screens: a small label under each icon. */
+@media (max-width: 900px), (max-height: 500px) and (orientation: landscape) {
+  .topnav__tab { flex-direction: column; justify-content: center; gap: 0; padding: 0 7px; }
+  .topnav__tab span { display: block; font-size: 9px; letter-spacing: 0.04em; line-height: 1.1; white-space: nowrap; }
+  .topnav__tab .ic { width: 22px; height: 22px; }
+  .topnav__tab--map .topnav__chev { display: none; }
+}
+@media (max-height: 500px) and (orientation: landscape) {
+  .topnav__tab { height: 40px; padding: 0 6px; }
+  .topnav__tab .ic { width: 20px; height: 20px; }
+  .topnav__tab span { font-size: 8.5px; }
+}

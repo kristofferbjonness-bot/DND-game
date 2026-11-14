@@ -21,7 +21,8 @@ const MAX_PEOPLE = 9;
 // canEdit(): the DM (not previewing); liveId(): the live scene's id; onSave(row) → saved row;
 // onDelete(id); onLive(id | null); onOpenJournal(type, id).
 // onFight({ heroes, enemies: { Bestiary id: n }, area }) starts setting up a fight in a scene.
-export function createSceneScreen(root, { entries, heroes, monsters, canEdit, liveId, onSave, onDelete, onLive, onOpenJournal, onFight }) {
+// onVisit(area): the party is shown at a place (it goes into the Journal's Places).
+export function createSceneScreen(root, { entries, heroes, monsters, canEdit, liveId, onSave, onDelete, onLive, onOpenJournal, onFight, onVisit }) {
   root.innerHTML = `
     <div class="scn__stage"></div>
     <header class="scn__plate" hidden></header>
@@ -170,6 +171,7 @@ export function createSceneScreen(root, { entries, heroes, monsters, canEdit, li
       const row = await onSave({ id: d.id, data: { ...d.data, title: (AREAS[d.data.area] ?? AREAS.port).name } });
       if (draft === d) draft = null; else if (draft && !draft.id) draft.id = row.id; // more changes came in meanwhile
       if (liveId() !== row.id) await onLive(row.id, { quiet: true });
+      onVisit?.(d.data.area);
       return row;
     }).catch((err) => { alert(err.message); });
     return saving;

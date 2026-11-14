@@ -7,6 +7,8 @@
 //     The look of a new hero from the character creator (the stats are worked
 //     out in the app). The Dungeon Master, or a player who has no hero yet.
 //
+//   POST /api/generate-item  { prompt }
+//     An item to give the heroes (a weapon, armour, a potion, a trinket) with 5e stats. Dungeon Master only.
 //   POST /api/generate-place  { town, prompt }
 //     A place for the Scene tab (a room, a street, a clearing): a voxel diorama. Dungeon Master only.
 //
@@ -119,12 +121,31 @@ Layout rules:
 - 80–400 boxes. Prefer a few big boxes over many single voxels, but give it character: windows with frames, beams, shelves with things on them, rugs, plants, signs, lamps.
 - "mood.brightness" between 0.6 (dark cellar, night) and 1.3 (bright noon); "mood.light" is the colour of the light (warm for candles and fire, cool for fog or moonlight).`;
 
+const ITEM_SYSTEM = `You design items for a Dungeons & Dragons 5e campaign app (the party is around level 2, so keep items modest unless asked). Answer with ONE JSON object and nothing else (no prose, no code fences):
+
+{
+  "name": "Item name (max 40 characters)",
+  "kind": "weapon" | "armour" | "shield" | "gear",
+  "note": "One short sentence: what it is, what it does, where it is from (max 100 characters).",
+  // weapons only:
+  "dice": "1d6", "type": "slashing", "props": ["finesse", "light", "thrown", "versatile", "two-handed", "ranged", "heavy"], "range": "20/60 ft", "versatile": "1d8",
+  "look": "sword" | "longsword" | "shortsword" | "dagger" | "rapier" | "katana" | "handaxe" | "greataxe" | "mace" | "staff" | "spear" | "shortbow" | "longbow" | "crossbow",
+  // armour only:
+  "ac": 12, "category": "Light" | "Medium" | "Heavy",
+  // shields only: "ac": 2
+  // gear only:
+  "group": "potions" | "food" | "tools" | "treasure" | "curio"
+}
+
+Follow 5e rules for weapons (dice, properties). Small weapons that can be a secondary weapon have "light" and/or "thrown". "range" only for thrown or ranged weapons, "versatile" only with the versatile property. Leave out keys that do not apply.`;
+
 const json = (status, body) => new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
 
 export default async (req) => {
   if (req.method !== 'POST') return json(405, { error: 'Use POST.' });
   const hero = new URL(req.url).pathname.endsWith('/generate-hero');
   const place = new URL(req.url).pathname.endsWith('/generate-place');
+  const item = new URL(req.url).pathname.endsWith('/generate-item');
 
   const apiKey = Netlify.env.get('ANTHROPIC_API_KEY');
   if (!apiKey) return json(500, { error: 'The Claude API key is not set up on Netlify yet (ANTHROPIC_API_KEY).' });
@@ -164,6 +185,12 @@ export default async (req) => {
       `Design notes from the player: ${design || '(none, go by the backstory)'}`,
       `Backstory: ${backstory || '(none)'}`,
     ].join('\n');
+  } else if (item) {
+    const prompt = String(body.prompt ?? '').trim();
+    if (!prompt) return json(400, { error: 'Describe the item first.' });
+    if (prompt.length > MAX_PROMPT) return json(400, { error: `Keep the description under ${MAX_PROMPT} characters.` });
+    system = ITEM_SYSTEM;
+    message = `Create this item: ${prompt}`;
   } else if (place) {
     const prompt = String(body.prompt ?? '').trim(), town = String(body.town ?? '').trim().slice(0, 60);
     if (!prompt) return json(400, { error: 'Describe the place first.' });
@@ -201,4 +228,4 @@ export default async (req) => {
   });
 };
 
-export const config = { path: ['/api/generate-monster', '/api/generate-hero', '/api/generate-place'] };
+export const config = { path: ['/api/generate-monster', '/api/generate-hero', '/api/generate-place', '/api/generate-item'] };

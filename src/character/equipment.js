@@ -30,9 +30,11 @@ export function optionsFor(c, slot) {
   const main = ITEMS[c.equipped.mainHand];
   if (main && has(main, 'two-handed')) return { ids: [], reason: `${main.name} needs both hands` };
   const shields = ids.filter((id) => ITEMS[id].kind === 'shield');
-  const offWeapons = !main || has(main, 'light') ? weapons.filter((id) => has(ITEMS[id], 'light') && id !== c.equipped.mainHand) : [];
+  // A secondary weapon: anything small (light or made to throw) beside any one-handed main weapon.
+  const small = (it) => (has(it, 'light') || has(it, 'thrown')) && !has(it, 'two-handed') && !has(it, 'heavy');
+  const offWeapons = weapons.filter((id) => small(ITEMS[id]) && id !== c.equipped.mainHand);
   const options = [...shields, ...offWeapons];
-  return options.length ? { ids: options } : { ids: [], reason: 'Needs a light weapon in the main hand' };
+  return options.length ? { ids: options } : { ids: [], reason: 'No small weapon or shield to hold' };
 }
 
 export function equip(c, slot, id) {
@@ -42,6 +44,6 @@ export function equip(c, slot, id) {
     const main = ITEMS[e.mainHand], off = ITEMS[e.offHand];
     if (e.offHand === e.mainHand) e.offHand = null;
     if (main && has(main, 'two-handed')) e.offHand = null;
-    else if (main && off?.kind === 'weapon' && !has(main, 'light')) e.offHand = null;
+    else if (off?.kind === 'weapon' && !(has(off, 'light') || has(off, 'thrown'))) e.offHand = null;
   }
 }

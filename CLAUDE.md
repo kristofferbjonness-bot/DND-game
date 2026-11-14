@@ -156,6 +156,15 @@ The original assets (hand-drawn world map, location art, character art, lore doc
   `sanitizePlace` (areas.js) checks it; it is saved as a journal row (`quests`, `data.kind: 'area'`, shown) and registered with
   `registerArea` on every device (main.js, on load and live); the scene moves there. People stand at the usual spots moved to
   open floor. Places are grouped by `town` (`towns()`).
+- **Visited places in the Journal**: every scene the DM sets (sceneScreen `push` → `onVisit` in main.js) adds a journal `place`
+  row `{ title, place: town map id, area }` once, or links an existing place with the same title (e.g. Kvini, Habibi Hands from
+  the lore). Kvini and Habibi Hands are scene areas too.
+- **Items made by Claude**: Manage → Give an item → "Create with Claude…" calls POST `/api/generate-item` (`ITEM_SYSTEM`);
+  `sanitizeItem` (items.js) checks it; saved as a journal row `{ kind: 'catalog', item }` (not listed in the Journal) and added to
+  `ITEMS` with `registerItem` on every device.
+- **Secondary weapons**: the off hand takes any light or thrown, non-two-handed weapon beside any one-handed main weapon (house
+  rule, equipment.js). Small weapons added: darts, light hammer, sickle, club, javelin, throwing axes, hidden wrist blade.
+- Tab names show under the icons on all small screens.
 - **No Bestiary tab and no Creatures section any more** (by request: everything is a person). `MONSTERS` (data/monsters.js) still
   holds every fighter's stats and generated people are still saved to the `monsters` table; `cleanMonster` is in data/cleanMonster.js.
 - **Fights happen in the Scene tab** (there is no Fight tab any more, by request). The DM presses "Fight!" in the scene

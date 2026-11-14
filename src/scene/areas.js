@@ -1083,12 +1083,73 @@ function sirivikBar() {
   };
 }
 
+// Kvini, a store in Razz of Mataz: a sandstone room with arches, shelves of jars and bottles, a
+// counter with scales and potions, hanging lamps, baskets of spice and rolled rugs.
+function kvini() {
+  const v = new Vox(SIZE, { corner: 3 });
+  slab(v, (x, z) => ((x + Math.floor(z / 2)) % 4 === 0 ? '#c9a46e' : '#d8b880'));
+  const stone = (x, y, z) => (hash(x, y, z) > 0.88 ? '#c49a62' : '#e0c08a');
+  for (let x = 0; x < SIZE; x++) for (let z = 0; z <= 2; z++) for (let y = 1; y <= 22; y++) v.set(x, y, z, stone(x, y, z));
+  for (const [x0, x1] of [[0, 2], [SIZE - 3, SIZE - 1]]) for (let x = x0; x <= x1; x++) for (let z = 3; z <= 44; z++) for (let y = 1; y <= 14; y++) v.set(x, y, z, stone(x, y, z));
+  // Arched niches in the back wall with shelves of jars and bottles.
+  for (const x0 of [5, 21, 37]) {
+    for (let x = x0; x <= x0 + 13; x++) for (let y = 3; y <= 18 - Math.max(0, Math.abs(x - x0 - 6.5) - 4); y++) v.set(x, y, 2, '#a8784a');
+    for (const y of [6, 10, 14]) for (let x = x0 + 1; x <= x0 + 12; x++) { v.set(x, y, 3, '#7a4e2c'); if (hash(x, y, 81) > 0.35) v.set(x, y + 1, 3, ['#3f8a5a', '#a8342a', '#2f6aa8', '#e8b84a', '#e8e2d6', '#8a5aa8'][Math.floor(hash(y, x, 82) * 6)]); }
+  }
+  // The counter with brass scales and a few glowing potions.
+  v.box(14, 1, 12, 46, 6, 15, '#7a4e2c'); v.box(13, 6, 12, 47, 7, 15, '#9a6c40');
+  for (let y = 7; y <= 11; y++) v.set(40, y, 13, '#c9a44a'); for (let x = 37; x <= 43; x++) v.set(x, 11, 13, '#c9a44a'); v.set(37, 8, 13, '#c9a44a'); v.set(43, 8, 13, '#c9a44a');
+  for (const [x, c] of [[18, '#d9503f'], [20, '#d9503f'], [23, '#5aa8d9'], [26, '#8fd36a']]) { v.light(x, 7, 13, c); v.light(x, 8, 13, c); v.set(x, 9, 13, '#8a6440'); }
+  // Hanging brass lamps, baskets of spice, rolled rugs.
+  for (const x of [15, 30, 45]) { for (let y = 18; y <= 21; y++) v.set(x, y, 20, '#5a4a3a'); v.light(x, 17, 20, '#ffcf70'); v.set(x - 1, 17, 20, '#c9a44a'); v.set(x + 1, 17, 20, '#c9a44a'); }
+  for (const [x, z, c] of [[6, 22, '#c9602a'], [10, 24, '#e8b84a'], [6, 27, '#8a3a2a'], [52, 22, '#7aa84a']]) { v.box(x, 1, z, x + 3, 4, z + 3, '#a87a48'); v.box(x, 4, z, x + 3, 5, z + 3, c); }
+  for (const [z, c] of [[30, '#9b2f2a'], [33, '#2f4f7a']]) v.box(50, 1, z, 56, 3, z + 2, c);
+  return {
+    v, heroSpots: HERO_SPOTS,
+    npcSpots: [[30, 9], [22, 20], [38, 20], [18, 26], [42, 27], [26, 24], [34, 24], [14, 32], [46, 33]],
+    mood: { bg: 'radial-gradient(ellipse at 50% 30%, #6a4428, #2a160a)', sky: '#ffe2b8', ground: '#8a6a44', hemi: 1.5, sun: '#ffd8a8', sunPower: 1.9, sunAt: [-20, 70, 50], exposure: 1.1 },
+  };
+}
+
+// Habibi Hands: Grill & Guide — Habibi's kebab stall on a busy street corner in Razz: a striped
+// awning, a smoking grill with skewers, a sign, stools, crates of vegetables and the maze-like
+// sandstone houses round it.
+function habibiHands() {
+  const v = new Vox(SIZE, { corner: 5 });
+  slab(v, (x, z) => (hash(x, z, 85) > 0.88 ? '#c9a46e' : (x + z) % 5 === 0 ? '#d4b07a' : '#dfc08c'));
+  for (const [x0, z0, w, h] of [[0, 0, 16, 22], [16, 0, 12, 16], [40, 0, 20, 20], [0, 16, 10, 14], [50, 22, 10, 16]]) {
+    sandstoneWall(v, x0, z0, x0 + w - 1, z0 + (z0 ? 12 : 8), h, { colour: hash(x0, z0) > 0.5 ? '#e0c28f' : '#d4b07a' });
+  }
+  // The stall: a counter, the grill with glowing coals and skewers, a striped awning on poles, the sign.
+  v.box(26, 1, 14, 40, 7, 18, '#8a5a34'); v.box(25, 7, 13, 41, 8, 19, '#9a6c40');
+  v.box(28, 8, 14, 34, 9, 17, '#3a3a40');
+  for (let x = 29; x <= 33; x++) v.light(x, 9, 15, x % 2 ? '#ff8a3c' : '#ffb347');
+  for (let x = 29; x <= 33; x += 2) { for (let z = 14; z <= 17; z++) v.set(x, 10, z, '#a87a48'); v.set(x, 11, 15, '#8a4a2a'); }
+  for (const [x, z] of [[25, 13], [41, 13], [25, 20], [41, 20]]) for (let y = 1; y <= 17; y++) v.set(x, y, z, '#5a3a22');
+  for (let x = 24; x <= 42; x++) for (let z = 12; z <= 21; z++) v.set(x, 18, z, Math.floor(x / 2) % 2 ? '#c94a3a' : '#f2e8d4');
+  for (let x = 27; x <= 39; x++) for (let y = 20; y <= 23; y++) v.set(x, y, 13, x === 27 || x === 39 || y === 20 || y === 23 ? '#d8a845' : '#5a3a22');
+  for (let x = 29; x <= 37; x += 2) v.set(x, 22, 14, '#f2d27a'); // the letters
+  // Smoke from the grill, stools, crates of vegetables, a pot of tea.
+  v.puff(31, 13, 15, 3, 3, 2);
+  for (const x of [28, 33, 38]) v.box(x, 1, 22, x + 2, 4, 24, '#6b4528');
+  for (const [x, z, c] of [[44, 14, '#c9302a'], [44, 18, '#7aa84a'], [47, 16, '#e8b84a']]) { v.box(x, 1, z, x + 3, 3, z + 3, '#a87a48'); v.box(x, 3, z, x + 3, 4, z + 3, c); }
+  v.box(20, 1, 16, 23, 3, 19, '#7a7068'); v.set(21, 3, 17, '#c9a44a'); v.set(21, 4, 17, '#c9a44a');
+  for (const [x, z] of [[12, 34], [48, 40]]) palm(v, x, 0, z, { lean: x < 30 ? 1 : -1 });
+  return {
+    v, heroSpots: HERO_SPOTS,
+    npcSpots: [[33, 21], [24, 26], [42, 26], [20, 30], [44, 32], [28, 30], [37, 30], [16, 26], [48, 28]],
+    mood: { bg: 'linear-gradient(#7fb6d9, #f2c48a 70%, #f7e2b8)', sky: '#fff1dc', ground: '#b89a70', hemi: 1.45, sun: '#ffd6a0', sunPower: 2.4, sunAt: [-50, 55, 40], exposure: 1.05 },
+  };
+}
+
 // `town`: where the place belongs, for grouping in the lists (TOWNS gives the order).
 export const AREAS = {
   camp: { town: 'Razz of Mataz', name: 'The camp of the Man Who Makes Himself Known', short: 'The camp', build: camp },
   wolf: { town: 'Razz of Mataz', name: 'The Wolf', short: 'The Wolf', build: wolf },
   port: { town: 'Razz of Mataz', name: 'The port of Razz of Mataz', short: 'The port', build: port },
   alley: { town: 'Razz of Mataz', name: 'Hooknose Alley', short: 'Hooknose Alley', build: alley },
+  kvini: { town: 'Razz of Mataz', name: 'Kvini', short: 'Kvini', build: kvini },
+  'habibi-hands': { town: 'Razz of Mataz', name: 'Habibi Hands: Grill & Guide', short: 'Habibi Hands', build: habibiHands },
   gate: { town: 'Razz of Mataz', name: 'Outside the city gates', short: 'The city gates', build: gate },
   road: { town: 'On the road', name: 'The road from Razz to Ytterhavn', short: 'The road', build: plainRoad },
   ytter: { town: 'Ytterhavn', name: 'Ytterhavn city centre', short: 'Ytterhavn', build: ytterCentre },

@@ -33,13 +33,14 @@ import { createCreatorScreen } from './creator/creatorScreen.js';
 import { createRulebook } from './rulebook/rulebook.js';
 import { createJournalScreen } from './journal/journalScreen.js';
 import { createSceneScreen } from './scene/sceneScreen.js';
-import { registerArea, unregisterArea } from './scene/areas.js';
+import { AREAS, registerArea, unregisterArea } from './scene/areas.js';
+import { sanitizeItem, registerItem } from './data/items.js';
 import { createDiceTray } from './dice/diceTray.js';
 import { createHeroManager } from './status/heroManager.js';
 import { shortRest, longRest, readyToLevel } from './character/progress.js';
 import { icon } from './ui/icons.js';
 import { heroPortrait, portraitImg } from './ui/portraits.js';
-import { loadRevealed, setRevealed, watchRevealed, loadWorld, saveWorld, watchWorld, loadEncounter, saveEncounter, loadRolls, addRoll, clearRolls, watchRolls, loadQuests, saveQuest, deleteQuest, watchQuests } from './net/backend.js';
+import { loadRevealed, setRevealed, watchRevealed, loadWorld, saveWorld, watchWorld, loadEncounter, saveEncounter, loadRolls, addRoll, clearRolls, watchRolls, loadQuests, saveQuest, deleteQuest, watchQuests, generateItem } from './net/backend.js';
 import { supabase, myProfile, loadCharacters, seedCharacters, saveCharacter, deleteCharacter, watchCharacters, signOut, explain, encounterChannel, presenceChannel, loadMonsters, watchMonsters } from './net/backend.js';
 import './style.css';
 
@@ -1016,6 +1017,13 @@ const manager = createHeroManager(document.getElementById('manage'), {
     id: q.id, title: q.data.title, type: q.data.type, given: q.data.shown !== false,
     holderName: q.data.shown === false ? '' : everyone.find((c) => c.id === q.data.holder)?.name ?? 'the party',
   })).sort((a, b) => Number(a.given) - Number(b.given) || a.title.localeCompare(b.title)),
+  async onMakeItem(prompt) {
+    const item = sanitizeItem(await generateItem(prompt, () => {}));
+    const row = await saveQuest({ data: { kind: 'catalog', item, prompt, shown: true } });
+    quests.push(row);
+    registerItem(row.id, item);
+    return row.id;
+  },
   async onGiveLore(id, heroId) {
     const q = quests.find((x) => x.id === id);
     const saved = await saveQuest({ id, data: { ...q.data, shown: true, holder: heroId } });
@@ -1337,19 +1345,36 @@ sceneScreen = createSceneScreen(screens.scene, {
   },
   onOpenJournal(type, id) { showScreen('journal'); journalScreen.openEntry(type, id); },
   onFight(setup) { combatScreen.prepare(setup); showScreen('combat'); },
+  // A place the party has been: written into the Journal's Places (under its town), once.
+  async onVisit(areaId) {
+    const area = AREAS[areaId];
+    if (!area || quests.some((q) => q.data.kind === 'place' && q.data.area === areaId)) return;
+    // A place already in the Journal with the same name (e.g. from the lore) is linked instead.
+    const same = quests.find((q) => q.data.kind === 'place' && !q.data.area && q.data.title?.toLowerCase() === area.name.toLowerCase());
+    const town = views.world.places.find((p) => p.name === area.town)?.id ?? '';
+    const data = same ? { ...same.data, area: areaId, shown: true } : { kind: 'place', title: area.name, place: town, body: '', area: areaId, shown: true };
+    try {
+      const row = await saveQuest({ id: same?.id, data });
+      const i = quests.findIndex((q) => q.id === row.id);
+      if (i >= 0) quests[i] = row; else quests.push(row);
+      journalScreen.refresh();
+    } catch (err) { console.warn('Could not note the place:', err.message); }
+  },
 });
 let watchingQuests = null;
 async function loadJournal() {
   try {
     quests.splice(0, quests.length, ...(await loadQuests()));
     for (const q of quests) if (q.data.kind === 'area') registerArea(q.id, q.data); // places Claude made
+    for (const q of quests) if (q.data.kind === 'catalog') registerItem(q.id, q.data.item); // items Claude made
   } catch (err) { console.warn('Journal not available yet:', err.message); return; }
   watchingQuests ??= watchQuests((event, row) => {
     const i = quests.findIndex((q) => q.id === row.id);
     if (event === 'DELETE') { if (i >= 0) quests.splice(i, 1); unregisterArea(row.id); } else if (i >= 0) quests[i] = row; else quests.push(row);
     if (event !== 'DELETE' && row.data?.kind === 'area') registerArea(row.id, row.data);
+    if (event !== 'DELETE' && row.data?.kind === 'catalog') registerItem(row.id, row.data.item);
     // Something new for a player: added, or revealed by the DM (it was not in their list before).
-    if (event !== 'DELETE' && i < 0 && me && !seesAll() && row.data.shown !== false && row.data.kind !== 'scene' && row.data.kind !== 'area') {
+    if (event !== 'DELETE' && i < 0 && me && !seesAll() && row.data.shown !== false && !['scene', 'area', 'catalog'].includes(row.data.kind)) {
       const what = { npc: 'Someone new in your journal', place: 'A new place in your journal', placenote: 'New notes in your journal', item: '📖 You found', creature: 'A new creature in your journal' }[row.data.kind] ?? '📜 New quest';
       const name = row.data.title ?? MONSTERS[row.data.monster]?.name;
       toast(name ? `${what}: ${name}` : what);
