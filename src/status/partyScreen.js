@@ -2,18 +2,26 @@
 // numbers. Tapping a plate opens that hero on the Hero screen. For the Dungeon Master:
 //   onNew        a "New hero" button that opens the character creator;
 //   onManage     a "Manage" button on each plate (health, XP, items);
-//   onEveryone   party-wide actions: ('short' | 'long' | 'xp', amount).
+//   onEveryone   party-wide actions: ('short' | 'long' | 'xp', amount);
+//   parties, current, onSwitch   the party names, the one shown, and switching to another.
+// Players get `title`: their party's name when there is more than one party.
 import { derive, signed } from '../character/rules.js';
 import { icon } from '../ui/icons.js';
 import { heroPortrait, portraitImg } from '../ui/portraits.js';
 
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
 
-export function renderParty(root, characters, onOpen, { onNew, onManage, onEveryone } = {}) {
+export function renderParty(root, characters, onOpen, { onNew, onManage, onEveryone, parties, current, onSwitch, title } = {}) {
   root.innerHTML = `
     <div class="party__inner">
       <header class="screen-head">
-        <h2 class="screen-title">The Party</h2>
+        ${parties ? `
+          <label class="party__switch" title="Which party to show">
+            <select class="party__select" aria-label="Party">
+              ${parties.map((p) => `<option value="${esc(p)}"${p === current ? ' selected' : ''}>${esc(p)}</option>`).join('')}
+              <option value="+">＋ New party…</option>
+            </select>
+          </label>` : `<h2 class="screen-title">${esc(title ?? 'The Party')}</h2>`}
         ${onNew ? `<button type="button" class="btn btn--gold party__new">${icon('plus')}New hero</button>` : ''}
       </header>
       ${onEveryone ? `
@@ -27,6 +35,7 @@ export function renderParty(root, characters, onOpen, { onNew, onManage, onEvery
           </span>
         </div>` : ''}
       <ul class="party__list">
+        ${characters.length ? '' : `<li class="party__empty">No heroes in this party yet.${parties ? ' Move heroes here with Manage, or make a new hero.' : ''}</li>`}
         ${characters.map((c) => {
           const d = derive(c);
           const hp = Math.max(0, c.hp.current / c.hp.max);
@@ -57,6 +66,14 @@ export function renderParty(root, characters, onOpen, { onNew, onManage, onEvery
       </ul>
     </div>`;
   root.querySelector('.party__new')?.addEventListener('click', onNew);
+  root.querySelector('.party__select')?.addEventListener('change', (e) => {
+    let name = e.target.value;
+    if (name === '+') {
+      name = (prompt('Name of the new party (move heroes into it with Manage):') ?? '').trim().slice(0, 40);
+      if (!name) { e.target.value = current; return; }
+    }
+    onSwitch(name);
+  });
   root.querySelector('.party__all')?.addEventListener('click', (e) => {
     const b = e.target.closest('[data-all]');
     if (!b) return;

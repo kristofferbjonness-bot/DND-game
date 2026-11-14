@@ -700,7 +700,30 @@ let screen = 'map';
 let statusScreen = null;
 // The party's characters, loaded from the database after logging in. Updated
 // in place when anyone changes a character, so every screen sees the same objects.
-const party = [];
+const everyone = []; // every hero in the database
+const party = [];    // the heroes of the party being shown (see currentParty)
+// Heroes belong to a named party (`party` on the sheet; none = the first party). Players see only
+// their own hero's party; the DM picks which party to look at (remembered on this device).
+const FIRST_PARTY = 'The party';
+const partyOf = (c) => String(c?.party ?? '').trim() || FIRST_PARTY;
+const partyNames = () => [...new Set([FIRST_PARTY, ...everyone.map(partyOf), dmParty])];
+let dmParty = (() => { try { return localStorage.getItem('dnd.party') || FIRST_PARTY; } catch { return FIRST_PARTY; } })();
+function currentParty() {
+  const heroId = me && !me.dm ? me.heroId : viewAs;
+  if (heroId) return partyOf(everyone.find((c) => c.id === heroId));
+  return partyNames().includes(dmParty) ? dmParty : FIRST_PARTY;
+}
+function refilterParty() {
+  const name = currentParty();
+  party.splice(0, party.length, ...everyone.filter((c) => partyOf(c) === name));
+}
+function switchParty(name) {
+  dmParty = name;
+  try { localStorage.setItem('dnd.party', name); } catch { /* private mode */ }
+  refilterParty();
+  heroChanged(null);
+  sceneScreen?.refresh();
+}
 const owners = new Map(); // character id -> profile id of the player
 const screens = {
   status: document.getElementById('status'), party: document.getElementById('party'),
@@ -715,11 +738,15 @@ let combatScreen = null; // the DM's controls
 let combatView = null;   // the players' view of a fight
 
 function showScreen(id) {
-  // The Combat tab opens the DM's controls, or the player's view of the fight.
-  if (id === 'combat' && document.body.dataset.role !== 'dm') id = 'fight';
+  // Fights happen in the Scene tab: the DM's fight controls while a fight is set up or on,
+  // the player's view of the fight while one is on.
+  const role = document.body.dataset.role;
+  if (id === 'scene' && role === 'dm' && combatScreen?.busy()) id = 'combat';
+  if ((id === 'scene' || id === 'combat') && role === 'player' && combatView?.active) id = 'fight';
+  if (id === 'combat' && role !== 'dm') id = 'scene';
   if (id === screen) return;
   screen = id;
-  const tab = id === 'fight' ? 'combat' : id;
+  const tab = id === 'fight' || id === 'combat' ? 'scene' : id;
   document.querySelectorAll('.topnav__tab').forEach((b) => b.classList.toggle('is-active', b.dataset.screen === tab));
   document.body.dataset.screen = id;
   for (const [key, el] of Object.entries(screens)) el.hidden = key !== id;
@@ -792,10 +819,11 @@ let watching = null;
 const creator = createCreatorScreen(document.getElementById('creator'), {
   async onCreated(c) {
     if (!me?.dm) { await enter(); return; } // the player's new hero is theirs: go in
+    if (currentParty() !== FIRST_PARTY) { c.party = currentParty(); saveHero(c); } // joins the party on show
     applyRow({ id: c.id, owner: null, data: c });
     showScreen('status');
     statusScreen.showCharacter(c.id);
-    toast(`${c.name} joined the party. A player can now pick them.`);
+    toast(`${c.name} joined ${currentParty()}. A player can now pick them.`);
   },
 });
 const startScreen = createStartScreen(document.getElementById('start'), { onLoggedIn: enter, onCreateHero: () => creator.open() });
@@ -803,15 +831,20 @@ const startScreen = createStartScreen(document.getElementById('start'), { onLogg
 function drawParty() {
   const open = (id) => { showScreen('status'); statusScreen.showCharacter(id); };
   const dm = me?.dm && !viewAs;
-  renderParty(screens.party, party, open, dm ? { onNew: () => creator.open(), onManage: (id) => manager.open(id), onEveryone: everyone } : {});
+  renderParty(screens.party, party, open, dm ? {
+    onNew: () => creator.open(), onManage: (id) => manager.open(id), onEveryone: everyoneDoes,
+    parties: partyNames(), current: currentParty(), onSwitch: switchParty,
+  } : { title: partyNames().length > 1 ? currentParty() : null });
 }
 
 // The Dungeon Master's tools for heroes (Party → Manage).
 const manager = createHeroManager(document.getElementById('manage'), {
-  party,
-  onSave(c) { saveHero(c); heroChanged(c.id); },
+  party: everyone,
+  parties: () => partyNames(),
+  partyOf,
+  onSave(c) { saveHero(c); refilterParty(); heroChanged(c.id); },
 });
-function everyone(what, amount) {
+function everyoneDoes(what, amount) {
   for (const c of party) {
     if (what === 'short') shortRest(c);
     else if (what === 'long') longRest(c);
@@ -845,6 +878,8 @@ async function removeHero(c) {
 statusScreen = createStatusScreen(screens.status, party, { onChange(c) { saveHero(c); drawBar(); applyParty(); }, onDelete: removeHero });
 combatScreen = createCombatScreen(screens.combat, {
   party, onHeroChange: saveHero, onPublic: publishFight, onSave: saveFightSoon,
+  liveArea: () => quests.find((q) => q.id === liveScene)?.data.area ?? null,
+  onLeave: () => showScreen('scene'),
   // The party has now met these creatures: they go into everyone's journal.
   onBegin: (types) => journalScreen.meetCreatures(types).catch((err) => console.warn('Could not note the creatures:', err.message)),
 });
@@ -910,9 +945,9 @@ function receiveFight(state) {
   const player = document.body.dataset.role === 'player';
   if (player && state.active && !wasActive && me && !me.dm) {
     toast('A fight has begun!');
-    showScreen('fight');
+    showScreen('scene');
   }
-  if (player && !state.active && screen === 'fight') showScreen('status');
+  if (player && !state.active && screen === 'fight') showScreen('scene');
 }
 
 function openFightChannel() {
@@ -926,26 +961,29 @@ function openFightChannel() {
 function setParty(rows) {
   const order = (id) => { const i = STARTING_HEROES.findIndex((h) => h.id === id); return i < 0 ? 999 : i; };
   rows.sort((a, b) => order(a.id) - order(b.id));
-  party.splice(0, party.length, ...rows.map((r) => r.data));
+  everyone.splice(0, everyone.length, ...rows.map((r) => r.data));
+  refilterParty();
   owners.clear();
   for (const r of rows) owners.set(r.id, r.owner);
 }
 
 // A character changed (or was deleted) somewhere: update it here and redraw what shows it.
 function applyRow(row) {
-  const i = party.findIndex((c) => c.id === row.id);
+  const i = everyone.findIndex((c) => c.id === row.id);
   if (row.deleted) {
     if (i < 0) return;
-    party.splice(i, 1);
+    everyone.splice(i, 1);
     owners.delete(row.id);
     // A player whose hero was deleted goes back to pick or make a new one.
     if (me && !me.dm && me.heroId === row.id) { location.reload(); return; }
     if (viewAs === row.id) previewAs(null);
   } else {
     owners.set(row.id, row.owner);
-    if (me && !me.dm && me.heroId === row.id && i >= 0) tellPlayer(party[i], row.data);
-    if (i >= 0) party[i] = row.data; else party.push(row.data);
+    if (me && !me.dm && me.heroId === row.id && i >= 0) tellPlayer(everyone[i], row.data);
+    if (i >= 0) everyone[i] = row.data; else everyone.push(row.data);
   }
+  refilterParty();
+  sceneScreen?.refresh();
   manager.refresh(row.id);
   heroChanged(row.id);
 }
@@ -1000,7 +1038,7 @@ async function enter() {
   if (me.dm) await restoreFight();
   loadDiceLog();
   loadJournal();
-  showScreen(me.dm ? 'map' : combatView.active ? 'fight' : 'status');
+  showScreen(me.dm ? 'map' : combatView.active ? 'scene' : 'status');
 }
 
 // --- Who the app is showing things for -------------------------------------------------------
@@ -1012,6 +1050,7 @@ const roleMenu = document.getElementById('role-menu');
 
 function applyView() {
   const heroId = me.dm ? viewAs : me.heroId;
+  refilterParty();
   document.body.dataset.role = heroId ? 'player' : 'dm';
   // The bar shows whose view this is; for the DM, its "you" button is also the view switcher.
   bar.hidden = false;
@@ -1027,7 +1066,7 @@ function applyView() {
 function previewAs(heroId) {
   viewAs = heroId;
   applyView();
-  showScreen(heroId ? (combatView.active ? 'fight' : 'status') : 'map');
+  showScreen(heroId ? (combatView.active ? 'scene' : 'status') : 'map');
 }
 
 roleChip.addEventListener('click', (e) => {
@@ -1036,7 +1075,7 @@ roleChip.addEventListener('click', (e) => {
     ${me.dm ? `
       <p class="role-menu__h">View the app as</p>
       <button type="button" data-view=""${viewAs ? '' : ' class="is-on"'}><i style="background:#3b2f22"></i>Dungeon Master</button>
-      ${party.map((c) => `<button type="button" data-view="${c.id}"${c.id === viewAs ? ' class="is-on"' : ''}><i style="background:${c.colour}"></i>${c.name}</button>`).join('')}
+      ${everyone.map((c) => `<button type="button" data-view="${c.id}"${c.id === viewAs ? ' class="is-on"' : ''}><i style="background:${c.colour}"></i>${c.name}${partyNames().length > 1 ? ` <small>${escHtml(partyOf(c))}</small>` : ''}</button>`).join('')}
       <hr />` : ''}
     <button type="button" data-action="logout">Log out</button>
     <p class="role-menu__version">Version ${new Date(__BUILD_TIME__).toLocaleString([], { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</p>`;
@@ -1117,6 +1156,7 @@ sceneScreen = createSceneScreen(screens.scene, {
     toast(id ? 'The scene is live for the players.' : 'The scene has ended.');
   },
   onOpenJournal(type, id) { showScreen('journal'); journalScreen.openEntry(type, id); },
+  onFight(setup) { combatScreen.prepare(setup); showScreen('combat'); },
 });
 let watchingQuests = null;
 async function loadJournal() {

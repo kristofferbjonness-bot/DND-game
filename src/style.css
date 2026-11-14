@@ -1041,7 +1041,7 @@ body.is-placing .hud-stack { opacity: 0.4; }
   padding: 11px 26px; cursor: pointer; box-shadow: inset 0 1px 0 rgba(255, 220, 200, 0.3), 0 4px 12px rgba(0, 0, 0, 0.35);
 }
 .combat__start:disabled, .combat__begin:disabled, .attack__apply:disabled { background: #4a3f4f; color: var(--bone-dim); box-shadow: none; cursor: default; }
-.combat__roll-enemies, .combat__back, .combat__end, .turnbar__next, .attack__close {
+.combat__roll-enemies, .combat__back, .combat__cancel, .combat__end, .turnbar__next, .attack__close {
   font: 600 13px var(--font-display); letter-spacing: 0.04em; color: var(--bone);
   background: linear-gradient(180deg, #43384a, #2f2735); border: 1px solid #0c090e; border-radius: 7px;
   padding: 8px 14px; cursor: pointer; box-shadow: inset 0 0 0 1px rgba(201, 164, 92, 0.25);
@@ -1712,7 +1712,7 @@ button.jr-tick { cursor: pointer; }
 .combat .init-row input, .combat .attack__roll input, .combat .die input {
   color: var(--pp-ink); background: rgba(255, 252, 240, 0.85); border: 1.5px solid var(--pp-line-dark); box-shadow: none;
 }
-.combat .combat__roll-enemies, .combat .combat__back, .combat .combat__end, .combat .turnbar__next, .combat .attack__close {
+.combat .combat__roll-enemies, .combat .combat__back, .combat .combat__cancel, .combat .combat__end, .combat .turnbar__next, .combat .attack__close {
   color: var(--pp-ink); background: rgba(255, 250, 235, 0.85); border: 1.5px solid var(--pp-line-dark); box-shadow: none;
 }
 .combat .combat__start:disabled, .combat .combat__begin:disabled { background: rgba(168, 134, 90, 0.35); color: rgba(43, 33, 24, 0.5); }
@@ -2250,3 +2250,21 @@ button.jr-tick { cursor: pointer; }
   .scn__card-face { width: 40px; height: 40px; }
   .scene-tag { font-size: 10.5px; padding: 1px 6px 2px; }
 }
+
+/* The DM's party switcher: the party's name as a dropdown in the title. */
+.party__switch { display: flex; align-items: center; min-width: 0; }
+.party__select {
+  appearance: none; -webkit-appearance: none; max-width: 100%; cursor: pointer; border: 0; border-bottom: 1.5px dashed var(--pp-line-dark);
+  padding: 0 26px 2px 0; font: 700 24px/1.2 var(--font-display); letter-spacing: 0.04em; color: var(--pp-ink);
+  background: transparent url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='9'%3E%3Cpath d='M1 1l6 6 6-6' fill='none' stroke='%235c4a36' stroke-width='2.2'/%3E%3C/svg%3E") right 4px center no-repeat;
+}
+.party__select:focus { outline: none; border-bottom-color: var(--pp-accent); }
+.party__empty { padding: 18px 6px; color: var(--pp-soft); font-style: italic; }
+.combat__where { display: flex; align-items: center; gap: 8px; flex-basis: 100%; font-size: 15px; color: var(--pp-ink); }
+.combat__where span { font: 700 12px var(--font-display); letter-spacing: 0.1em; text-transform: uppercase; color: var(--pp-soft); }
+.combat__area {
+  flex: 1; min-width: 0; padding: 6px 28px 6px 10px; border-radius: 6px; font: 600 15px var(--font-body); color: var(--pp-ink, #2b2118);
+  background: rgba(255, 252, 240, 0.85) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%235c4a36' stroke-width='2'/%3E%3C/svg%3E") right 10px center no-repeat;
+  border: 1.5px solid #a8865a; appearance: none; -webkit-appearance: none;
+}
+.combat__setup .combat__go { flex-wrap: wrap; }

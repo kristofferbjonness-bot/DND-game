@@ -8,6 +8,7 @@ import { bevelBox } from '../fx/bevelBox.js';
 import { hash } from '../city/vox.js';
 import { buildFigure, buildMonsterFigure } from '../character/model.js';
 import { disposeTree } from '../fx/dispose.js';
+import { AREAS, SCALE, toWorld } from '../scene/areas.js';
 
 const TOUCH = window.matchMedia('(pointer: coarse)').matches;
 
@@ -69,7 +70,7 @@ export function createBattleScene(container) {
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.05;
+    renderer.toneMappingExposure = (area?.mood ?? PLAIN).exposure;
     container.appendChild(renderer.domElement);
     makeControls();
     container.addEventListener('pointerdown', () => { touching = true; });
@@ -88,7 +89,33 @@ export function createBattleScene(container) {
   sun.shadow.normalBias = 0.04;
   sun.shadow.radius = 4;
   scene.add(sun);
-  scene.add(arena());
+  const hemi = scene.children.find((o) => o.isHemisphereLight);
+  // The ground: the plain round arena, or one of the scene areas (areas.js).
+  let ground = arena(), areaId = null, area = null, standY = 0;
+  scene.add(ground);
+  const PLAIN = { bg: '', sky: '#fff6ea', ground: '#a99a8c', hemi: 1.5, sun: '#ffe9cf', sunPower: 2.4, sunAt: [-30, 60, 40], exposure: 1.05 };
+  function setArena(id) {
+    id = AREAS[id] ? id : null;
+    if (id === areaId && ground) return;
+    const changed = Boolean(camera.userData.sized);
+    areaId = id;
+    disposeTree(ground); scene.remove(ground);
+    area = id ? AREAS[id].build() : null;
+    if (area) { ground = new THREE.Group(); area.v.render(ground); ground.scale.setScalar(SCALE); standY = SCALE; } else { ground = arena(); standY = 0; }
+    scene.add(ground);
+    const m = area?.mood ?? PLAIN;
+    container.style.background = m.bg;
+    hemi.color.set(m.sky); hemi.groundColor.set(m.ground); hemi.intensity = m.hemi;
+    sun.color.set(m.sun); sun.intensity = m.sunPower; sun.position.set(...m.sunAt);
+    if (area) sun.position.multiplyScalar(2);
+    if (renderer) renderer.toneMappingExposure = m.exposure;
+    Object.assign(sun.shadow.camera, area ? { left: -75, right: 75, top: 75, bottom: -75, far: 400 } : { left: -60, right: 60, top: 55, bottom: -55, far: 250 });
+    sun.shadow.camera.updateProjectionMatrix();
+    if (changed && controls) resetView();
+  }
+  // Where fighters stand: in an area, where people stand in its scenes (heroes at the front,
+  // enemies further in), so a fight starts where the scene was.
+  const centre = (pts) => ({ x: pts.reduce((a, p) => a + p[0], 0) / pts.length, z: pts.reduce((a, p) => a + p[1], 0) / pts.length });
 
   const fighters = new THREE.Group();
   scene.add(fighters);
@@ -98,7 +125,7 @@ export function createBattleScene(container) {
     // holder (the spot and its pad) > mover (dashes and dodges) > body (faces
     // the enemy, falls over) > lean (leans into a swing) > the figure.
     const holder = new THREE.Group();
-    holder.position.set(x, 0, z);
+    holder.position.set(x, standY, z);
     holder.add(pad(4, padColour));
     const mover = new THREE.Group();
     const body = new THREE.Group();
@@ -122,14 +149,17 @@ export function createBattleScene(container) {
     fx.clear();
     setActive(null);
     if (camera.userData.sized) resetView();
-    const heroCentre = { x: -25, z: 12 }, enemyCentre = { x: 28, z: -16 };
+    const heroSpots = area ? area.heroSpots.map(toWorld) : HERO_SPOTS;
+    const enemySpots = area ? area.npcSpots.map(toWorld) : ENEMY_SPOTS;
+    const heroCentre = area ? centre(heroSpots.slice(0, Math.max(1, heroes.length))) : { x: -25, z: 12 };
+    const enemyCentre = area ? centre(enemySpots.slice(0, Math.max(1, enemies.length))) : { x: 28, z: -16 };
     heroes.forEach((c, i) => {
       const figure = buildFigure(c);
-      if (figure) place(figure, HERO_SPOTS[i % HERO_SPOTS.length], enemyCentre, '#9fb6d6', `hero:${c.id}`);
+      if (figure) place(figure, heroSpots[i % heroSpots.length], enemyCentre, '#9fb6d6', `hero:${c.id}`);
     });
     enemies.forEach((e, i) => {
       const figure = buildMonsterFigure(e.model);
-      if (figure) place(figure, ENEMY_SPOTS[i % ENEMY_SPOTS.length], heroCentre, '#d6a49f', `enemy:${e.uid}`);
+      if (figure) place(figure, enemySpots[i % enemySpots.length], heroCentre, '#d6a49f', `enemy:${e.uid}`);
     });
   }
 
@@ -177,7 +207,7 @@ export function createBattleScene(container) {
   const ease = (t) => t * t * (3 - 2 * t);
   const SPARK = new THREE.IcosahedronGeometry(0.5, 0);
   SPARK.userData.shared = true;
-  const worldPos = (a, up = 0.55) => a.holder.position.clone().add(a.mover.position).setY(a.height * up);
+  const worldPos = (a, up = 0.55) => a.holder.position.clone().add(a.mover.position).setY(standY + a.height * up);
 
   function play(dur, step, end) { effects.push({ age: 0, dur, step, end }); }
 
@@ -326,6 +356,13 @@ export function createBattleScene(container) {
   let upright = false;
   function resetView() {
     upright = camera.aspect < 0.8;
+    if (area) { // from the front, like the Scene
+      const d = upright ? 225 * Math.min(1.5, 0.75 / camera.aspect) : container.clientHeight < 500 ? 150 : 225;
+      controls.target.set(0, 12, 4);
+      camera.position.set(0, d * 0.55, 4 + d * 0.84);
+      controls.update();
+      return;
+    }
     controls.target.set(2, 2, -2);
     if (upright) {
       // Along the line from the heroes to the enemies, from behind the heroes.
@@ -377,14 +414,14 @@ export function createBattleScene(container) {
       a.body.position.z = 0;
     }
     if (active) {
-      marker.position.set(active.holder.position.x, active.height + 5 + Math.sin(t * 3) * 0.8, active.holder.position.z);
+      marker.position.set(active.holder.position.x, standY + active.height + 5 + Math.sin(t * 3) * 0.8, active.holder.position.z);
       marker.rotation.y = t * 1.5;
     }
     renderer.render(scene, camera);
   }
 
   return {
-    setFighters, setDown, hit, attack, setActive,
+    setFighters, setDown, hit, attack, setActive, setArena,
     start() { ensureRenderer(); clock.getDelta(); resize(); renderer.setAnimationLoop(frame); },
     stop() { renderer?.setAnimationLoop(null); },
   };

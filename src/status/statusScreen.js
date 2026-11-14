@@ -264,7 +264,7 @@ export function createStatusScreen(root, characters, { onChange, onDelete } = {}
       if (next) showCharacter(next);
       return;
     }
-    if (shownId !== id) { if (characters[index]) renderHero(characters[index]); return; } // portraits in the picker
+    if (shownId !== id) { index = characters.findIndex((x) => x.id === shownId); if (characters[index]) renderHero(characters[index]); return; } // portraits in the picker
     index = characters.findIndex((x) => x.id === id);
     render({ keepScroll: true });
     viewer.show(characters[index]);

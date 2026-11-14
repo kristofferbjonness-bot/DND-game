@@ -121,7 +121,19 @@ The original assets (hand-drawn world map, location art, character art, lore doc
     - Held weapons appear in the hand (bows in the left hand).
     - Swords not in hand hang at the left hip, with an empty scabbard when drawn.
     - Axes hang at the right hip, and bows go on the back next to the quiver.
-- **Combat** (`src/combat/`, DM only; the tab is hidden unless `body[data-role=dm]`):
+- **Fights happen in the Scene tab** (there is no Fight tab any more, by request). The DM presses the swords
+  button on a scene: `combatScreen.prepare()` opens the setup with the scene's heroes and fighters picked
+  (Bestiary creatures, and NPC figures that have a Bestiary entry with model `npc-<id>`), "Where" set to its area,
+  and the scene put live. The battle uses that area (`battleScene.setArena`; heroes at the area's hero spots,
+  enemies at its NPC spots, camera from the front). "Where" can also be "The open field" (the old round arena).
+  `showScreen('scene')` shows the DM's fight controls while `combatScreen.busy()`, and players the fight view
+  while one is on; End / "Back to the scene" return to the scene (`onLeave`).
+- **Parties**: a hero's sheet has `party` (a name; none = "The party"). `everyone` holds all heroes; `party` (in
+  main.js) is only the current party: a player's own hero's party, the previewed hero's, or the one the DM picked
+  in the Party screen's title dropdown (remembered in localStorage, "＋ New party…" makes one). Heroes move
+  between parties in Manage → Party. Everything that lists heroes (bar, Party, Hero picker, scenes, fights, map
+  marker) uses `party`; the DM's "View the app as" lists everyone.
+- **Combat** (`src/combat/`, DM only):
   - Setup: pick the heroes and the number of each enemy (max 6). Enemy types are in
     `src/data/monsters.js` (only the Hooknose cutthroat for now; its figure is
     `buildMonsterFigure` in model.js).

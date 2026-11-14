@@ -6,6 +6,7 @@
 import { MONSTERS } from '../data/monsters.js';
 import { derive, signed, parseDice, sneakAttackDice } from '../character/rules.js';
 import { createBattleScene } from './battleScene.js';
+import { AREAS } from '../scene/areas.js';
 
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
 const MAX_ENEMIES = 6;
@@ -17,7 +18,8 @@ const plus = (n) => (n ? ` ${n > 0 ? '+' : '−'} ${Math.abs(n)}` : '');
 // `onPublic(state)` receives what players may see, after every change (see publicState).
 // `onSave(encounter | null)` keeps the running fight safe online (null when it ends).
 // `onBegin(types)` is told which Bestiary creatures are in a fight when it begins.
-export function createCombatScreen(root, { party, onHeroChange, onPublic, onSave, onBegin }) {
+// `onLeave()` goes back to the scene (after ending a fight, or leaving the setup).
+export function createCombatScreen(root, { party, onHeroChange, onPublic, onSave, onBegin, onLeave, liveArea = () => null }) {
   root.innerHTML = `
     <div class="combat__setup">
       <div class="combat__col">
@@ -29,8 +31,10 @@ export function createCombatScreen(root, { party, onHeroChange, onPublic, onSave
         <ul class="combat__enemies-pick"></ul>
       </div>
       <div class="combat__go">
+        <label class="combat__where"><span>Where</span><select class="combat__area"></select></label>
         <label class="combat__toggle"><input type="checkbox" class="combat__show-hp" checked /> Players can see enemy health</label>
         <p class="combat__summary"></p>
+        <button type="button" class="combat__cancel">‹ Back to the scene</button>
         <button type="button" class="combat__start">Next: initiative</button>
       </div>
     </div>
@@ -76,6 +80,10 @@ export function createCombatScreen(root, { party, onHeroChange, onPublic, onSave
   const counts = Object.fromEntries(Object.keys(MONSTERS).map((k) => [k, 0]));
   let encounter = null; // { heroes: [id], enemies: [...], rolls: {key: n}, order: [key], turn, round }
   let visible = false;
+  let whereTouched = false; // the DM picked a place (otherwise it follows the live scene)
+  let staging = false; // the DM is setting up a fight (from a scene)
+  $('.combat__cancel').addEventListener('click', () => { staging = false; onLeave?.(); });
+  $('.combat__area').addEventListener('change', () => { whereTouched = true; });
 
   // --- Fighters: heroes and enemies seen the same way --------------------------------------
   const heroesInFight = () => encounter.heroes.map((id) => party.find((c) => c.id === id)).filter(Boolean);
@@ -146,6 +154,11 @@ export function createCombatScreen(root, { party, onHeroChange, onPublic, onSave
           <button type="button" data-type="${type}" data-step="1" aria-label="One more">+</button>
         </span>
       </li>`).join('');
+    const where = $('.combat__area');
+    if (!where.options.length) {
+      where.innerHTML = `<option value="">The open field</option>${Object.entries(AREAS).map(([k, a]) => `<option value="${k}">${esc(a.name)}</option>`).join('')}`;
+    }
+    if (!whereTouched) where.value = liveArea() ?? '';
     const n = Object.values(counts).reduce((a, b) => a + b, 0);
     summary.textContent = `${chosen.size} hero${chosen.size === 1 ? '' : 'es'} against ${n} enem${n === 1 ? 'y' : 'ies'}`;
     startBtn.disabled = !chosen.size || !n;
@@ -180,6 +193,7 @@ export function createCombatScreen(root, { party, onHeroChange, onPublic, onSave
     encounter = {
       heroes: party.filter((c) => chosen.has(c.id)).map((c) => c.id), enemies, rolls: {}, order: [], turn: 0, round: 1,
       showEnemyHp: $('.combat__show-hp').checked,
+      area: $('.combat__area').value || null,
     };
     showStep('init');
     renderInit();
@@ -237,6 +251,7 @@ export function createCombatScreen(root, { party, onHeroChange, onPublic, onSave
     encounter.round = 1;
     onBegin?.(encounter.enemies.map((e) => e.type));
     showStep('battle');
+    scene.setArena(encounter.area);
     scene.setFighters(heroesInFight(), encounter.enemies);
     skipDowned();
     renderBattle();
@@ -288,6 +303,7 @@ export function createCombatScreen(root, { party, onHeroChange, onPublic, onSave
       round: encounter.round,
       turn: encounter.turn,
       heroes: encounter.heroes,
+      area: encounter.area ?? null,
       hit,
       anim,
       fighters: encounter.order.map(fighter).filter(Boolean).map((f) => ({
@@ -333,10 +349,12 @@ export function createCombatScreen(root, { party, onHeroChange, onPublic, onSave
   $('.combat__end').addEventListener('click', () => {
     if (!confirm('End this encounter?')) return;
     encounter = null;
+    staging = false;
     attackEl.hidden = true;
     showStep('setup');
     renderSetup();
     publish();
+    onLeave?.();
   });
 
   // --- Attack calculator ---------------------------------------------------------------------------
@@ -509,6 +527,23 @@ export function createCombatScreen(root, { party, onHeroChange, onPublic, onSave
       if (encounter?.order.length) { renderBattle(); scene.start(); } else if (!encounter) renderSetup();
     },
     stop() { visible = false; scene.stop(); },
+    // A fight is being set up or fought.
+    busy: () => staging || Boolean(encounter),
+    // Sets up a fight from a scene: its heroes and enemies already picked, in its place.
+    // enemies: { Bestiary id: count }.
+    prepare({ heroes, enemies, area }) {
+      if (encounter) return;
+      staging = true;
+      chosen.clear();
+      heroes.filter((id) => party.some((c) => c.id === id)).forEach((id) => chosen.add(id));
+      for (const k of Object.keys(counts)) counts[k] = 0;
+      let room = MAX_ENEMIES;
+      for (const [type, n] of Object.entries(enemies)) if (MONSTERS[type] && room > 0) { counts[type] = Math.min(n, room); room -= counts[type]; }
+      renderSetup();
+      $('.combat__area').value = area ?? '';
+      whereTouched = true;
+      showStep('setup');
+    },
     publicState: () => publicState(),
     // Picks up a fight saved online (after a reload). Enemies whose type no
     // longer exists in the bestiary are left out.
@@ -521,6 +556,7 @@ export function createCombatScreen(root, { party, onHeroChange, onPublic, onSave
       if (encounter.order.length) {
         encounter.turn = Math.min(encounter.turn, encounter.order.length - 1);
         showStep('battle');
+        scene.setArena(encounter.area);
         scene.setFighters(heroesInFight(), encounter.enemies);
         renderBattle();
         if (visible) scene.start();

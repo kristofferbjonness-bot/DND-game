@@ -43,9 +43,10 @@ export function createCombatView(root, { party }) {
     if (!active) { scene.stop(); return; }
 
     // Rebuild the 3D figures only when the line-up changes.
-    const lineup = JSON.stringify([state.heroes, state.fighters.filter((f) => f.side === 'enemy').map((f) => f.key)]);
+    const lineup = JSON.stringify([state.area, state.heroes, state.fighters.filter((f) => f.side === 'enemy').map((f) => f.key)]);
     if (lineup !== cast) {
       cast = lineup;
+      scene.setArena(state.area);
       const heroes = state.heroes.map((id) => party.find((c) => c.id === id)).filter(Boolean);
       const enemies = state.fighters.filter((f) => f.side === 'enemy').map((f) => ({ uid: f.key.split(':')[1], model: f.model }));
       scene.setFighters(heroes, enemies);

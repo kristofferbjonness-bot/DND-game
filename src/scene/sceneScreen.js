@@ -19,7 +19,8 @@ const MAX_PEOPLE = 9;
 // entries: the shared journal rows; heroes(): the party; monsters(): the Bestiary { id: monster };
 // canEdit(): the DM (not previewing); liveId(): the live scene's id; onSave(row) → saved row;
 // onDelete(id); onLive(id | null); onOpenJournal(type, id).
-export function createSceneScreen(root, { entries, heroes, monsters, canEdit, liveId, onSave, onDelete, onLive, onOpenJournal }) {
+// onFight({ heroes, enemies: { Bestiary id: n }, area }) starts setting up a fight in a scene.
+export function createSceneScreen(root, { entries, heroes, monsters, canEdit, liveId, onSave, onDelete, onLive, onOpenJournal, onFight }) {
   root.innerHTML = `
     <div class="scn__stage"></div>
     <header class="scn__plate" hidden></header>
@@ -118,6 +119,7 @@ export function createSceneScreen(root, { entries, heroes, monsters, canEdit, li
             <button type="button" class="scn__pick" data-do="view"><b>${esc(e.data.title || area.name)}</b><small>${esc(area.short)} · ${cast(e.data).length} here${e.id === live ? ' · <em>live</em>' : ''}</small></button>
             <span class="scn__tools">
               <button type="button" data-do="${e.id === live ? 'end' : 'live'}" class="scn__go${e.id === live ? ' is-on' : ''}">${e.id === live ? 'End' : 'Go live'}</button>
+              <button type="button" data-do="fight" aria-label="Fight here" title="Start a fight here">${icon('combat')}</button>
               <button type="button" data-do="edit" aria-label="Edit">${icon('pen')}</button>
             </span>
           </li>`;
@@ -228,6 +230,19 @@ export function createSceneScreen(root, { entries, heroes, monsters, canEdit, li
       case 'view': viewing = id; draw(); break;
       case 'live': viewing = id; await onLive(id); draw(); break;
       case 'end': await onLive(null); draw(); break;
+      case 'fight': {
+        const d = byId(id).data, enemies = {};
+        // Who can fight: Bestiary creatures, and people who are also in the Bestiary (Lord Wolf…).
+        for (const p of d.people ?? []) {
+          const [kind, fid] = p.fig.split(':');
+          const type = kind === 'monster' ? fid : Object.entries(monsters()).find(([, m]) => m.model === `npc-${fid}`)?.[0];
+          if (type) enemies[type] = (enemies[type] ?? 0) + (p.n ?? 1);
+        }
+        viewing = id;
+        if (liveId() !== id) await onLive(id); // the players see where the fight is
+        onFight({ heroes: heroesIn(d).map((c) => c.id), enemies, area: d.area });
+        break;
+      }
       case 'edit': { const s = byId(id); editing = { id, data: structuredClone(s.data) }; viewing = id; draw(); break; }
       case 'cancel': editing = null; draw(); break;
       case 'delete':

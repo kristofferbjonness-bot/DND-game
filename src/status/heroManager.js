@@ -14,7 +14,7 @@ const GROUPS = [
 const COINS = { pp: 'Platinum', gp: 'Gold', sp: 'Silver', cp: 'Copper' };
 
 // `onSave(character)` saves a changed hero.
-export function createHeroManager(root, { party, onSave }) {
+export function createHeroManager(root, { party, onSave, parties = () => [], partyOf = (c) => c.party }) {
   let id = null, said = '';
   const hero = () => party.find((c) => c.id === id);
   const num = (name) => Math.max(0, Math.round(Number(root.querySelector(`[name=${name}]`)?.value) || 0));
@@ -33,6 +33,16 @@ export function createHeroManager(root, { party, onSave }) {
           <button type="button" class="manage__close" aria-label="Close">×</button>
         </header>
         <p class="manage__said" role="status">${esc(said)}</p>
+
+        <section class="manage__sec">
+          <h3>Party <small>who ${esc(c.name.split(' ')[0])} plays with</small></h3>
+          <div class="manage__row">
+            <select class="manage__select manage__party" aria-label="Party">
+              ${[...new Set([...parties(), partyOf(c)])].map((p) => `<option value="${esc(p)}"${p === partyOf(c) ? ' selected' : ''}>${esc(p)}</option>`).join('')}
+              <option value="+">＋ New party…</option>
+            </select>
+          </div>
+        </section>
 
         <section class="manage__sec">
           <h3>Health <small>${c.hp.current} / ${c.hp.max} HP${c.hp.temp ? ` · ${c.hp.temp} temp` : ''}</small></h3>
@@ -124,6 +134,17 @@ export function createHeroManager(root, { party, onSave }) {
     if (e.target.name === 'item') root.querySelector('[name=newname]').hidden = e.target.value !== 'new';
   });
 
+  root.addEventListener('change', (e) => {
+    const sel = e.target.closest('.manage__party');
+    if (!sel) return;
+    const c = hero();
+    let name = sel.value;
+    if (name === '+') {
+      name = (prompt('Name of the new party:') ?? '').trim().slice(0, 40);
+      if (!name) { render(); return; }
+    }
+    change(`${c.name} is now in ${name}.`, (h) => { h.party = name; });
+  });
   root.addEventListener('click', (e) => {
     if (e.target === root || e.target.closest('.manage__close')) { close(); return; }
     const b = e.target.closest('button');

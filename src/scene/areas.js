@@ -280,3 +280,27 @@ export const AREAS = {
   alley: { name: 'Hooknose Alley', short: 'Hooknose Alley', build: alley },
   gate: { name: 'Outside the city gates', short: 'The city gates', build: gate },
 };
+
+// World position → slab voxel, and back.
+export const toVox = ([x, z]) => [Math.round(x / SCALE + SIZE / 2 - 0.5), Math.round(z / SCALE + SIZE / 2 - 0.5)];
+export const toWorld = ([x, z]) => [(x - SIZE / 2 + 0.5) * SCALE, (z - SIZE / 2 + 0.5) * SCALE];
+
+// The nearest spot to `want` (world units) with clear, dry, flat ground around it (`r` voxels),
+// not too close to the spots already `taken`. Used to stand fighters in an area.
+export function clearSpot(v, want, taken = [], r = 2) {
+  const [cx, cz] = toVox(want);
+  const free = (x, z) => {
+    for (let dx = -r; dx <= r; dx++) for (let dz = -r; dz <= r; dz++) {
+      if (!v.inside(x + dx, z + dz, v.corner + 2) || v.groundY(x + dx, z + dz) !== 0) return false;
+      for (let y = 1; y <= 5; y++) if (v.has(x + dx, y, z + dz)) return false;
+    }
+    return taken.every(([tx, tz]) => Math.hypot(tx - x, tz - z) >= r * 2 + 2);
+  };
+  for (let ring = 0; ring <= 14; ring++) {
+    for (let dx = -ring; dx <= ring; dx++) for (let dz = -ring; dz <= ring; dz++) {
+      if (Math.max(Math.abs(dx), Math.abs(dz)) !== ring) continue;
+      if (free(cx + dx, cz + dz)) return [cx + dx, cz + dz];
+    }
+  }
+  return [cx, cz];
+}
