@@ -712,6 +712,89 @@ function sirivikSquare() {
   };
 }
 
+// The guards' cellar under Ytterhavn's watch house, where troublemakers are thrown: damp stone, a
+// row of barred cells with straw and a bucket, chains on the wall, a high grated window letting in
+// a little daylight, a guard's table with a candle, a ring of keys and a stairway up.
+function cellar() {
+  const v = new Vox(SIZE, { corner: 3 });
+  const stone = (x, y, z) => (hash(x, y, z) > 0.85 ? '#4e4a46' : hash(x, y, z) > 0.6 ? '#5a5650' : '#66625a');
+  slab(v, (x, z) => (hash(x, z, 61) > 0.8 ? '#4a4640' : '#57534c'));
+  // Walls: back and sides, a low vaulted feel.
+  for (let x = 0; x < SIZE; x++) for (let z = 0; z <= 2; z++) for (let y = 1; y <= 26; y++) v.set(x, y, z, stone(x, y, z));
+  for (const [x0, x1] of [[0, 2], [SIZE - 3, SIZE - 1]]) for (let x = x0; x <= x1; x++) for (let z = 3; z <= 44; z++) for (let y = 1; y <= 18; y++) v.set(x, y, z, stone(x, y, z));
+  // A high grated window in the back wall with a shaft of light.
+  for (let x = 27; x <= 33; x++) for (let y = 21; y <= 24; y++) if (x % 2) v.set(x, y, 2, '#2e2a26'); else v.light(x, y, 2, '#dfe8f0');
+  for (let x = 27; x <= 33; x++) for (let z = 10; z <= 16; z++) v.set(x, 0, z, '#8a867c'); // the patch of daylight on the floor
+  // Three cells across the back, with iron bars and a door each.
+  const iron = '#2e2e34';
+  for (const [x0, x1] of [[3, 18], [21, 38], [41, 56]]) {
+    for (let x = x0; x <= x1; x++) for (let y = 1; y <= 16; y++) if (x % 2 === 0 || y === 1 || y === 8 || y === 16) v.set(x, y, 16, iron);
+    for (let z = 3; z <= 16; z++) for (let y = 1; y <= 16; y++) { v.set(x0 - 1, y, z, stone(x0, y, z)); }
+    for (let x = x0 + 1; x <= x0 + 8; x++) for (let z = 4; z <= 9; z++) if (hash(x, z, 62) > 0.3) v.set(x, 1, z, hash(x, z, 63) > 0.5 ? '#c4a860' : '#a88e4a'); // straw
+    v.box(x1 - 3, 1, 4, x1 - 1, 3, 6, '#6b4528'); // a bucket
+    for (let y = 9; y <= 13; y++) { v.set(x0 + 3, y, 3, '#3a3a40'); v.set(x0 + 8, y, 3, '#3a3a40'); } // chains on the wall
+    v.box(x0 + 2, 8, 3, x0 + 4, 9, 4, '#3a3a40'); v.box(x0 + 7, 8, 3, x0 + 9, 9, 4, '#3a3a40');
+  }
+  // One cell door hangs open.
+  for (let z = 17; z <= 23; z++) for (let y = 1; y <= 16; y++) if (z % 2 === 1 || y === 1 || y === 16) v.set(37, y, z, iron);
+  // The guard's table with a candle, a stool, a ring of keys on a hook, the stair up.
+  v.box(46, 1, 30, 54, 7, 36, '#5a3a22'); v.box(45, 7, 29, 55, 8, 37, '#6b4528');
+  v.set(50, 8, 32, '#e8e0d0'); v.light(50, 9, 32, '#ffcf70'); v.set(52, 8, 34, '#d9a63a'); v.set(53, 8, 34, '#d9a63a');
+  v.box(48, 1, 38, 51, 5, 41, '#4a3020');
+  for (let y = 9; y <= 12; y++) v.set(56, y, 26, '#3a3a40'); v.set(56, 8, 27, '#d9a63a'); v.set(56, 7, 26, '#d9a63a');
+  for (let i = 0; i < 8; i++) v.box(3, 1, 30 + i * 2, 9, 2 + i * 2, 32 + i * 2, '#6e6a62'); // stone steps up along the left wall
+  v.light(4, 12, 30, '#ffb347'); v.set(3, 11, 30, '#3a3a40'); // a torch in a bracket
+  return {
+    v, heroSpots: [[12, 9], [16, 11], [24, 9], [30, 11], [44, 9], [49, 11], [36, 9]], // the heroes are inside the cells
+    npcSpots: [[30, 30], [40, 33], [22, 32], [34, 38], [26, 38], [44, 26], [18, 26], [38, 28], [30, 42]],
+    mood: { bg: 'radial-gradient(ellipse at 50% 30%, #2a2622, #0e0c0a)', sky: '#d0d4dc', ground: '#4a4640', hemi: 1.55, sun: '#ffe0b8', sunPower: 1.8, sunAt: [-20, 70, 40], exposure: 1.25 },
+  };
+}
+
+// A bedroom at an inn in Ytterhavn, for resting and healing: a warm room under a sloping ceiling,
+// two beds with patchwork quilts, a washstand with a jug, a chest, a little table with a candle,
+// a rug, a fireplace, and a window looking out on the masts in the harbour.
+function innRoom() {
+  const v = new Vox(SIZE, { corner: 3 });
+  slab(v, (x, z) => (Math.floor(x / 3) % 2 ? '#9a6c40' : '#8a5e36'));
+  const plaster = (x, y, z) => (hash(x, y, z) > 0.9 ? '#e0d4bc' : '#ece2cc'), beam = '#5a3a22';
+  for (let x = 0; x < SIZE; x++) for (let z = 0; z <= 2; z++) for (let y = 1; y <= 22; y++) v.set(x, y, z, x % 15 === 0 || y === 22 ? beam : plaster(x, y, z));
+  for (const [x0, x1] of [[0, 2], [SIZE - 3, SIZE - 1]]) for (let x = x0; x <= x1; x++) for (let z = 3; z <= 44; z++) for (let y = 1; y <= 14; y++) v.set(x, y, z, z % 12 === 0 || y === 14 ? beam : plaster(x, y, z));
+  // The window: harbour sky and masts outside, a sill with a pot of herbs.
+  for (let x = 24; x <= 36; x++) for (let y = 8; y <= 17; y++) {
+    const edge = x === 24 || x === 36 || y === 8 || y === 17 || x === 30 || y === 12;
+    v.light(x, y, 2, edge ? '#5a3a22' : (x === 27 && y > 11) || (x === 33 && y > 13) ? '#4a3020' : y < 11 ? '#9cc8e8' : '#c8e0f0');
+  }
+  v.box(23, 7, 2, 38, 8, 4, '#6b4528'); v.set(34, 8, 3, '#b8552f'); v.set(34, 9, 3, '#5aa86a');
+  // Two beds with quilts and pillows.
+  const bed = (x0, quilt) => {
+    v.box(x0, 1, 4, x0 + 10, 4, 22, '#6b4528');
+    v.box(x0, 4, 4, x0 + 10, 9, 5, '#5a3a22');
+    v.box(x0 + 1, 4, 6, x0 + 9, 5, 21, '#f2ece0');
+    v.box(x0 + 2, 5, 6, x0 + 8, 6, 9, '#ffffff');
+    for (let x = x0 + 1; x <= x0 + 9; x++) for (let z = 11; z <= 21; z++) v.set(x, 5, z, quilt[(Math.floor(x / 2) + Math.floor(z / 2)) % quilt.length]);
+  };
+  bed(5, ['#a8342a', '#e8b84a', '#3f6fa8', '#f2ece0']); bed(44, ['#3f7a5a', '#e8dcc0', '#a8342a', '#c4a050']);
+  // A washstand with a jug and basin, a chest at the foot of a bed, a table with a candle and a book.
+  v.box(17, 1, 4, 22, 7, 8, '#7a4e2c'); v.box(18, 7, 5, 21, 8, 7, '#e8eef0'); v.box(19, 8, 5, 20, 11, 6, '#e8eef0');
+  v.box(45, 1, 24, 54, 6, 28, '#6b4528'); v.box(45, 6, 24, 54, 7, 28, '#5a3a22'); v.set(49, 5, 28, '#d9a63a');
+  v.box(27, 1, 26, 33, 7, 31, '#7a4e2c'); v.box(26, 7, 25, 34, 8, 32, '#8a5a34');
+  v.set(28, 8, 27, '#e8e0d0'); v.light(28, 9, 27, '#ffcf70'); v.box(31, 8, 28, 33, 9, 30, '#7a3a44');
+  // A fireplace on the left wall, warm and lit.
+  v.box(3, 1, 30, 6, 13, 40, '#7a7068'); v.box(4, 1, 32, 6, 6, 38, '#2a2220');
+  v.light(5, 1, 33, '#ff8a3c'); v.light(5, 2, 34, '#ffb347'); v.light(5, 1, 36, '#ff9a3c'); v.light(5, 2, 35, '#ffd27a');
+  v.box(3, 13, 29, 7, 14, 41, '#5a3a22');
+  // A round rug in the middle and boots by the door.
+  for (let x = -7; x <= 7; x++) for (let z = -5; z <= 5; z++) if ((x / 7) ** 2 + (z / 5) ** 2 <= 1) v.set(30 + x, 0, 38 + z, (x / 7) ** 2 + (z / 5) ** 2 > 0.7 ? '#c4a050' : '#3f6f8a');
+  v.box(50, 1, 40, 52, 4, 42, '#3a2a20'); v.box(52, 1, 40, 54, 4, 42, '#3a2a20');
+  return {
+    v,
+    heroSpots: [[10, 14], [49, 14], [26, 36], [34, 36], [30, 42], [20, 40], [40, 40]], // two lying in the beds
+    npcSpots: [[30, 24], [38, 34], [22, 34], [40, 26], [20, 26], [44, 34], [16, 34], [30, 30], [36, 44]],
+    mood: { bg: 'radial-gradient(ellipse at 50% 30%, #5a3a24, #2a160a)', sky: '#ffe2b8', ground: '#5a3a24', hemi: 1.45, sun: '#ffd8a8', sunPower: 1.8, sunAt: [-20, 70, 50], exposure: 1.1 },
+  };
+}
+
 // `town`: where the place belongs, for grouping in the lists (TOWNS gives the order).
 export const AREAS = {
   camp: { town: 'Razz of Mataz', name: 'The camp of the Man Who Makes Himself Known', short: 'The camp', build: camp },
@@ -723,6 +806,8 @@ export const AREAS = {
   ytter: { town: 'Ytterhavn', name: 'Ytterhavn city centre', short: 'Ytterhavn', build: ytterCentre },
   ytterport: { town: 'Ytterhavn', name: 'The port of Ytterhavn', short: 'Ytterhavn port', build: ytterPort },
   tavern: { town: 'Ytterhavn', name: 'A sailors’ bar in Ytterhavn', short: 'The bar', build: tavern },
+  cellar: { town: 'Ytterhavn', name: 'The guards’ cellar (the cells)', short: 'The cells', build: cellar },
+  inn: { town: 'Ytterhavn', name: 'A room at the inn', short: 'The inn room', build: innRoom },
   shop: { town: 'Ytterhavn', name: 'A street shop in Ytterhavn', short: 'The shop', build: shop },
   sirivik: { town: 'Sirivik', name: 'The square of Sirivik', short: 'Sirivik', build: sirivikSquare },
   ship: { town: 'At sea', name: 'Aboard a small ship', short: 'The ship', build: ship },
