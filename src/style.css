@@ -2440,3 +2440,25 @@ body[data-screen="combat"]:not(:has(#combat.is-battle)) .tags-toggle { display: 
 .scn__maker { display: grid; gap: 6px; padding: 8px 10px; border-radius: 8px; border: 1.5px dashed var(--pp-bronze); background: rgba(154, 107, 31, 0.08); }
 .scn__maker-row { display: flex; justify-content: flex-end; gap: 6px; }
 .scn__maker-error { margin: 0; font-size: 13px; color: var(--pp-accent); }
+
+/* ---------- iPhone fit pass ---------- */
+@media (orientation: portrait) and (max-width: 600px) {
+  /* Scene: the folded panel sits at the bottom, above the tab bar, clear of the place card at the top. */
+  .scn__panel.is-folded { top: auto; bottom: calc(var(--nav) + 6px); }
+  .scn__plate { top: calc(var(--safe-t, 0px) + 8px); }
+  /* Journal: the title goes (the tab says where you are); search and the buttons share one row. */
+  .jr__title { display: none; }
+  .jr__head { flex-wrap: wrap; gap: 6px; }
+  .jr__search { order: 0; flex: 1 1 140px; max-width: none; margin: 0; }
+  .jr__search input { padding: 5px 0; font-size: 15px; }
+  .jr__new span { display: none; }
+  .jr__new { padding: 6px 9px; min-height: 0; }
+  .jr__new .ic { margin: 0; }
+  .jr__import { order: 3; flex-basis: 100%; padding: 4px 8px; font-size: 11px; min-height: 0; }
+  .jr__tabs { margin-top: 4px; }
+}
+@media (max-height: 500px) and (orientation: landscape) {
+  .party__who b { font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .party__card { padding-top: 6px; padding-bottom: 6px; }
+}
+@media (orientation: portrait) and (max-width: 600px) { .scn__plate small { display: none; } }
