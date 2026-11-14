@@ -33,6 +33,14 @@ export const cellToWorld = (x, z) => [x - cols / 2 + 0.5, z - rows / 2 + 0.5];
 export const worldToCell = (wx, wz) => [Math.floor(wx + cols / 2), Math.floor(wz + rows / 2)];
 export const pixelToCell = ([px, py]) => [Math.floor(px / grid.cell), Math.floor(py / grid.cell)];
 
+// Dark forests: dense gloomy woods with dark ground (Sortland, under its mist). Centre in map
+// pixels, radius in cells; the edge is ragged.
+const DARK_FORESTS = [{ px: [595, 492], r: 10 }];
+export const inDarkForest = (x, z) => DARK_FORESTS.some(({ px, r }) => {
+  const [cx, cz] = pixelToCell(px);
+  return Math.hypot(x - cx, z - cz) <= r - 1.5 + hash(x, z, 77) * 3;
+});
+
 // Number of cells to the nearest sea cell (0 for sea).
 export const distToSea = (() => {
   const d = new Uint16Array(cols * rows).fill(65535);

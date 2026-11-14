@@ -59,8 +59,8 @@ export function buildLighthouse() {
 export function buildShadowMist(radius = 9) {
   const g = new THREE.Group();
   const layers = [
-    { colour: '#25212d', opacity: 0.5, n: 34, y: [0.4, 1.6], s: [2.2, 3.6] },
-    { colour: '#3a3446', opacity: 0.32, n: 26, y: [1.6, 3.2], s: [2.6, 4.4] },
+    { colour: '#4a4458', opacity: 0.22, n: 26, y: [0.8, 2.0], s: [2.0, 3.2] },
+    { colour: '#5a5468', opacity: 0.16, n: 20, y: [2.2, 3.6], s: [2.4, 4.0] },
   ];
   const meshes = [];
   layers.forEach((L, li) => {

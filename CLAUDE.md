@@ -49,7 +49,8 @@ The original assets (hand-drawn world map, location art, character art, lore doc
   - `cities.js`: the registry of city maps.
 - `src/fx/tiltShift.js`: the optional miniature blur.
 - `src/world/features.js`: non-town things on the world map: the lighthouse on a rock in Siri's Gap (beam turns)
-  and the shadowy mist over Sortland (drifting dark puffs); placed in `buildWorldView` by place id.
+  and the shadowy mist over Sortland (drifting dark puffs); placed in `buildWorldView` by place id. Sortland is also
+  a dark forest (`DARK_FORESTS` in grid.js: dark ground in terrain.js, dense dark pines and dead trees in scatter.js).
 - Hand edits to the land: `SEA_CUTS` in `tools/bake-map.mjs` cuts sea channels where painted coasts nearly touch
   (the snowy island north of Bartedalen and the green peninsula east of it are separate islands). Re-run `npm run bake`.
 - `tools/`
