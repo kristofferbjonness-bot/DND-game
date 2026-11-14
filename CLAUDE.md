@@ -267,7 +267,7 @@ The original assets (hand-drawn world map, location art, character art, lore doc
   the `companion` slot ("Varg carries" on the Gear tab; default the young Hooknose tied up across his back, `companionLoad`), a weapon
   lashed on his back, or saddle bags for any other item.
 - **Scene** (`src/scene/`, a tab for everyone): a 3D place where the heroes stand with the people they meet.
-  - Areas (`areas.js`): voxel dioramas on a 60×60 slab at 2 world units per voxel: the Man's camp, The Wolf, the road Razz–Ytterhavn, Ytterhavn's centre and port, the guards' cellar (heroes start in the cells), an inn room (two heroes in bed), a small ship at sea, a sailors' bar, a street shop (`townhouse`/`row` build the gabled houses),
+  - Areas (`areas.js`): voxel dioramas on a 60×60 slab at 2 world units per voxel: the Man's camp, The Wolf, the road Razz–Ytterhavn, Ytterhavn's centre and port, the guards' cellar (heroes start in the cells), an inn room (two heroes in bed), the bridge, the foggy lighthouse islet, the road past the dark forest, the road to Sirivik, Sirivik's town centre, Per Hul Øye's bar and the cliff edge, a small ship at sea, a sailors' bar, a street shop (`townhouse`/`row` build the gabled houses),
     the port of Razz, Hooknose Alley, outside the city gates. Each has a `town` (lists are grouped by it: `TOWNS`, `areaOptions`) and a mood (light, background), hero spots at
     the front and NPC spots further in; `standY` lifts everyone onto a deck (the ship). Add an area by writing a builder and listing it in `AREAS`.
   - `sceneView.js`: renderer (made on first start), OrbitControls, name tags (HTML) over each figure, tap to pick.

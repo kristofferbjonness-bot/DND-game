@@ -654,6 +654,7 @@ function shop() {
 // wooden lift down to the ships, gibbet cages hanging over the drop with crows on them, a wall of
 // black obsidian, a statue with an arm and its face broken off, and a
 // small shrine with candles and an empty cradle.
+// (the cliff edge of Sirivik)
 function sirivikSquare() {
   const v = new Vox(SIZE, { corner: 5 });
   v.waterColour = '#2a4a5a';
@@ -835,12 +836,14 @@ function bridgeArea() {
 // lamp, the keeper's cottage, a little jetty with a rowing boat, nets drying and gulls.
 function lighthouseArea() {
   const v = new Vox(SIZE, { corner: 8 });
-  v.waterColour = '#2f86b0';
+  v.waterColour = '#2a5a6e';
+  v.mistColour = '#c4c8d0';
   const rock = (x, z) => Math.hypot((x - 30) * 0.9, z - 26) < 21 + noise(x, z, 5, 4) * 6;
-  slab(v, (x, z, h) => (h < 0 ? '#3a6a80' : h > 2 ? '#7a746c' : hash(x, z, 7) > 0.7 ? '#8a847a' : '#6a655e'),
-    { height: (x, z) => (rock(x, z) ? Math.round(noise(x, z, 6, 2) * 3) : -4), water: -1, bed: () => '#2a4a5a', side: () => '#5a554e' });
-  // Flatten a yard round the tower and the cottage.
-  for (let x = 14; x <= 46; x++) for (let z = 8; z <= 40; z++) if (rock(x, z)) { for (let y = 1; y <= 4; y++) v.clear(x, y, z); v.set(x, 0, z, hash(x, z, 8) > 0.7 ? '#8a847a' : '#9a948a'); }
+  // Black obsidian rock, like the cliffs of Sirivik across the water, with grey stone paths.
+  slab(v, (x, z, h) => (h < 0 ? '#2a3a44' : hash(x, z, 7) > 0.75 ? '#3a3644' : '#2a2632'),
+    { height: (x, z) => (rock(x, z) ? Math.round(noise(x, z, 6, 2) * 3) : -4), water: -1, bed: () => '#1e2a30', side: (x, z, y) => (hash(x, y, z) > 0.8 ? '#3a3644' : '#24202c') });
+  for (let x = 14; x <= 46; x++) for (let z = 8; z <= 40; z++) if (rock(x, z)) { for (let y = 1; y <= 4; y++) v.clear(x, y, z); v.set(x, 0, z, hash(x, z, 8) > 0.7 ? '#4a4652' : '#3a3644'); }
+  for (let z = 22; z <= 40; z++) for (let x = 15; x <= 18; x++) v.set(x, 0, z, '#6a665e'); // the path to the jetty
   // The tower: red and white bands, a gallery, the lamp room with a glowing lamp, a dark cap.
   const cx = 36, cz = 14;
   for (let y = 1; y <= 40; y++) {
@@ -864,13 +867,164 @@ function lighthouseArea() {
   for (const x of [38, 46]) for (let y = 1; y <= 9; y++) v.set(x, y, 32, '#5b4a3a');
   for (let x = 39; x <= 45; x++) for (let y = 3; y <= 8; y++) if ((x + y) % 2) v.set(x, y, 32, '#9a8a6a');
   barrel(v, 30, 0, 22); barrel(v, 33, 0, 23);
-  // Gulls on the rocks.
+  // Gulls on the rocks, a crow on the cottage roof.
   for (const [x, z] of [[10, 30], [48, 22], [44, 40]]) { v.set(x, 3, z, '#f4f4f4'); v.set(x + 1, 3, z, '#f4f4f4'); v.set(x, 4, z, '#f4f4f4'); }
+  v.set(22, 16, 17, '#141216'); v.set(22, 17, 17, '#141216');
+  // Fog banks round the islet and drifting over the sea.
+  for (let a = 0; a < 6; a++) { const ang = a / 6 * 6.28 + 0.4; v.puff(30 + Math.cos(ang) * 27, 2 + hash(a, 1, 9) * 4, 28 + Math.sin(ang) * 27, 5, 3, 4); }
+  v.puff(46, 30, 8, 6, 3, 4);
   return {
     v, standY: 0,
     heroSpots: [[22, 34], [28, 35], [18, 37], [33, 37], [25, 38], [14, 38], [38, 38]],
     npcSpots: [[30, 27], [24, 26], [36, 26], [20, 29], [40, 30], [28, 31], [34, 32], [16, 30], [44, 34]],
-    mood: { bg: 'linear-gradient(#6a9ac0, #c8dce8)', sky: '#eef4ff', ground: '#5a6a70', hemi: 1.4, sun: '#fff0d4', sunPower: 2.3, sunAt: [-40, 70, 40], exposure: 1.05 },
+    mood: { bg: 'linear-gradient(#5a6070, #9aa0aa)', sky: '#d4d8e0', ground: '#3a3a44', hemi: 1.45, sun: '#dce0ea', sunPower: 1.6, sunAt: [-30, 70, 40], exposure: 1.2 },
+  };
+}
+
+
+// The old road past the dark forest of Sortland: a worn, overgrown track; on the left the forest
+// turns from green to grey, dense dark pines and bare dead trees under a low mist; on the right
+// open grass. An old waystone, a broken fence, a cart track.
+function forestRoad() {
+  const v = new Vox(SIZE, { corner: 8 });
+  v.mistColour = '#7a7488';
+  const mid = (z) => 34 + Math.sin(z / 10) * 3;
+  const onRoad = (x, z) => Math.abs(x - mid(z)) <= 4;
+  const dark = (x, z) => Math.max(0, Math.min(1, (mid(z) - 5 - x + (noise(x, z, 6, 41) - 0.5) * 8) / 12)); // 1 deep in the forest (left)
+  slab(v, (x, z) => {
+    if (onRoad(x, z)) return hash(x, z, 5) > 0.75 ? '#7a8a4a' : hash(x, z, 6) > 0.5 ? '#8a7656' : '#7a6848'; // grown over in patches
+    const d = dark(x, z);
+    return d > 0.5 ? (hash(x, z, 7) > 0.7 ? '#4c5244' : '#43473f') : d > 0.1 ? (hash(x, z, 8) < d * 2 ? '#5e6a48' : '#7aa850') : pick(x, z, 22, ['#8cc35c', '#7fb553', '#98cb66']);
+  });
+  for (let x = 1; x < SIZE - 1; x += 3) for (let z = 1; z < SIZE - 1; z += 3) {
+    const jx = x + Math.floor(hash(x, z, 9) * 2), jz = z + Math.floor(hash(z, x, 9) * 2);
+    if (!v.inside(jx, jz, 9) || onRoad(jx, jz) || Math.abs(jx - mid(jz)) < 7) continue;
+    const d = dark(jx, jz);
+    if (d > 0.3 && hash(jx, jz, 10) < 0.45) {
+      if (hash(jx, jz, 11) > 0.35) { for (let y = 1; y <= 14; y++) v.set(jx, y, jz, '#6a645c'); v.set(jx + 1, 9, jz, '#6a645c'); v.set(jx + 2, 10, jz, '#6a645c'); v.set(jx, 11, jz - 1, '#5e5852'); v.set(jx, 12, jz - 2, '#5e5852'); }
+      else { for (let y = 1; y <= 3; y++) v.set(jx, y, jz, '#3e3630'); for (let i = 0; i < 5; i++) { const r = 3 - Math.floor(i * 0.7); for (let dx = -r; dx <= r; dx++) for (let dz = -r; dz <= r; dz++) if (Math.abs(dx) + Math.abs(dz) <= r) v.set(jx + dx, 4 + i * 2, jz + dz, i % 2 ? '#3a443d' : '#36403a'); } }
+    } else if (d < 0.05 && hash(jx, jz, 12) > 0.93) tree(v, jx, 0, jz, { size: 1 });
+  }
+  // A waystone, a broken fence, an old cart wheel in the grass.
+  { const x = Math.round(mid(20) + 6); v.box(x, 1, 20, x + 2, 9, 22, '#7a746c'); v.box(x, 9, 20, x + 2, 10, 22, '#6a645c'); }
+  for (let z = 30; z < 50; z++) if (hash(z, 3, 13) > 0.35) { const x = Math.round(mid(z) + 7); v.set(x, 2, z, '#6b5a44'); if (z % 3 === 0) v.set(x, 1, z, '#5a4a38'); }
+  for (let a = 0; a < 12; a++) v.set(50 + Math.round(Math.cos(a / 12 * 6.28) * 3), 1, 40 + Math.round(Math.sin(a / 12 * 6.28) * 3), '#5a4632');
+  // Mist lying low in the forest.
+  for (let i = 0; i < 8; i++) v.puff(6 + hash(i, 1, 14) * 18, 2, 6 + i * 6, 6, 2, 4);
+  return {
+    v, heroSpots: [[30, 44], [36, 44], [27, 49], [39, 49], [33, 50], [24, 52], [42, 52]],
+    npcSpots: [[33, 26], [28, 24], [38, 24], [26, 30], [40, 30], [33, 18], [22, 22], [44, 20], [33, 34]],
+    mood: { bg: 'linear-gradient(#7a8090, #b8bcb0)', sky: '#e0e4dc', ground: '#4a5040', hemi: 1.4, sun: '#e8e8d8', sunPower: 1.9, sunAt: [-40, 70, 40], exposure: 1.1 },
+  };
+}
+
+// The road to Sirivik: a grey stone road climbing through bleak, foggy heath towards the cliffs;
+// boulders, heather, a gallows post with a crow, a weathered signpost, and the dark shapes of the
+// town's roofs and the lift tower in the fog at the end of the road.
+function sirivikRoad() {
+  const v = new Vox(SIZE, { corner: 8 });
+  v.mistColour = '#b8bcc4';
+  const mid = (z) => 30 + Math.sin(z / 9) * 4;
+  const onRoad = (x, z) => Math.abs(x - mid(z)) <= 3.5;
+  slab(v, (x, z) => (onRoad(x, z) ? (hash(x, z, 5) > 0.7 ? '#6a6660' : '#7a766e') : hash(x, z, 6) > 0.85 ? '#7a5a6a' : pick(x, z, 31, ['#6a7458', '#5e6850', '#727a5e'])),
+    { height: (x, z) => (onRoad(x, z) || z > 14 ? 0 : Math.round(Math.max(0, noise(x, z, 7, 5) * 6 - z * 0.3))) });
+  for (const [x, z] of [[8, 22], [14, 40], [48, 18], [52, 36], [44, 48], [10, 50]]) { v.box(x, 1, z, x + 4, 3 + Math.round(hash(x, z) * 2), z + 3, '#5a5660'); v.set(x + 1, 4, z + 1, '#4a4650'); }
+  // A gallows post with an empty noose and a crow; a signpost with one arm.
+  for (let y = 1; y <= 22; y++) v.set(40, y, 28, '#3e3228');
+  for (let x = 40; x <= 46; x++) v.set(x, 22, 28, '#3e3228');
+  for (let y = 15; y <= 21; y++) v.set(45, y, 28, '#a8906a');
+  v.set(44, 15, 28, '#a8906a'); v.set(46, 15, 28, '#a8906a');
+  v.set(41, 23, 28, '#141216'); v.set(42, 23, 28, '#141216');
+  { const x = Math.round(mid(40) - 6); for (let y = 1; y <= 16; y++) v.set(x, y, 40, '#5a4632'); for (let i = 1; i <= 6; i++) { v.set(x + i, 14, 40, '#7a6448'); v.set(x + i, 13, 40, '#7a6448'); } }
+  // Sirivik's dark roofs and lift tower in the fog at the far end.
+  for (const [x, w, h] of [[20, 7, 14], [28, 6, 18], [35, 8, 12]]) v.box(x, 1, 2, x + w, h, 6, '#3a3640');
+  for (let y = 1; y <= 24; y++) { v.set(44, y, 4, '#3a2e26'); v.set(48, y, 4, '#3a2e26'); }
+  for (let x = 44; x <= 48; x++) v.set(x, 24, 4, '#3a2e26');
+  for (let x = 2; x < 58; x += 7) v.puff(x, 6, 6, 8, 6, 5);
+  for (const [x, z] of [[12, 30], [48, 44], [24, 52]]) v.puff(x, 2, z, 7, 2, 5);
+  return {
+    v, heroSpots: [[28, 44], [34, 44], [25, 49], [37, 49], [31, 50], [22, 52], [40, 52]],
+    npcSpots: [[31, 26], [26, 24], [36, 24], [24, 30], [38, 31], [31, 18], [20, 26], [44, 22], [31, 34]],
+    mood: { bg: 'linear-gradient(#5a5e68, #9a9ea6)', sky: '#d0d4dc', ground: '#4a4a48', hemi: 1.4, sun: '#d8dce4', sunPower: 1.5, sunAt: [-30, 70, 40], exposure: 1.2 },
+  };
+}
+
+// Sirivik's town centre: a cramped, foggy street of tall, dark stone houses leaning together, with
+// Three-Fingered Paul's shop (a lantern in the window), the hostel and Per Hul Øye's bar sign; a
+// dry, cracked well in the middle, laundry lines with single gloves and one-legged trousers,
+// crows on the gutters, and a lamp that barely lights.
+function sirivikCentre() {
+  const v = new Vox(SIZE, { corner: 5 });
+  v.mistColour = '#a8acb4';
+  slab(v, (x, z) => (hash(x, z, 61) > 0.85 ? '#4e4a58' : (x + 2 * z) % 9 === 0 ? '#3a3644' : '#46424e'));
+  const dark = { roof: '#2a2830', trim: '#6a6670', door: '#2a2024', shutters: '#2a2830' };
+  townhouse(v, { x: 0, z: 0, w: 15, d: 10, floors: 2, wall: '#4a4650', ...dark });
+  townhouse(v, { x: 15, z: 0, w: 14, d: 10, floors: 2, wall: '#55505a', ...dark }); // the hostel
+  townhouse(v, { x: 29, z: 0, w: 16, d: 10, floors: 2, wall: '#3e3a44', ...dark }); // the bar
+  townhouse(v, { x: 45, z: 0, w: 15, d: 10, floors: 2, wall: '#4e4a54', ...dark });
+  townhouse(v, { x: 0, z: 10, w: 14, d: 10, face: 'east', floors: 2, wall: '#504c56', ...dark }); // Paul's shop
+  townhouse(v, { x: 0, z: 24, w: 16, d: 10, face: 'east', floors: 2, wall: '#46424c', ...dark });
+  townhouse(v, { x: 50, z: 12, w: 16, d: 10, face: 'west', floors: 2, wall: '#4a4650', ...dark });
+  townhouse(v, { x: 50, z: 28, w: 14, d: 10, face: 'west', floors: 2, wall: '#3e3a44', ...dark });
+  // Hanging signs: a bed (the hostel), a mug (the bar), a lantern lit in Paul's window.
+  for (const [x, c] of [[22, '#c8c0b0'], [37, '#8a6440']]) { for (let z = 10; z <= 13; z++) v.set(x, 18, z, '#2e2a2e'); v.box(x - 2, 13, 13, x + 3, 17, 14, '#4a3020'); v.box(x - 1, 14, 13, x + 2, 16, 14, c); }
+  v.light(10, 9, 14, '#ffb347'); v.light(10, 10, 14, '#ffb347');
+  // A dry, cracked well in the middle with a broken bucket.
+  for (let x = -4; x <= 4; x++) for (let z = -4; z <= 4; z++) { const d = Math.hypot(x, z); if (d > 4.4) continue; if (d > 3.2) for (let y = 1; y <= 4; y++) v.set(30 + x, y, 30 + z, hash(x, y, z) > 0.8 ? '#4a4650' : '#5e5a62'); else v.set(30 + x, 0, 30 + z, '#1a161c'); }
+  for (const x of [26, 34]) for (let y = 5; y <= 13; y++) v.set(x, y, 30, '#3e3228');
+  for (let x = 26; x <= 34; x++) v.set(x, 13, 30, '#3e3228');
+  v.box(29, 7, 29, 31, 9, 31, '#5a4632'); v.set(30, 10, 30, '#a8906a'); v.set(30, 11, 30, '#a8906a'); v.set(30, 12, 30, '#a8906a');
+  // Laundry lines across the street: single gloves, one-legged trousers, a shirt with one sleeve.
+  for (let x = 14; x <= 50; x++) v.set(x, 22, 22, '#8a8478');
+  for (const [x, c, h] of [[18, '#8a7a6a', 4], [22, '#6a6a7a', 6], [27, '#a89a8a', 3], [33, '#7a6a5a', 6], [39, '#6a7a6a', 4], [44, '#9a8a7a', 3]]) for (let y = 22 - h; y < 22; y++) v.set(x, y, 22, c);
+  // Crows on the gutters, a dim lamp, a barrel, a bench.
+  for (const [x, z] of [[8, 9], [40, 9], [53, 13], [5, 30]]) { v.set(x, 34, z, '#141216'); v.set(x + 1, 34, z, '#141216'); }
+  for (let y = 1; y <= 14; y++) v.set(44, y, 40, '#2e2a2e'); v.light(44, 15, 40, '#c8a050');
+  barrel(v, 16, 0, 40); v.box(36, 1, 44, 42, 3, 46, '#4a3a2e');
+  for (let x = 4; x < 56; x += 10) v.puff(x, 3, 50, 6, 3, 4);
+  v.puff(30, 12, 20, 10, 3, 4);
+  return {
+    v, heroSpots: HERO_SPOTS,
+    npcSpots: [[30, 38], [22, 33], [38, 33], [18, 26], [42, 26], [24, 40], [36, 41], [16, 34], [44, 34]],
+    mood: { bg: 'linear-gradient(#4a4e5a, #8a8e96)', sky: '#d4d8e0', ground: '#4a4650', hemi: 1.5, sun: '#d8dce8', sunPower: 1.6, sunAt: [-30, 70, 40], exposure: 1.2 },
+  };
+}
+
+// Per Hul Øye's bar in Sirivik: low, smoky and grim, nothing like Ytterhavn's. Rough plank walls
+// and a sagging beam ceiling, a scarred bar with a few dusty bottles and one keg, crooked tables,
+// a single candle each, a dartboard with knives in it, nets and a cracked mirror, a small dim
+// fire, and an empty chair with a crow feather left on it.
+function sirivikBar() {
+  const v = new Vox(SIZE, { corner: 3 });
+  slab(v, (x, z) => (hash(x, z, 71) > 0.85 ? '#3a2e24' : Math.floor(z / 2) % 2 ? '#4a3a2c' : '#433426'));
+  const plank = (x, y, z) => (hash(x, y, z) > 0.85 ? '#3a2e24' : y % 4 === 0 ? '#2e241c' : '#4a3a2c');
+  for (let x = 0; x < SIZE; x++) for (let z = 0; z <= 2; z++) for (let y = 1; y <= 20; y++) v.set(x, y, z, plank(x, y, z));
+  for (const [x0, x1] of [[0, 2], [SIZE - 3, SIZE - 1]]) for (let x = x0; x <= x1; x++) for (let z = 3; z <= 44; z++) for (let y = 1; y <= 13; y++) v.set(x, y, z, plank(x, y, z));
+  // The bar: scarred wood, a few dusty bottles, one keg, a lantern.
+  v.box(14, 1, 9, 44, 5, 12, '#3a2c20'); v.box(13, 5, 9, 45, 6, 12, '#4e3a28');
+  for (let x = 16; x <= 42; x++) v.set(x, 8, 3, '#2e241c');
+  for (const x of [18, 23, 27, 34, 39]) { v.set(x, 9, 3, hash(x, 1, 2) > 0.5 ? '#3a5a3a' : '#5a3a2a'); v.set(x, 10, 3, '#3a5a3a'); }
+  v.box(30, 1, 3, 34, 5, 6, '#5a3a22'); v.set(32, 3, 6, '#2a2a2e');
+  v.set(20, 6, 10, '#2e2a2e'); v.light(20, 7, 10, '#c8903a');
+  // A cracked mirror and a dartboard with knives, a net on the wall.
+  for (let x = 22; x <= 28; x++) for (let y = 11; y <= 16; y++) v.set(x, y, 3, x === 22 || x === 28 || y === 11 || y === 16 ? '#2e241c' : (x + y) % 5 === 0 ? '#6a6e74' : '#9aa0a8');
+  for (let a = 0; a < 14; a++) for (let r = 0; r <= 3; r++) v.set(3, 9 + Math.round(Math.sin(a / 14 * 6.28) * r), 22 + Math.round(Math.cos(a / 14 * 6.28) * r), r === 3 ? '#2e241c' : r % 2 ? '#a8342a' : '#d8cfbe');
+  for (const [y, z] of [[9, 23], [10, 21]]) { v.set(4, y, z, '#c4ccd4'); v.set(5, y, z, '#4a3020'); }
+  for (let z = 30; z <= 40; z++) for (let y = 5; y <= 11; y++) if ((y + z) % 2) v.set(56, y, z, '#6a5e4a');
+  // A small, dim fire.
+  v.box(52, 1, 12, 56, 8, 20, '#4a4650'); v.box(53, 1, 14, 56, 4, 18, '#1a1612');
+  v.light(54, 1, 15, '#c8602a'); v.light(54, 1, 16, '#a8502a');
+  // Crooked tables with a candle each, stools, one empty chair with a crow feather.
+  for (const [x, z] of [[12, 24], [26, 30], [44, 26], [16, 38], [40, 38]]) {
+    v.box(x, 1, z, x + 1, 4, z + 1, '#3a2c20'); v.box(x - 2, 4, z - 1, x + 3, 5, z + 2, '#4e3a28');
+    v.set(x, 5, z, '#d8cfbe'); v.light(x, 6, z, '#e8a050');
+    for (const [dx, dz] of [[-4, 0], [4, 1], [0, 4]]) v.box(x + dx, 1, z + dz, x + dx + 1, 3, z + dz + 1, '#3a2c20');
+  }
+  v.box(33, 1, 30, 35, 4, 32, '#3a2c20'); for (let y = 4; y <= 8; y++) v.set(33, y, 30, '#3a2c20'); v.set(34, 4, 31, '#141216');
+  return {
+    v, heroSpots: HERO_SPOTS,
+    npcSpots: [[30, 7], [22, 18], [38, 18], [14, 30], [44, 32], [24, 25], [36, 24], [20, 42], [40, 43]],
+    mood: { bg: 'radial-gradient(ellipse at 50% 30%, #2e241c, #0e0a08)', sky: '#e8c8a0', ground: '#2e241c', hemi: 1.3, sun: '#e8c090', sunPower: 1.4, sunAt: [-20, 70, 50], exposure: 1.2 },
   };
 }
 
@@ -888,7 +1042,11 @@ export const AREAS = {
   cellar: { town: 'Ytterhavn', name: 'The guards’ cellar (the cells)', short: 'The cells', build: cellar },
   inn: { town: 'Ytterhavn', name: 'A room at the inn', short: 'The inn room', build: innRoom },
   shop: { town: 'Ytterhavn', name: 'A street shop in Ytterhavn', short: 'The shop', build: shop },
-  sirivik: { town: 'Sirivik', name: 'The square of Sirivik', short: 'Sirivik', build: sirivikSquare },
+  sirivikcentre: { town: 'Sirivik', name: 'Sirivik town centre', short: 'Sirivik', build: sirivikCentre },
+  sirivikbar: { town: 'Sirivik', name: 'Per Hul Øye’s bar', short: 'The bar', build: sirivikBar },
+  sirivik: { town: 'Sirivik', name: 'The cliff edge of Sirivik', short: 'The cliff edge', build: sirivikSquare },
+  forestroad: { town: 'On the road', name: 'The road past the dark forest', short: 'The forest road', build: forestRoad },
+  sirivikroad: { town: 'On the road', name: 'The road to Sirivik', short: 'The road to Sirivik', build: sirivikRoad },
   bridge: { town: 'On the road', name: 'The bridge east of Ytterhavn', short: 'The bridge', build: bridgeArea },
   lighthouse: { town: 'At sea', name: 'The lighthouse in Siri’s Gap', short: 'The lighthouse', build: lighthouseArea },
   ship: { town: 'At sea', name: 'Aboard a small ship', short: 'The ship', build: ship },
