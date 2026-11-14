@@ -1280,12 +1280,12 @@ input.is-bad { box-shadow: inset 0 0 0 2px #e2634e; }
 
 .rb-toggle {
   position: fixed; z-index: 5; left: 0; top: 50%; transform: translateY(-50%);
-  width: calc(38px + var(--safe-l)); height: 52px; padding: 7px 7px 7px max(5px, var(--safe-l)); cursor: pointer;
+  width: calc(30px + var(--safe-l)); height: 40px; padding: 5px 5px 5px max(4px, var(--safe-l)); cursor: pointer;
   background: linear-gradient(90deg, #2b2330, #3a3141); border: 0; border-radius: 0 8px 8px 0;
   box-shadow: 0 0 0 1px #0c090e, inset -2px 0 0 rgba(201, 164, 92, 0.5), var(--shadow);
   transition: width 0.15s ease;
 }
-.rb-toggle:hover, .rb-toggle.is-open { width: calc(44px + var(--safe-l)); }
+.rb-toggle:hover, .rb-toggle.is-open { width: calc(35px + var(--safe-l)); }
 .rb-toggle svg { width: 100%; height: 100%; display: block; }
 
 .rb {
@@ -1361,7 +1361,7 @@ input.is-bad { box-shadow: inset 0 0 0 2px #e2634e; }
 
 /* ---------- Dice tray (opened from the d20 tab under the rulebook) ---------- */
 
-.dt-toggle { top: calc(50% + 60px); padding: 6px 6px 6px max(4px, var(--safe-l)); }
+.dt-toggle { top: calc(50% + 46px); padding: 5px 5px 5px max(4px, var(--safe-l)); }
 .dt-toggle .die-icon { width: 100%; height: 100%; }
 .dt-toggle .die-icon polygon { fill: #fff6dc; stroke: #4a2c17; stroke-width: 2.6; }
 .dt-toggle .die-icon text { font: 700 12px var(--font-display); fill: #3b2a1b; }
@@ -1807,7 +1807,7 @@ button.jr-tick { cursor: pointer; }
   .topnav__tab span { display: none; }
   .topnav__tab .ic { width: 24px; height: 24px; }
   .topnav__tab.is-active::after { bottom: 2px; }
-  .screen { padding-left: max(10px, var(--safe-l)); padding-right: calc(max(6px, var(--safe-r)) + 40px); }
+  .screen { padding-left: max(10px, var(--safe-l)); padding-right: calc(max(6px, var(--safe-r)) + 32px); }
   .combat.is-battle { padding: 0; }
   .round { width: 40px; height: 40px; }
   .hud-stack { right: max(10px, var(--safe-r)); gap: 8px; }
@@ -1880,10 +1880,10 @@ button.jr-tick { cursor: pointer; }
   .manage__card { padding: 10px 16px 12px; }
   .manage__sec { padding: 7px 0; gap: 5px; }
   /* Phones on their side: the book and dice tabs move to the right edge, clear of the camera notch. */
-  .rb-toggle { left: auto; right: 0; width: calc(34px + var(--safe-r)); height: 44px; border-radius: 8px 0 0 8px; padding: 6px max(5px, var(--safe-r)) 6px 6px; box-shadow: 0 0 0 1px #0c090e, inset 2px 0 0 rgba(201, 164, 92, 0.5), var(--shadow); }
-  .rb-toggle:hover, .rb-toggle.is-open { width: calc(40px + var(--safe-r)); }
-  .dt { left: auto; right: calc(var(--safe-r) + 44px); }
-  .roll-pop { left: auto; right: calc(var(--safe-r) + 44px); }
+  .rb-toggle { left: auto; right: 0; width: calc(28px + var(--safe-r)); height: 36px; border-radius: 8px 0 0 8px; padding: 5px max(4px, var(--safe-r)) 5px 5px; box-shadow: 0 0 0 1px #0c090e, inset 2px 0 0 rgba(201, 164, 92, 0.5), var(--shadow); }
+  .rb-toggle:hover, .rb-toggle.is-open { width: calc(32px + var(--safe-r)); }
+  .dt { left: auto; right: calc(var(--safe-r) + 36px); }
+  .roll-pop { left: auto; right: calc(var(--safe-r) + 36px); }
   body:has(#panel:not([hidden])) .rb-toggle { display: none; }
   .bar__me-text { display: flex; }
   .bar__me-text small { display: none; }
@@ -2125,8 +2125,8 @@ button.jr-tick { cursor: pointer; }
   .manage__card { padding: 12px 14px 14px; }
 
   /* Rulebook */
-  .rb-toggle { top: auto; bottom: calc(var(--nav) + 70px); transform: none; width: 30px; height: 42px; padding: 5px 5px 5px 3px; }
-  .dt-toggle { bottom: calc(var(--nav) + 120px); }
+  .rb-toggle { top: auto; bottom: calc(var(--nav) + 70px); transform: none; width: 26px; height: 34px; padding: 4px 4px 4px 3px; }
+  .dt-toggle { bottom: calc(var(--nav) + 110px); }
   .roll-pop { top: auto; bottom: calc(var(--nav) + 120px); left: 40px; right: 8px; }
   .rb-turn--prev { left: 2px; }
   .rb-turn--next { right: 2px; }
@@ -2273,3 +2273,28 @@ button.jr-tick { cursor: pointer; }
 /* Setting up a fight over the scene: the scene shows behind, without its own notes and panel. */
 body[data-screen="combat"] .scn__panel, body[data-screen="combat"] .scn__plate, body[data-screen="combat"] .scn__card { display: none; }
 body[data-screen="combat"] #scene .scene-tags { opacity: 0.5; }
+
+/* The Scene, calmer for the DM: a small name note, a slim panel, small name tags. */
+.scn__plate { flex-direction: row; flex-wrap: wrap; align-items: center; column-gap: 10px; row-gap: 0; padding: 2px 8px 4px; border-width: 10px; max-width: min(380px, calc(100% - 120px)); }
+.scn__plate small { flex-basis: 100%; font-size: 9.5px; }
+.scn__plate b { font-size: 15px; }
+.scn__live { margin-top: 0; font-size: 10px; }
+.scn__fight { margin: 2px 0 0; padding: 3px 10px; font-size: 12px; min-height: 0; }
+.scn__fight .ic { width: 16px; height: 16px; }
+.scn__panel { width: 280px; padding: 0 4px 6px; border-width: 18px; right: calc(max(12px, var(--safe-r)) + 34px); }
+.scn__panel.is-folded { width: auto; }
+.scn__head { padding-bottom: 6px; }
+.scn__fold { font-size: 16px; }
+.scn__new { padding: 4px 10px; font-size: 12px; min-height: 0; }
+.scn__new .ic { width: 15px; height: 15px; }
+.scn__pick { padding: 7px 2px 7px 6px; }
+.scn__pick b { font-size: 14px; }
+.scn__pick small { font-size: 12px; }
+.scn__tools button { min-width: 26px; height: 26px; padding: 0 6px; font-size: 11px; }
+.scn__tools .ic { width: 15px; height: 15px; }
+.scn__form { gap: 8px; }
+.scn__title { font-size: 17px; }
+.scn__who { padding: 3px 2px; font-size: 14px; }
+.scn__face { width: 26px; height: 26px; }
+.scn .stepper button { width: 24px; height: 24px; font-size: 15px; }
+.scene-tag { font-size: 10.5px; padding: 1px 6px 2px; }

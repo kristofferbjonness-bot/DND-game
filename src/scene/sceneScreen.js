@@ -33,7 +33,7 @@ export function createSceneScreen(root, { entries, heroes, monsters, canEdit, li
 
   let viewing = null; // the scene the DM is looking at
   let editing = null; // { id?, data } while the DM writes a scene
-  let folded = window.matchMedia('(max-width: 600px)').matches; // the DM's panel folded away (at first on phones)
+  let folded = window.matchMedia('(max-width: 600px), (max-height: 500px)').matches; // the DM's panel folded away (at first on phones)
   let running = false;
   let shownKey = '';
 
