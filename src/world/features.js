@@ -344,8 +344,7 @@ export function buildDesertCamp(n = 3) {
 }
 
 // Things round Sirivik, for the curious (world-map scale; y = 0 at the ground):
-// gibbet cages hanging from posts at the cliff edge with crows on them, standing stones of black
-// obsidian carved with glowing blue runes, a weathered statue with an arm and its face broken off,
+// gibbet cages hanging from posts at the cliff edge with crows on them, a weathered statue with an arm and its face broken off,
 // a little shrine with candles and an empty cradle, and the town's wooden lift down to the water.
 export function buildGibbet() {
   const g = new THREE.Group();
@@ -356,18 +355,6 @@ export function buildGibbet() {
   block(g, [0.26, 0.04, 0.26], [0.45, 0.55, 0], iron); block(g, [0.26, 0.04, 0.26], [0.45, 0.97, 0], iron);
   block(g, [0.12, 0.2, 0.08], [0.45, 0.62, 0], bone);
   block(g, [0.08, 0.06, 0.05], [0.45, 1.01, 0.02], crow); block(g, [0.07, 0.05, 0.05], [0.02, 1.31, 0], crow);
-  return g;
-}
-export function buildRuneStone(h = 0.8) {
-  const g = new THREE.Group();
-  block(g, [0.28, h, 0.18], [0, 0, 0], solid('#1e1a24'));
-  const rune = new THREE.MeshBasicMaterial({ color: '#5ac8ff', toneMapped: false });
-  for (let i = 0; i < 3; i++) {
-    const m = new THREE.Mesh(bevelBox(0.12, 0.04, 0.02, 0.005).clone(), rune);
-    m.position.set(0, 0.2 + i * (h - 0.3) / 2, 0.1);
-    m.rotation.z = i % 2 ? 0.6 : -0.6;
-    g.add(m);
-  }
   return g;
 }
 export function buildBrokenStatue() {

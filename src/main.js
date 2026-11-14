@@ -12,7 +12,7 @@ import { buildPlants, buildClouds } from './world/scatter.js';
 import { buildLandmark, buildTine } from './world/landmarks.js';
 import { buildAnimals } from './world/animals.js';
 import { MINE, BRIDGE, crossings, road } from './world/roads.js';
-import { buildLighthouse, buildShadowMist, buildCabin, buildBridge, buildVolcanoSparks, buildCloudCap, buildMountainMist, buildMine, buildYurtCamp, buildDesertCamp, buildGibbet, buildRuneStone, buildBrokenStatue, buildShrine, buildLift } from './world/features.js';
+import { buildLighthouse, buildShadowMist, buildCabin, buildBridge, buildVolcanoSparks, buildCloudCap, buildMountainMist, buildMine, buildYurtCamp, buildDesertCamp, buildGibbet, buildBrokenStatue, buildShrine, buildLift } from './world/features.js';
 import { LOCATIONS } from './world/locations.js';
 import { CITIES } from './city/cities.js';
 import { createTiltShiftPasses } from './fx/tiltShift.js';
@@ -274,7 +274,6 @@ function buildWorldView() {
     edge.sort((a, b) => a[3] - b[3]);
     edge.slice(0, 2).forEach(([dx, dz, rot]) => put(buildGibbet(), dx, dz, rot - Math.PI / 2));
     if (edge[3]) { const [dx, dz, rot] = edge[3]; put(buildLift(1.6), dx, dz, rot); }
-    put(buildRuneStone(0.9), 2, -2, 0.3); put(buildRuneStone(0.7), 3, -1, -0.4); put(buildRuneStone(0.8), 2, 0, 0.9);
     put(buildBrokenStatue(), -1, -3, 0.5);
     put(buildShrine(), 1, 3, -0.3);
   }
@@ -999,6 +998,18 @@ const manager = createHeroManager(document.getElementById('manage'), {
   parties: () => partyNames(),
   partyOf,
   onSave(c) { saveHero(c); refilterParty(); heroChanged(c.id); },
+  // The Journal's items (lore books, letters, maps): giving one shows it to the players, held by the hero.
+  loreItems: () => quests.filter((q) => q.data.kind === 'item').map((q) => ({
+    id: q.id, title: q.data.title, type: q.data.type, given: q.data.shown !== false,
+    holderName: q.data.shown === false ? '' : everyone.find((c) => c.id === q.data.holder)?.name ?? 'the party',
+  })).sort((a, b) => Number(a.given) - Number(b.given) || a.title.localeCompare(b.title)),
+  async onGiveLore(id, heroId) {
+    const q = quests.find((x) => x.id === id);
+    const saved = await saveQuest({ id, data: { ...q.data, shown: true, holder: heroId } });
+    const i = quests.findIndex((x) => x.id === id);
+    if (i >= 0) quests[i] = saved;
+    journalScreen.refresh();
+  },
 });
 function everyoneDoes(what, amount) {
   for (const c of party) {

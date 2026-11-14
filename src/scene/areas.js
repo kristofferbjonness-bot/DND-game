@@ -652,7 +652,7 @@ function shop() {
 // --- Sirivik -------------------------------------------------------------------------------------
 // The square of Sirivik at the top of its obsidian cliff, always in fog: dark stone houses, the
 // wooden lift down to the ships, gibbet cages hanging over the drop with crows on them, a wall of
-// black obsidian carved with glowing runes, a statue with an arm and its face broken off, and a
+// black obsidian, a statue with an arm and its face broken off, and a
 // small shrine with candles and an empty cradle.
 function sirivikSquare() {
   const v = new Vox(SIZE, { corner: 5 });
@@ -662,13 +662,10 @@ function sirivikSquare() {
   slab(v, (x, z, h) => (h < 0 ? '#1e1a24' : hash(x, z, 51) > 0.92 ? '#4e4a58' : (x + z) % 7 === 0 ? '#3a3644' : '#433f4c'),
     { height: (x, z) => (cliff(z) ? -12 : 0), water: -10, bed: () => '#1a2a30', bottom: -14, side: (x, z, y) => (hash(x, y, z) > 0.85 ? '#3e3a48' : '#24202c') });
   for (let x = 0; x < SIZE; x++) for (let y = -11; y <= 0; y++) if (v.inside(x, 14)) v.set(x, y, 14, hash(x, y, 52) > 0.85 ? '#3e3a48' : '#24202c'); // the cliff face
-  // Runes etched into the ground near the edge.
-  for (const [x, z] of [[24, 17], [25, 17], [26, 18], [33, 17], [34, 18], [35, 17]]) v.light(x, 0, z, '#3a8ab0');
   // Houses of dark stone down the left side.
   for (const [i, z0] of [[0, 18], [1, 32], [2, 46]]) townhouse(v, { x: 0, z: z0, w: 14, d: 10, face: 'east', floors: 2, wall: ['#4a4650', '#3e3a44', '#55505a'][i], roof: '#2a2830', trim: '#6a6670', door: '#2a2024', shutters: '#2a2830' });
-  // The obsidian wall carved with runes down the right side.
+  // A wall of black obsidian down the right side.
   for (let x = 52; x < SIZE; x++) for (let z = 16; z < 52; z++) for (let y = 1; y <= 14; y++) v.set(x, y, z, hash(x, y, z) > 0.9 ? '#2e2a38' : '#1e1a24');
-  for (let z = 18; z < 50; z += 4) for (let k = 0; k < 4; k++) v.light(52, 4 + ((z + k * 3) % 8), z + k % 3, '#5ac8ff');
   // The lift: a wooden tower at the edge, a beam over the drop, ropes, the platform far below.
   const wood = '#4a3a2e', rope = '#a8906a';
   for (const [x, z] of [[8, 14], [14, 14], [8, 19], [14, 19]]) for (let y = 1; y <= 22; y++) v.set(x, y, z, wood);

@@ -104,3 +104,19 @@ export function attackNameIcon(name = '', type = '') {
   if (/longsword/.test(n)) return 'longsword';
   return 'sword';
 }
+
+// The icon for any item from data/items.js.
+export function itemIcon(it) {
+  if (!it) return 'bag';
+  if (it.kind === 'weapon') return weaponIcon(it);
+  if (it.kind === 'armour') return 'armour';
+  if (it.kind === 'shield') return 'ac';
+  if (it.gem || /gem|pearl/i.test(it.name ?? '')) return 'gem';
+  if (/potion|elixir|flask|antidote|cocktail/i.test(it.name ?? '')) return 'potion';
+  if (/\bmap\b|chart/i.test(it.name ?? '')) return 'chart';
+  if (/condom/i.test(it.name ?? '')) return 'protection';
+  if (/ring|locket|coin|gold/i.test(it.name ?? '')) return 'coin';
+  if (/book|letter|note|scroll/i.test(it.name ?? '')) return 'scroll';
+  if (/lantern|torch/i.test(it.name ?? '')) return 'sun';
+  return 'bag';
+}

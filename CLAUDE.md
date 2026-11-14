@@ -61,7 +61,7 @@ The original assets (hand-drawn world map, location art, character art, lore doc
   Rama's mountains (`onRama`) are bare rock, snowy only round their summit (`RAMA_SUMMIT`). The volcano has no smoke
   column, only haze and faint orange sparks (`buildVolcanoSparks`). The ice mountain's foot is icy (`iceField`).
 - Round Sirivik on the world map (features.js, placed in `buildWorldView`): gibbet cages at the cliff edge, the lift, obsidian
-  rune stones, a broken statue, a shrine with an empty cradle (hints at the lore, no words). The `sirivik` scene area has the same.
+  a broken statue, a shrine with an empty cradle (hints at the lore, no words). The `sirivik` scene area has the same.
 - `src/world/roads.js`: roads found with A* over the land at load (round mountains and the sea; rivers are crossed at
   `BRIDGE` east of Ytterhavn, elsewhere plank bridges at `crossings`): an old patchy dirt road Razz → Ikeheim → Tine with
   forks to Sirivik and Ytterhavn, and a gravel road from the Bartedalen Mine (`MINE`, at ground level in the corner SW of
@@ -370,6 +370,9 @@ The original assets (hand-drawn world map, location art, character art, lore doc
     - The rules are in `src/character/progress.js`. Level up adds the average hit die + Con to
       max HP, one hit die, one attribute point (`abilityPoints`), and class features for the new level when `CLASSES` has them (only
       levels 1–2 so far). It does no ability score improvements or subclasses yet.
+    - Give an item: a picker with search and shelves (`SHELVES` in heroManager.js: weapons, armour, potions & food, gear
+      & tools, treasure & curios, from the towns, lore & letters). Items have `group` and `from` (town) in items.js. The
+      lore shelf lists the Journal's items; giving one shows it to the players held by that hero (`onGiveLore`).
     - Every change is saved at once. Players get a toast for XP, levels, HP, items and coins
       (`tellPlayer` in main.js).
 - **Look (redesign 2026-11-13): a medieval storybook, Lord of the Rings feel, fitting the voxel world.**

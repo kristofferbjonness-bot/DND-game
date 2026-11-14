@@ -7,7 +7,7 @@ import { createCharacterViewer } from './viewer.js';
 import { ITEMS } from '../data/items.js';
 import { SLOTS, companionLoad, optionsFor, equip } from '../character/equipment.js';
 import { itemInfo, spendAbilityPoints, MAX_SCORE } from '../character/progress.js';
-import { icon, weaponIcon, attackNameIcon } from '../ui/icons.js';
+import { icon, weaponIcon, attackNameIcon, itemIcon } from '../ui/icons.js';
 import { heroPortrait, portraitImg } from '../ui/portraits.js';
 
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
@@ -30,10 +30,6 @@ const USE = {
 };
 
 const SLOT_ICON = { mainHand: 'sword', offHand: 'ac', armour: 'armour' };
-const itemIcon = (it) => (it.kind === 'weapon' ? weaponIcon(it)
-  : it.kind === 'armour' ? 'armour' : it.kind === 'shield' ? 'ac' : it.gem ? 'gem'
-  : /potion|elixir|flask/i.test(it.name ?? '') ? 'potion' : /\bmap\b/i.test(it.name ?? '') ? 'chart'
-  : /condom/i.test(it.name ?? '') ? 'protection' : 'bag');
 
 const tile = (ic, label, value) => `<div class="tile">${icon(ic)}<b>${value}</b><span>${label}</span></div>`;
 
