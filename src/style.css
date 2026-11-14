@@ -2304,3 +2304,41 @@ body[data-screen="combat"] #scene .scene-tags { opacity: 0.5; }
 /* The place-names button: hides the map labels (the party's tag stays). */
 body.no-labels .label { visibility: hidden; }
 #labels-toggle[aria-pressed="true"] { color: var(--paper-red, #9c2f22); }
+
+/* ---------- Phones on their side: roomier Journal and Scene, map buttons clear of the tabs ---------- */
+@media (max-height: 500px) and (orientation: landscape) {
+  /* Journal: the bookmarks, the search and the buttons share one slim row; the rest is for reading. */
+  .jr {
+    display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: auto minmax(0, 1fr); column-gap: 8px;
+    padding: 0 6px 2px; border-width: 12px; border-image-width: 20px;
+  }
+  .jr__tabs { grid-column: 1; grid-row: 1; margin-top: 0; }
+  .jr__head { grid-column: 2; grid-row: 1; flex-wrap: nowrap; gap: 6px; border-bottom: 1.5px solid var(--pp-line); }
+  .jr__title { display: none; }
+  .jr__search { order: 0; flex: 0 0 150px; max-width: 150px; margin: 0; padding: 0 8px; }
+  .jr__search input { padding: 4px 0; font-size: 14px; }
+  .jr__search:focus-within { flex-basis: 220px; max-width: 220px; }
+  .jr__head .btn { padding: 4px 8px; font-size: 11px; min-height: 0; white-space: nowrap; }
+  .jr__new span { display: none; }
+  .jr__new .ic { margin: 0; }
+  .jr-tab { padding: 6px 7px 7px; }
+  .jr__body { grid-column: 1 / -1; grid-row: 2; grid-template-columns: minmax(200px, 0.75fr) minmax(0, 1.5fr); }
+  .jr__list { padding-top: 2px; }
+  .jr-group { margin-top: 8px; }
+
+  /* Scene: the picture fills the screen; the name note is a small tag, the person card slim. */
+  .scn__plate { top: calc(var(--top) + 2px); padding: 0 8px 2px; border-width: 8px; border-image-width: 14px; max-width: 46%; }
+  .scn__plate small { display: none; }
+  .scn__plate b { font-size: 13px; }
+  .scn__live { font-size: 9px; }
+  .scn__fight { padding: 2px 8px; font-size: 11px; }
+  .scn__panel { width: 250px; border-width: 14px; border-image-width: 22px; top: calc(var(--top) + 2px); bottom: calc(var(--nav) + 2px); }
+  .scn__card { bottom: calc(var(--nav) + 4px); min-width: 0; padding: 0 28px 0 2px; border-width: 8px; border-image-width: 14px; }
+  .scn__card b { font-size: 13px; }
+  .scn__card-face { width: 32px; height: 32px; }
+  .scn__card-link, .scn__card small { font-size: 12px; }
+  .scene-tag { font-size: 9px; padding: 0 5px 1px; }
+
+  /* Map: the round buttons move in from the edge, clear of the book and dice tabs. */
+  .hud-stack { right: calc(max(10px, var(--safe-r)) + 36px); }
+}
