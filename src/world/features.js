@@ -143,35 +143,30 @@ export function buildShadowMist(radius = 9, { grey = false } = {}) {
   return g;
 }
 
-// Smoke rising from a volcano's crater: grey puffs that rise, grow, drift with the wind and fade.
-// Stands at the crater floor (y = 0); a glowing lava pool sits there too. `update(dt)` animates.
-export function buildVolcanoSmoke({ height = 16, crater = 2 } = {}) {
+// A volcano's crater: a faint glow, and now and then a few tiny orange sparks drifting up, as if
+// there were lava somewhere below. Stands at the crater floor (y = 0). `update(dt)` animates.
+export function buildVolcanoSparks({ crater = 2 } = {}) {
   const g = new THREE.Group();
-  const glow = new THREE.PointLight('#ff7a2e', 1.5, 8, 1.6); // only a faint glow in the crater
-  glow.position.y = 1.5;
+  const glow = new THREE.PointLight('#ff7a2e', 1.2, 8, 1.6);
+  glow.position.y = 1.2;
   g.add(glow);
-  const puffGeo = bevelBox(1, 1, 1, 0.3);
-  const puffs = [];
-  const N = 34;
-  for (let i = 0; i < N; i++) {
-    const mat = new THREE.MeshStandardMaterial({ color: i % 3 ? '#8a847e' : '#6a6460', roughness: 1, transparent: true, depthWrite: false });
-    const m = new THREE.Mesh(puffGeo, mat);
-    g.add(m);
-    puffs.push({ m, phase: i / N, spin: hash(i, 1, 41) * 6, side: (hash(i, 2, 41) - 0.5) * 2 });
-  }
+  const N = 14;
+  const mesh = new THREE.InstancedMesh(new THREE.BoxGeometry(0.12, 0.12, 0.12), new THREE.MeshBasicMaterial({ color: '#ff9a4a', toneMapped: false, transparent: true, opacity: 0.85 }), N);
+  mesh.frustumCulled = false;
+  g.add(mesh);
+  const sparks = Array.from({ length: N }, (_, i) => ({ phase: hash(i, 4, 71), x: (hash(i, 5, 71) - 0.5) * crater, z: (hash(i, 6, 71) - 0.5) * crater, drift: (hash(i, 7, 71) - 0.5) * 1.5, period: 3 + hash(i, 8, 71) * 3 }));
+  const m = new THREE.Matrix4(), q = new THREE.Quaternion(), pos = new THREE.Vector3(), scl = new THREE.Vector3();
   let t = 0;
-  const PERIOD = 9; // seconds for a puff to rise all the way
   function update(dt) {
     t += dt;
-    for (const p of puffs) {
-      const a = (t / PERIOD + p.phase) % 1; // 0 at the crater, 1 at the top
-      const s = 1.6 + a * 6;
-      p.m.position.set(p.side * 0.8 + a * a * 6, 0.8 + a * height, p.side * 0.6 + a * 2);
-      p.m.scale.set(s * 1.1, s * 0.8, s);
-      p.m.rotation.y = p.spin + a * 1.5;
-      p.m.material.opacity = Math.min(1, a * 6) * (1 - a) * 0.75;
-    }
-    glow.intensity = 1.2 + Math.sin(t * 3.1) * 0.3;
+    sparks.forEach((s, i) => {
+      const a = (t / s.period + s.phase) % 1;
+      pos.set(s.x + a * s.drift, 0.5 + a * 5, s.z + a * s.drift * 0.5);
+      scl.setScalar(a < 0.8 ? 1 - a * 0.6 : (1 - a) * 2.6); // shrink away as they cool
+      mesh.setMatrixAt(i, m.compose(pos, q, scl));
+    });
+    mesh.instanceMatrix.needsUpdate = true;
+    glow.intensity = 1 + Math.sin(t * 3.1) * 0.25;
   }
   update(0);
   g.userData.update = update;
@@ -221,7 +216,7 @@ export function buildCloudCap(radius = 7, band = 6, { opacity = 1 } = {}) {
 // A soft haze hanging round the mountain tops: pale puffs at `spots` ([x, y, z] in world units),
 // drifting a little. `update(dt)` animates.
 export function buildMountainMist(spots) {
-  const mesh = new THREE.InstancedMesh(bevelBox(1, 1, 1, 0.3), new THREE.MeshStandardMaterial({ color: '#eef1f4', roughness: 1, transparent: true, opacity: 0.4, depthWrite: false }), spots.length);
+  const mesh = new THREE.InstancedMesh(bevelBox(1, 1, 1, 0.3), new THREE.MeshStandardMaterial({ color: '#eef1f4', roughness: 1, transparent: true, opacity: 0.28, depthWrite: false }), spots.length);
   mesh.frustumCulled = false;
   const puffs = spots.map(([x, y, z], i) => {
     const s = 2.4 + hash(i, 3, 61) * 2.6;

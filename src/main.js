@@ -10,7 +10,8 @@ import { grid, WATER_LEVEL, pixelToCell, nearestLand, cellToWorld, PEAKS, hash a
 import { buildTerrain, surfaceY } from './world/terrain.js';
 import { buildPlants, buildClouds } from './world/scatter.js';
 import { buildLandmark } from './world/landmarks.js';
-import { buildLighthouse, buildShadowMist, buildCabin, buildBridge, buildVolcanoSmoke, buildCloudCap, buildMountainMist } from './world/features.js';
+import { buildAnimals } from './world/animals.js';
+import { buildLighthouse, buildShadowMist, buildCabin, buildBridge, buildVolcanoSparks, buildCloudCap, buildMountainMist } from './world/features.js';
 import { LOCATIONS } from './world/locations.js';
 import { CITIES } from './city/cities.js';
 import { createTiltShiftPasses } from './fx/tiltShift.js';
@@ -143,6 +144,8 @@ function buildWorldView() {
   const plants = buildPlants((x, z) => towns.some((p) => Math.abs(p.cx - x) <= 3 && Math.abs(p.cz - z) <= 3)
     || clear.some(([cx, cz, r]) => Math.abs(cx - x) <= r && Math.abs(cz - z) <= r));
   scene.add(plants);
+  const animals = buildAnimals((x, z) => towns.some((p) => Math.abs(p.cx - x) <= 4 && Math.abs(p.cz - z) <= 4));
+  scene.add(animals);
   const clouds = buildClouds();
   scene.add(clouds);
   const atmosphere = createAtmosphere(scene, { lights, daySky: '#cfe9f0', fog: [160, 620], clouds, touch: TOUCH });
@@ -179,9 +182,9 @@ function buildWorldView() {
   for (const p of PEAKS) {
     const [x, z] = cellToWorld(p.cx, p.cz);
     if (p.kind === 'volcano') {
-      const smoke = buildVolcanoSmoke({ height: 22, crater: p.crater * 0.8 });
-      smoke.position.set(x, surfaceY(p.cx, p.cz), z);
-      scene.add(smoke); features.push(smoke);
+      const sparks = buildVolcanoSparks({ crater: p.crater * 0.8 });
+      sparks.position.set(x, surfaceY(p.cx, p.cz), z);
+      scene.add(sparks); features.push(sparks);
       const haze = buildCloudCap(5, 4, { opacity: 0.55 }); // smoke and haze hanging round the top
       haze.position.set(x, surfaceY(p.cx, p.cz) + 1, z);
       haze.children.forEach((c) => c.material.color.set('#b8b2ac'));
@@ -192,13 +195,16 @@ function buildWorldView() {
       scene.add(cap); features.push(cap);
     }
   }
-  // Haze on every high mountain: a puff over the tops, about one per 5×5 cells.
+  // Haze only over the densest mountain ranges: a puff (about one per 8×8 cells) where a 7×7 patch is almost all high peaks.
   {
     const spots = [];
-    for (let cz = 2; cz < grid.rows; cz += 5) for (let cx = 2; cx < grid.cols; cx += 5) {
+    for (let cz = 2; cz < grid.rows; cz += 8) for (let cx = 2; cx < grid.cols; cx += 8) {
       const jx = cx + Math.floor(cellHash(cx, cz, 64) * 4) - 2, jz = cz + Math.floor(cellHash(cx, cz, 65) * 4) - 2;
       const k = jz * grid.cols + jx;
-      if (jx < 0 || jz < 0 || jx >= grid.cols || jz >= grid.rows || !grid.land[k] || grid.heights[k] < 11) continue;
+      if (jx < 3 || jz < 3 || jx >= grid.cols - 3 || jz >= grid.rows - 3 || !grid.land[k] || grid.heights[k] < 13) continue;
+      let high = 0;
+      for (let dz = -3; dz <= 3; dz++) for (let dx = -3; dx <= 3; dx++) if (grid.heights[(jz + dz) * grid.cols + jx + dx] >= 12) high++;
+      if (high < 40) continue;
       const [x, z] = cellToWorld(jx, jz);
       spots.push([x, surfaceY(jx, jz) + 0.8 + cellHash(cx, cz, 66) * 1.5, z]);
     }
@@ -217,7 +223,7 @@ function buildWorldView() {
   const view = {
     id: 'world',
     title: 'World Map',
-    scene, camera, places, atmosphere,
+    scene, camera, places, atmosphere, animals,
     controls: makeControls(camera, { min: 18, max: 420 }),
     start: { target: new THREE.Vector3(0, 0, 8), offset: new THREE.Vector3(0, 175, 120) },
     bounds: [grid.cols / 2, grid.rows / 2],
@@ -230,6 +236,7 @@ function buildWorldView() {
       clouds.userData.update(dt);
       for (const s of spinners) s.rotation.z += dt * 1.6;
       for (const f of features) f.userData.update(dt);
+      animals.userData.update(dt, camera.position.distanceTo(view.controls.target));
     },
     // Zoomed out you see the continents and main cities; smaller places,
     // mountains and seas appear as you zoom in on an area.
@@ -1342,5 +1349,5 @@ renderer.setAnimationLoop((now) => {
   if (needle !== lastCompass) { lastCompass = needle; compassNeedle.style.transform = needle; }
 });
 
-if (import.meta.env.DEV) window.__debug = { renderer, get view() { return view; } };
+if (import.meta.env.DEV) window.__debug = { renderer, get view() { return view; }, get world() { return views.world; } };
 document.body.classList.add('is-ready');

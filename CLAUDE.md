@@ -57,8 +57,12 @@ The original assets (hand-drawn world map, location art, character art, lore doc
   north-centre of the western range (mountain rock turning ashier near the top, a dark crater with a faint glow;
   `buildVolcanoSmoke` adds smoke, a hazy `buildCloudCap` hangs round it) and a thin, sharp blue ice spire on the
   north tip of the snowy island north of Bartedalen, the tallest point (92 layers; a cloud cap hides its summit).
-  Colours in `peakColor` (terrain.js). Every high mountain (≥ 11 layers) has drifting haze (`buildMountainMist`).
-  Rama's mountains (`onRama`) are bare rock with only patchy snow on the highest tops.
+  Colours in `peakColor` (terrain.js). Only the densest mountain ranges have drifting haze (`buildMountainMist`).
+  Rama's mountains (`onRama`) are bare rock, snowy only round their summit (`RAMA_SUMMIT`). The volcano has no smoke
+  column, only haze and faint orange sparks (`buildVolcanoSparks`). The ice mountain's foot is icy (`iceField`).
+- `src/world/animals.js`: horses, sheep, camels, goats, deer, seals and whales placed by biome/height (`KINDS`,
+  herds kept 14 cells apart and away from towns), one instanced mesh per body part; they wander and graze near home,
+  whales circle and surface. Hidden when the camera is far (> 170).
 - Hand edits to the land: `SEA_CUTS` in `tools/bake-map.mjs` cuts sea channels where painted coasts nearly touch
   (the snowy island north of Bartedalen and the green peninsula east of it are separate islands; the south end of the
   Strait of Skinder is opened into Siri's Gap so it and its river reach the sea). Re-run `npm run bake`.

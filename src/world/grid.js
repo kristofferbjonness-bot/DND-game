@@ -62,6 +62,16 @@ export const onRama = (() => {
   return out;
 })();
 
+// The icy ground round the foot of the ice mountain: 1 at the mountain, fading to 0 at `ICE_FIELD` cells.
+const ICE_FIELD = 17;
+export function iceField(x, z) {
+  const p = PEAKS.find((q) => q.kind === 'ice');
+  const d = Math.hypot(x - p.cx, z - p.cz) + (hash(x, z, 87) - 0.5) * 3;
+  return Math.max(0, Math.min(1, (ICE_FIELD - d) / 7));
+}
+// Rama's one snowy summit (around its highest point).
+export const RAMA_SUMMIT = { cx: 136, cz: 67, r: 7 };
+
 // Which great peak (if any) a cell belongs to: { kind, d (distance from the middle), t (0 edge – 1 middle) }.
 export function peakAt(x, z) {
   for (const p of PEAKS) {
