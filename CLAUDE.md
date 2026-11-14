@@ -157,6 +157,8 @@ The original assets (hand-drawn world map, location art, character art, lore doc
   enemies at its NPC spots, camera from the front). "Where" can also be "The open field" (the old round arena).
   `showScreen('scene')` shows the DM's fight controls while `combatScreen.busy()`, and players the fight view
   while one is on; End / "Back to the scene" return to the scene (`onLeave`).
+- The names switch (`setLabelsHidden`, body.no-labels) hides map labels, scene name tags and fight health boxes; on the map
+  it is `#labels-toggle`, in fights `#tags-toggle`, in scenes the button on the name note.
 - **Parties**: a hero's sheet has `party` (a name; none = "The party"). `everyone` holds all heroes; `party` (in
   main.js) is only the current party: a player's own hero's party, the previewed hero's, or the one the DM picked
   in the Party screen's title dropdown (remembered in localStorage, "＋ New party…" makes one). Heroes move
@@ -253,7 +255,9 @@ The original assets (hand-drawn world map, location art, character art, lore doc
   Per Hul Øye, Three-Fingered Paul and the hostel owner; Ytterhavn's Olemann, Bobby and Bob; Razz's Sand Nug). Recipes built with small helpers (`slim`, `stout`,
   `huge` builds), registered as `npc-<id>` monster models. Journal people show the figure (round face in the
   list, full body on the page): `data.figure`, or by name (`match`); the person form has a "3D figure" picker.
-  Lord Wolf and Silk Sister are also Bestiary enemies (monsters.js).
+  Every NPC of Razz and Ytterhavn with a figure is also a Bestiary enemy (monsters.js: Lord Wolf, Silk Sister, Habibi,
+  the young Hooknose, the Man, the Sand Nug, Olemann, Bobby, Bob); stats other than the lore's are placeholders.
+  Never put DM secrets in monster names or notes (the repo is public; players read notes in the Journal).
   Varg is a figure too (`npc-varg`, built by `vargAlone` in model.js, not a recipe). On Edbart he carries one thing:
   the `companion` slot ("Varg carries" on the Gear tab; default the young Hooknose tied up across his back, `companionLoad`), a weapon
   lashed on his back, or saddle bags for any other item.

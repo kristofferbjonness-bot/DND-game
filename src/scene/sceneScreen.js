@@ -89,6 +89,7 @@ export function createSceneScreen(root, { entries, heroes, monsters, canEdit, li
       plate.innerHTML = `
         ${s.data.title && s.data.title !== area.name ? `<small>${esc(area.name)}</small>` : ''}
         <b>${esc(s.data.title || area.name)}</b>
+        <button type="button" class="scn__tags" title="Hide or show the names" aria-label="Hide or show the names"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h11l4 5-4 5H4z" /><path d="M8 12h5" /></svg></button>
         ${dm() ? `<span class="scn__live${live ? ' is-on' : ''}">${live ? 'Live for the players' : editing ? 'Being written' : 'Not live'}</span>
           <button type="button" class="btn btn--gold scn__fight">${icon('combat')}Fight!</button>` : ''}`;
       const people = cast(s.data), crew = heroesIn(s.data);
@@ -212,7 +213,7 @@ export function createSceneScreen(root, { entries, heroes, monsters, canEdit, li
       if (type) enemies[type] = (enemies[type] ?? 0) + (p.n ?? 1);
     }
     viewing = row.id;
-    if (liveId() !== row.id) await onLive(row.id);
+    if (liveId() !== row.id) await onLive(row.id, { quiet: true });
     onFight({ heroes: heroesIn(d).map((c) => c.id), enemies, area: d.area });
   }
   // A scene still being written is saved first.
@@ -223,6 +224,7 @@ export function createSceneScreen(root, { entries, heroes, monsters, canEdit, li
     editing = null;
     return row;
   }
+  plate.addEventListener('click', (e) => { if (e.target.closest('.scn__tags')) document.getElementById('tags-toggle').click(); });
   plate.addEventListener('click', async (e) => {
     const b = e.target.closest('.scn__fight');
     if (!b) return;

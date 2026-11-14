@@ -714,13 +714,17 @@ attachTouchGestures(labelRenderer.domElement, () => view, () => { flight = null;
 // The compass needle points north; tapping it turns the map back to north-up.
 // The place-names button hides or shows every name label on the maps (remembered on this device).
 const labelsToggle = document.getElementById('labels-toggle');
+const tagsToggle = document.getElementById('tags-toggle'); // the same switch in scenes and fights
 function setLabelsHidden(hidden) {
   document.body.classList.toggle('no-labels', hidden);
   labelsToggle.setAttribute('aria-pressed', String(hidden));
   labelsToggle.title = labelsToggle.ariaLabel = hidden ? 'Show place names' : 'Hide place names';
+  tagsToggle.setAttribute('aria-pressed', String(hidden));
+  tagsToggle.title = tagsToggle.ariaLabel = hidden ? 'Show names and health boxes' : 'Hide names and health boxes';
   try { localStorage.setItem('dnd.noLabels', hidden ? '1' : ''); } catch { /* private mode */ }
 }
 labelsToggle.addEventListener('click', () => setLabelsHidden(!document.body.classList.contains('no-labels')));
+tagsToggle.addEventListener('click', () => setLabelsHidden(!document.body.classList.contains('no-labels')));
 try { setLabelsHidden(localStorage.getItem('dnd.noLabels') === '1'); } catch { /* private mode */ }
 
 const compass = document.getElementById('compass');
@@ -1277,13 +1281,13 @@ sceneScreen = createSceneScreen(screens.scene, {
     return saved;
   }).catch((err) => { throw new Error(explain(err)); }),
   onDelete: (id) => deleteQuest(id).then(() => { const i = quests.findIndex((q) => q.id === id); if (i >= 0) quests.splice(i, 1); }),
-  async onLive(id) {
+  async onLive(id, { quiet = false } = {}) {
     // A scene going live is shown to the players (scenes are journal rows: RLS sends only shown ones).
     const row = quests.find((q) => q.id === id);
     if (row && row.data.shown === false) await saveQuest({ id, data: { ...row.data, shown: true } });
     liveScene = id;
     saveWorldSoon();
-    toast(id ? 'The scene is live for the players.' : 'The scene has ended.');
+    if (!quiet) toast(id ? 'The scene is live for the players.' : 'The scene has ended.');
   },
   onOpenJournal(type, id) { showScreen('journal'); journalScreen.openEntry(type, id); },
   onFight(setup) { combatScreen.prepare(setup); showScreen('combat'); },

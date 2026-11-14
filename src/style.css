@@ -2342,3 +2342,32 @@ body.no-labels .label { visibility: hidden; }
   /* Map: the round buttons move in from the edge, clear of the book and dice tabs. */
   .hud-stack { right: calc(max(10px, var(--safe-r)) + 36px); }
 }
+
+/* The names switch in scenes and fights (the same setting as the map's place names): hides the
+   name tags over figures and the fight's health boxes. */
+.tags-toggle { position: fixed; z-index: 6; display: none; right: max(16px, var(--safe-r)); bottom: calc(var(--nav) + 52px); width: 38px; height: 38px; }
+body:is([data-screen="combat"], [data-screen="fight"]) .tags-toggle { display: grid; }
+/* In a scene the switch sits on the scene's name note. */
+.scn__tags { align-self: center; display: grid; place-items: center; width: 26px; height: 26px; padding: 0; border-radius: 50%; cursor: pointer; color: var(--pp-ink); background: rgba(255, 252, 240, 0.8); border: 1.5px solid var(--pp-line-dark); }
+.scn__tags svg { width: 16px; height: 16px; }
+body.no-labels .scn__tags { color: var(--pp-accent); border-color: var(--pp-accent); }
+body.no-labels .scene-tag { display: none; }
+body.no-labels .combat.is-battle .combat__boxes { display: none; }
+.tags-toggle[aria-pressed="true"] { color: var(--paper-red, #9c2f22); }
+body[data-screen="combat"]:not(:has(#combat.is-battle)) .tags-toggle { display: none; } /* not over the setup cards */
+
+/* Less clutter for the DM on phones: smaller panels, cards, health boxes and turn strip. */
+@media (max-height: 500px) and (orientation: landscape) {
+  .tags-toggle { right: calc(max(10px, var(--safe-r)) + 36px); bottom: calc(var(--nav) + 42px); width: 32px; height: 32px; }
+  .scn__panel { zoom: 0.86; }
+  .combat__setup, .combat__init { zoom: 0.82; }
+  .combat__hint { display: none; }
+  .combat.is-battle .combat__boxes { zoom: 0.78; }
+  .combat.is-battle .turns { zoom: 0.85; }
+}
+@media (orientation: portrait) and (max-width: 600px) {
+  .tags-toggle { top: calc(var(--top) + 46px); bottom: auto; left: 78px; right: auto; width: 32px; height: 32px; }
+  .scn__panel { zoom: 0.88; max-height: 44vh; }
+  .combat__init { zoom: 0.9; }
+  .combat.is-battle .combat__boxes { zoom: 0.8; }
+}
