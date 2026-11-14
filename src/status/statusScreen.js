@@ -31,9 +31,11 @@ const USE = {
 
 const SLOT_ICON = { mainHand: 'sword', offHand: 'ac', armour: 'armour' };
 const ATTACK_ICON = { melee: 'sword', arrow: 'bow', thrown: 'dagger', magic: 'magic' };
-const itemIcon = (it) => (it.kind === 'weapon' ? (it.props?.includes('ammunition') ? 'bow' : 'sword')
+const itemIcon = (it) => (it.kind === 'weapon' ? (it.props?.includes('ammunition') ? 'bow'
+    : /knife|knives|dagger|dart/i.test(it.name ?? '') ? 'dagger' : it.model === 'longsword' || it.props?.includes('versatile') ? 'longsword' : 'sword')
   : it.kind === 'armour' ? 'armour' : it.kind === 'shield' ? 'ac' : it.gem ? 'gem'
-  : /potion|elixir|flask/i.test(it.name ?? '') ? 'potion' : 'bag');
+  : /potion|elixir|flask/i.test(it.name ?? '') ? 'potion' : /\bmap\b/i.test(it.name ?? '') ? 'chart'
+  : /condom/i.test(it.name ?? '') ? 'protection' : 'bag');
 
 const tile = (ic, label, value) => `<div class="tile">${icon(ic)}<b>${value}</b><span>${label}</span></div>`;
 

@@ -308,8 +308,11 @@ The original assets (hand-drawn world map, location art, character art, lore doc
   - Dark carved panels with a gold hairline and diamond corners (`--frame`, `--corners` in style.css),
     parchment for reading (quests, story, lore), gold buttons for the main action.
   - Fonts: Uncial Antiqua (titles), Cinzel (labels, numbers), Alegreya Sans (text).
-  - Icons are little voxel objects (`src/ui/voxelIcons.js`: 12×12 grids built from bevelled cubes and
-    photographed once); `icon(name)` in `src/ui/icons.js`, with flat SVGs as a no-3D fallback.
+  - Icons are painted (`public/art/icons/*.webp`, 96px). `node tools/paint-icons.mjs` builds them: the owner's
+    painted pack (`hero-sheet-design-pack/public/art/all-icons/`, not in git) for tabs and gear, and SVG drawings
+    in the same style (ink outline, muted shaded colours) for the rest. `icon(name)` in `src/ui/icons.js`
+    (`PAINTED` lists the names), with flat SVGs as a fallback. To add one: draw it in `ART` in paint-icons.mjs
+    or map a pack PNG in `FROM_PACK`, re-run, and add the name to `PAINTED`.
   - Portraits of heroes and monsters are small renders of their figures (`src/ui/portraits.js`,
     one shared offscreen renderer, cached by gear/look).
 - **Paper sheets** (`public/art/ui/paper/*.webp`, the owner's painted blank paper, originals in

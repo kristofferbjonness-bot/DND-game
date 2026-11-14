@@ -1,7 +1,7 @@
 /* ==========================================================================
    Look: a medieval storybook. Dark carved panels with a thin gold engraved
    line and little diamond corners; parchment for anything you read; voxel
-   icons (src/ui/voxelIcons.js) and voxel portraits.
+   painted icons (public/art/icons/) and voxel portraits.
    Fonts: Uncial Antiqua for titles, Cinzel for labels and numbers,
    Alegreya Sans for reading.
    ========================================================================== */
@@ -282,14 +282,14 @@ button, summary, .label { -webkit-tap-highlight-color: transparent; touch-action
 .places__item.is-secret { font-style: italic; color: #9a8466; }
 .places__item.is-secret::after { content: ' · hidden'; font-size: 12px; }
 
-/* The screens: words in inked capitals with a small voxel icon. */
+/* The screens: words in inked capitals with a small painted icon. */
 .topnav { justify-self: center; display: flex; gap: 2px; min-width: 0; }
 .topnav__tab {
   position: relative; display: flex; align-items: center; gap: 7px; height: 40px;
   font: 700 13px var(--font-display); letter-spacing: 0.08em; text-transform: uppercase; color: var(--paper-ink-soft);
   background: none; border: 0; border-radius: 4px; padding: 0 12px; cursor: pointer; white-space: nowrap;
 }
-.topnav__tab .ic { width: 22px; height: 22px; opacity: 0.85; transition: transform 0.15s; filter: drop-shadow(0 1px 0 rgba(255, 248, 228, 0.6)); }
+.topnav__tab .ic { width: 26px; height: 26px; transition: transform 0.15s; filter: drop-shadow(0 1px 0 rgba(255, 248, 228, 0.6)); }
 .topnav__tab:hover { color: var(--paper-ink); }
 .topnav__tab:hover .ic { transform: translateY(-1px); }
 .topnav__tab.is-active { color: var(--paper-ink); }
@@ -603,7 +603,7 @@ body.is-placing .hud-stack { opacity: 0.4; }
 }
 .abil.is-save .abil__save { color: var(--gold-hi); background: rgba(201, 164, 92, 0.12); }
 
-/* Tabs: words with a voxel icon, a gold line under the open one. */
+/* Tabs: words with a painted icon, a gold line under the open one. */
 .tabs { display: flex; gap: 4px; margin: 20px 0 4px; border-bottom: 1px solid var(--line); }
 .tab {
   flex: 1; display: flex; align-items: center; justify-content: center; gap: 7px; position: relative;

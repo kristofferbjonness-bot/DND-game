@@ -1,6 +1,11 @@
-// Icons. `icon(name)` gives a little voxel object (voxelIcons.js) as an <img>;
-// where 3D is not available it falls back to the flat drawings below.
-import { voxelIcon } from './voxelIcons.js';
+// Icons. `icon(name)` gives a painted icon (public/art/icons/<name>.webp, built by
+// tools/paint-icons.mjs from the owner's painted pack plus drawings in the same style);
+// a name without a painted icon falls back to the flat drawings below.
+const PAINTED = new Set(['ac', 'armour', 'bag', 'bestiary', 'bow', 'cha', 'chart', 'check', 'cloud', 'coin', 'combat', 'con',
+  'crown', 'dagger', 'dex', 'gem', 'hero', 'hp', 'init', 'int', 'journal', 'lock', 'longsword', 'magic', 'map', 'moon', 'party',
+  'pen', 'pin', 'plus', 'potion', 'prof', 'protection', 'rain', 'scroll', 'snow', 'speed', 'storm', 'str', 'sun', 'sword',
+  'windy', 'wis', 'xp']);
+const BASE = `${import.meta.env.BASE_URL}art/icons/`;
 
 const INK = '#2a1f2a';
 
@@ -61,7 +66,7 @@ const ART = {
 export const ICON_NAMES = Object.keys(ART);
 
 export function icon(name, cls = '') {
-  const url = voxelIcon(name);
+  const url = PAINTED.has(name) ? `${BASE}${name}.webp` : null;
   if (url) return `<img class="ic${cls ? ` ${cls}` : ''}" src="${url}" alt="" draggable="false" />`;
   return `<svg class="ic${cls ? ` ${cls}` : ''}" viewBox="0 0 24 24" stroke="${INK}" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true">${ART[name] ?? ''}</svg>`;
 }

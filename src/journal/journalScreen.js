@@ -38,7 +38,7 @@ const SECTIONS = [
 ];
 const ITEM_TYPE = {
   book: { label: 'Book', icon: 'journal' }, note: { label: 'Note', icon: 'scroll' }, letter: { label: 'Letter', icon: 'scroll' },
-  map: { label: 'Map', icon: 'map' }, object: { label: 'Object', icon: 'bag' },
+  map: { label: 'Map', icon: 'chart' }, object: { label: 'Object', icon: 'bag' },
 };
 const TIER_NAME = { continent: 'Continent', city: 'Town', local: 'Place', region: 'Land', water: 'Water' };
 
