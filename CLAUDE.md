@@ -255,7 +255,7 @@ The original assets (hand-drawn world map, location art, character art, lore doc
   list, full body on the page): `data.figure`, or by name (`match`); the person form has a "3D figure" picker.
   Lord Wolf and Silk Sister are also Bestiary enemies (monsters.js).
   Varg is a figure too (`npc-varg`, built by `vargAlone` in model.js, not a recipe). On Edbart he carries one thing:
-  the `companion` slot ("Varg carries" on the Gear tab; default the young Hooknose riding, `companionLoad`), a weapon
+  the `companion` slot ("Varg carries" on the Gear tab; default the young Hooknose tied up across his back, `companionLoad`), a weapon
   lashed on his back, or saddle bags for any other item.
 - **Scene** (`src/scene/`, a tab for everyone): a 3D place where the heroes stand with the people they meet.
   - Areas (`areas.js`): voxel dioramas on a 60×60 slab at 2 world units per voxel: the Man's camp, The Wolf, the road Razz–Ytterhavn, Ytterhavn's centre and port, a small ship at sea, a sailors' bar, a street shop (`townhouse`/`row` build the gabled houses),
@@ -349,6 +349,8 @@ The original assets (hand-drawn world map, location art, character art, lore doc
   - Places of active visible quests get a 📜 on their map label (`questFor`, quests only).
   - Caveat: when the DM hides a shown entry, players keep seeing it until they reload (RLS stops the
     realtime update from reaching them).
+- To read the live journal: on the dev server, the DM's app posts all journal rows to `/__journal-dump` (vite.config.js),
+  saved as `tools/out/journal.local.json` (git-ignored). Ask the owner to open the dev server logged in as DM.
 - The SQL files (`world.sql`, `session.sql`) are safe to run again: `drop policy if exists`,
   and the publication changes are guarded.
 - **Party** (`src/status/partyScreen.js`) shows a card per hero with HP, AC, initiative and

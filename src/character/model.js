@@ -422,7 +422,7 @@ function flameSlinger() {
 
 // --- Varg, Edbart's wolf ----------------------------------------------------------------
 // Varg, Edbart's wolf. `load` is what he carries on his back: 'young-hooknose' (the captured
-// Hooknose riding him, strapped on), a weapon (lashed along his back), any other item (saddle
+// Hooknose bandit, tied up and slung across his back like a sack), a weapon (lashed along his back), any other item (saddle
 // bags), or nothing.
 function buildVarg(x0, z0, load = null) {
   const C = { fur: '#8e959d', furLight: '#d6dade', furDark: '#5f666e', nose: '#2a2628', eye: '#f2c94c' };
@@ -451,11 +451,19 @@ function buildVarg(x0, z0, load = null) {
     strap.box(x0, 7, z0 + 2, x0 + 2, 7, z0 + 2, '#5e3d27');
     group.add(strap.build());
     if (load === 'young-hooknose') {
-      const rider = buildHooknose();
-      rider.group.scale.setScalar(0.6);
-      rider.group.position.set(x0 + 1, 6.4, z0 + 2);
-      group.add(rider.group);
-      group.userData.rider = rider;
+      const bandit = buildHooknose();
+      bandit.update(0); // still: he is tied up
+      bandit.group.scale.setScalar(0.6);
+      bandit.group.rotation.z = Math.PI / 2; // lying across the back, head over one side, feet over the other
+      bandit.group.position.set(x0 + 5, 8.2, z0 + 2);
+      group.add(bandit.group);
+      group.userData.bandit = bandit.group;
+      const rope = new Part();
+      for (const z of [z0 + 1, z0 + 3]) {
+        rope.box(x0 - 1, 9, z, x0 + 3, 9, z, '#c4a878');
+        for (let y = 4; y <= 8; y++) { rope.set(x0 - 1, y, z, '#c4a878'); rope.set(x0 + 3, y, z, '#c4a878'); }
+      }
+      group.add(rope.build());
     } else if (item.kind === 'weapon' || item.kind === 'shield') {
       const w = heldWeapon(item, 1, [0, 0, 0]);
       w.rotation.set(Math.PI / 2, 0, 0);
@@ -477,7 +485,7 @@ function buildVarg(x0, z0, load = null) {
   return {
     group,
     update(t) {
-      group.userData.rider?.update(t * 0.5);
+      if (group.userData.bandit) group.userData.bandit.rotation.x = Math.sin(t * 0.7) * 0.06; // a little struggling
       tailMesh.rotation.y = Math.sin(t * 5) * 0.35;
       headMesh.rotation.y = Math.sin(t * 0.6 + 2) * 0.25;
       headMesh.rotation.x = Math.sin(t * 0.4) * 0.06;

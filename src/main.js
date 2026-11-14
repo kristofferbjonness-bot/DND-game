@@ -1309,6 +1309,8 @@ async function loadJournal() {
   journalScreen.refresh();
   sceneScreen.refresh();
   applyFog();
+  // On the dev server, the DM's journal is saved to the game folder for Claude (see vite.config.js).
+  if (import.meta.env.DEV && me?.dm) fetch('/__journal-dump', { method: 'POST', body: JSON.stringify(quests, null, 1) }).catch(() => {});
 }
 
 // The little rulebook, always one tap away. Its weapons page shows the player's
