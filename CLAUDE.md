@@ -121,8 +121,9 @@ The original assets (hand-drawn world map, location art, character art, lore doc
     - Held weapons appear in the hand (bows in the left hand).
     - Swords not in hand hang at the left hip, with an empty scabbard when drawn.
     - Axes hang at the right hip, and bows go on the back next to the quiver.
-- **Fights happen in the Scene tab** (there is no Fight tab any more, by request). The DM presses the swords
-  button on a scene: `combatScreen.prepare()` opens the setup with the scene's heroes and fighters picked
+- **Fights happen in the Scene tab** (there is no Fight tab any more, by request). The DM presses "Fight!" on the
+  scene's note (saves a scene still being written first) or the swords button in the list; with heroes and
+  enemies picked it goes straight to initiative, with the scene still showing behind (`showSceneBehind`): `combatScreen.prepare()` opens the setup with the scene's heroes and fighters picked
   (Bestiary creatures, and NPC figures that have a Bestiary entry with model `npc-<id>`), "Where" set to its area,
   and the scene put live. The battle uses that area (`battleScene.setArena`; heroes at the area's hero spots,
   enemies at its NPC spots, camera from the front). "Where" can also be "The open field" (the old round arena).

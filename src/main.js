@@ -737,6 +737,13 @@ let sceneScreen = null; // made below, once the journal's entries exist
 let combatScreen = null; // the DM's controls
 let combatView = null;   // the players' view of a fight
 
+// The scene stays on show behind the DM's fight setup and initiative (not behind the battle).
+function showSceneBehind() {
+  const on = screen === 'scene' || (screen === 'combat' && combatScreen && !combatScreen.inBattle());
+  if (!sceneScreen) return;
+  screens.scene.hidden = !on;
+  if (on) sceneScreen.start(); else sceneScreen.stop();
+}
 function showScreen(id) {
   // Fights happen in the Scene tab: the DM's fight controls while a fight is set up or on,
   // the player's view of the fight while one is on.
@@ -757,7 +764,7 @@ function showScreen(id) {
   }
   if (id === 'party') drawParty(); // re-rendered each time, so AC and HP follow gear changes
   if (id === 'journal') journalScreen.render();
-  if (id === 'scene') sceneScreen.start(); else sceneScreen?.stop();
+  showSceneBehind();
   if (id === 'combat') combatScreen.start(); else combatScreen?.stop();
   if (id === 'fight') combatView.start(); else combatView?.stop();
   if (id === 'bestiary') bestiaryScreen.start(); else bestiaryScreen?.stop();
@@ -880,6 +887,7 @@ combatScreen = createCombatScreen(screens.combat, {
   party, onHeroChange: saveHero, onPublic: publishFight, onSave: saveFightSoon,
   liveArea: () => quests.find((q) => q.id === liveScene)?.data.area ?? null,
   onLeave: () => showScreen('scene'),
+  onStep: () => showSceneBehind(),
   // The party has now met these creatures: they go into everyone's journal.
   onBegin: (types) => journalScreen.meetCreatures(types).catch((err) => console.warn('Could not note the creatures:', err.message)),
 });

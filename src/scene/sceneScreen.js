@@ -89,7 +89,8 @@ export function createSceneScreen(root, { entries, heroes, monsters, canEdit, li
       plate.innerHTML = `
         ${s.data.title && s.data.title !== area.name ? `<small>${esc(area.name)}</small>` : ''}
         <b>${esc(s.data.title || area.name)}</b>
-        ${dm() ? `<span class="scn__live${live ? ' is-on' : ''}">${live ? 'Live for the players' : editing ? 'Being written' : 'Not live'}</span>` : ''}`;
+        ${dm() ? `<span class="scn__live${live ? ' is-on' : ''}">${live ? 'Live for the players' : editing ? 'Being written' : 'Not live'}</span>
+          <button type="button" class="btn btn--gold scn__fight">${icon('combat')}Fight!</button>` : ''}`;
       const people = cast(s.data), crew = heroesIn(s.data);
       const key = JSON.stringify([s.data.area, people.map((p) => p.key + p.model), crew.map((c) => `${c.id}|${JSON.stringify(c.equipped)}|${c.figure ? 1 : 0}`)]);
       if (key !== shownKey) { shownKey = key; view.show({ area: s.data.area, heroes: crew, npcs: people }); card.hidden = true; }
@@ -195,6 +196,44 @@ export function createSceneScreen(root, { entries, heroes, monsters, canEdit, li
     return null;
   }
 
+  // Straight into a fight in a scene: it is put live (so the players see where), and the fight
+  // starts with its heroes and everyone in it who can fight.
+  async function fightIn(row) {
+    if (!row) return;
+    const d = row.data, enemies = {};
+    // Who can fight: Bestiary creatures, and people who are also in the Bestiary (Lord Wolf…).
+    for (const p of d.people ?? []) {
+      const [kind, fid] = p.fig.split(':');
+      const type = kind === 'monster' ? fid : Object.entries(monsters()).find(([, m]) => m.model === `npc-${fid}`)?.[0];
+      if (type) enemies[type] = (enemies[type] ?? 0) + (p.n ?? 1);
+    }
+    viewing = row.id;
+    if (liveId() !== row.id) await onLive(row.id);
+    onFight({ heroes: heroesIn(d).map((c) => c.id), enemies, area: d.area });
+  }
+  // A scene still being written is saved first.
+  async function saveEditing() {
+    readForm(panel.querySelector('.scn__form'));
+    const row = await onSave({ id: editing.id, data: { ...editing.data, title: editing.data.title.trim() || AREAS[editing.data.area].name } });
+    viewing = row.id;
+    editing = null;
+    return row;
+  }
+  plate.addEventListener('click', async (e) => {
+    const b = e.target.closest('.scn__fight');
+    if (!b) return;
+    b.disabled = true;
+    try {
+      const row = editing ? await saveEditing() : current();
+      draw();
+      await fightIn(row);
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      b.disabled = false;
+    }
+  });
+
   // --- Events ------------------------------------------------------------------------------------------
   card.addEventListener('click', (e) => {
     if (e.target.closest('.scn__card-close')) { card.hidden = true; return; }
@@ -230,19 +269,7 @@ export function createSceneScreen(root, { entries, heroes, monsters, canEdit, li
       case 'view': viewing = id; draw(); break;
       case 'live': viewing = id; await onLive(id); draw(); break;
       case 'end': await onLive(null); draw(); break;
-      case 'fight': {
-        const d = byId(id).data, enemies = {};
-        // Who can fight: Bestiary creatures, and people who are also in the Bestiary (Lord Wolf…).
-        for (const p of d.people ?? []) {
-          const [kind, fid] = p.fig.split(':');
-          const type = kind === 'monster' ? fid : Object.entries(monsters()).find(([, m]) => m.model === `npc-${fid}`)?.[0];
-          if (type) enemies[type] = (enemies[type] ?? 0) + (p.n ?? 1);
-        }
-        viewing = id;
-        if (liveId() !== id) await onLive(id); // the players see where the fight is
-        onFight({ heroes: heroesIn(d).map((c) => c.id), enemies, area: d.area });
-        break;
-      }
+      case 'fight': fightIn(byId(id)); break;
       case 'edit': { const s = byId(id); editing = { id, data: structuredClone(s.data) }; viewing = id; draw(); break; }
       case 'cancel': editing = null; draw(); break;
       case 'delete':
@@ -266,9 +293,7 @@ export function createSceneScreen(root, { entries, heroes, monsters, canEdit, li
     const btn = e.target.querySelector('[type=submit]');
     btn.disabled = true;
     try {
-      const row = await onSave({ id: editing.id, data: { ...editing.data, title: editing.data.title.trim() || AREAS[editing.data.area].name } });
-      viewing = row.id;
-      editing = null;
+      await saveEditing();
       draw();
     } catch (err) {
       btn.disabled = false;

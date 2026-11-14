@@ -19,7 +19,8 @@ const plus = (n) => (n ? ` ${n > 0 ? '+' : '−'} ${Math.abs(n)}` : '');
 // `onSave(encounter | null)` keeps the running fight safe online (null when it ends).
 // `onBegin(types)` is told which Bestiary creatures are in a fight when it begins.
 // `onLeave()` goes back to the scene (after ending a fight, or leaving the setup).
-export function createCombatScreen(root, { party, onHeroChange, onPublic, onSave, onBegin, onLeave, liveArea = () => null }) {
+// `onStep(step)` is told when the screen moves between 'setup', 'init' and 'battle'.
+export function createCombatScreen(root, { party, onHeroChange, onPublic, onSave, onBegin, onLeave, onStep, liveArea = () => null }) {
   root.innerHTML = `
     <div class="combat__setup">
       <div class="combat__col">
@@ -519,6 +520,7 @@ export function createCombatScreen(root, { party, onHeroChange, onPublic, onSave
     battleEl.hidden = step !== 'battle';
     root.classList.toggle('is-battle', step === 'battle');
     if (step !== 'battle') scene.stop();
+    onStep?.(step);
   }
 
   return {
@@ -529,6 +531,7 @@ export function createCombatScreen(root, { party, onHeroChange, onPublic, onSave
     stop() { visible = false; scene.stop(); },
     // A fight is being set up or fought.
     busy: () => staging || Boolean(encounter),
+    inBattle: () => Boolean(encounter?.order.length),
     // Sets up a fight from a scene: its heroes and enemies already picked, in its place.
     // enemies: { Bestiary id: count }.
     prepare({ heroes, enemies, area }) {
@@ -543,6 +546,8 @@ export function createCombatScreen(root, { party, onHeroChange, onPublic, onSave
       $('.combat__area').value = area ?? '';
       whereTouched = true;
       showStep('setup');
+      // With heroes and enemies already there, go straight on to initiative.
+      if (chosen.size && Object.values(counts).some(Boolean)) startBtn.click();
     },
     publicState: () => publicState(),
     // Picks up a fight saved online (after a reload). Enemies whose type no

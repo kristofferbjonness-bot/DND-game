@@ -2267,3 +2267,9 @@ button.jr-tick { cursor: pointer; }
   border: 1.5px solid #a8865a; appearance: none; -webkit-appearance: none;
 }
 .combat__setup .combat__go { flex-wrap: wrap; }
+.scn__plate { pointer-events: auto; }
+.scn__fight { align-self: flex-start; margin-top: 6px; padding: 6px 14px; }
+.scn__fight .ic { width: 20px; height: 20px; }
+/* Setting up a fight over the scene: the scene shows behind, without its own notes and panel. */
+body[data-screen="combat"] .scn__panel, body[data-screen="combat"] .scn__plate, body[data-screen="combat"] .scn__card { display: none; }
+body[data-screen="combat"] #scene .scene-tags { opacity: 0.5; }
