@@ -6,7 +6,7 @@
 import { MONSTERS } from '../data/monsters.js';
 import { derive, signed, parseDice, sneakAttackDice } from '../character/rules.js';
 import { createBattleScene } from './battleScene.js';
-import { AREAS } from '../scene/areas.js';
+import { areaOptions } from '../scene/areas.js';
 
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
 const MAX_ENEMIES = 6;
@@ -157,7 +157,7 @@ export function createCombatScreen(root, { party, onHeroChange, onPublic, onSave
       </li>`).join('');
     const where = $('.combat__area');
     if (!where.options.length) {
-      where.innerHTML = `<option value="">The open field</option>${Object.entries(AREAS).map(([k, a]) => `<option value="${k}">${esc(a.name)}</option>`).join('')}`;
+      where.innerHTML = `<option value="">The open field</option>${areaOptions(null, esc)}`;
     }
     if (!whereTouched) where.value = liveArea() ?? '';
     const n = Object.values(counts).reduce((a, b) => a + b, 0);

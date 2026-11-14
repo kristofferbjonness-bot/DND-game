@@ -8,7 +8,7 @@
 // where `fig` is 'npc:<NPC figure id>' or 'monster:<Bestiary id>'. Which scene is live is
 // shared through the world row (`scene` in main.js), so players switch with the DM.
 import { createSceneView } from './sceneView.js';
-import { AREAS } from './areas.js';
+import { AREAS, TOWNS, areaOptions } from './areas.js';
 import { NPC_FIGURES, npcFigureId } from '../character/npcFigures.js';
 import { monsterPortrait, heroPortrait, portraitImg } from '../ui/portraits.js';
 import { icon } from '../ui/icons.js';
@@ -113,7 +113,11 @@ export function createSceneScreen(root, { entries, heroes, monsters, canEdit, li
         <button type="button" class="btn btn--gold scn__new">${icon('plus')}New scene</button>
       </header>
       <ul class="scn__list">
-        ${list.length ? list.map((e) => {
+        ${list.length ? TOWNS.flatMap((t) => {
+          const here = list.filter((e) => (AREAS[e.data.area] ?? AREAS.port).town === t);
+          return here.length ? [`<li class="scn__town">${esc(t)}</li>`, ...here] : [];
+        }).map((e) => {
+          if (typeof e === 'string') return e;
           const area = AREAS[e.data.area] ?? AREAS.port;
           return `
           <li class="scn__item${e.id === shown ? ' is-open' : ''}${e.id === live ? ' is-live' : ''}" data-id="${e.id}">
@@ -146,7 +150,7 @@ export function createSceneScreen(root, { entries, heroes, monsters, canEdit, li
       <form class="scn__form">
         <h3 class="scn__title">${editing.id ? 'Edit scene' : 'New scene'}</h3>
         <label class="field"><span>Name</span><input class="field__input" name="title" maxlength="60" value="${esc(d.title)}" placeholder="e.g. An audience with the Man" /></label>
-        <label class="field"><span>Where</span><select class="field__input" name="area">${Object.entries(AREAS).map(([k, a]) => `<option value="${k}"${k === d.area ? ' selected' : ''}>${esc(a.name)}</option>`).join('')}</select></label>
+        <label class="field"><span>Where</span><select class="field__input" name="area">${areaOptions(d.area, esc)}</select></label>
         <p class="scn__h">Heroes here</p>
         <div class="scn__heroes">${heroes().map((c) => `
           <label class="scn__hero"><input type="checkbox" name="hero" value="${esc(c.id)}"${!d.heroes || d.heroes.includes(c.id) ? ' checked' : ''} />${portraitImg(heroPortrait(c), { name: c.name, colour: c.colour, cls: 'scn__face' })}<span>${esc(c.name.split(' ')[0])}</span></label>`).join('')}

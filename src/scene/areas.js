@@ -298,6 +298,12 @@ function townhouse(v, { x, z, w, d, h, face = 'south', wall, roof = '#5a4a48', t
     }
     P(u, y, t, c);
   }
+  // Flower boxes under some windows, sticking out from the front.
+  for (let u = 1; u < w - 1; u += 3) for (let y = 7; y < h - 1; y += 4) {
+    if (hash(x + u, y, z + 61) < 0.5) continue;
+    P(u, y - 1, -1, '#6b4528');
+    P(u, y, -1, ['#d9503f', '#e86aa0', '#f2e04a', '#e8e8e8'][Math.floor(hash(u, y, x + 62) * 4)]);
+  }
   // A stepped gable facing the street; the roof runs back from it.
   for (let i = 0; ; i++) {
     const lo = i, hi = w - 1 - i;
@@ -324,29 +330,55 @@ function lamp(v, x, z, h = 6) {
   v.set(x, h + 2, z, '#2e2a2e');
 }
 
-// The road between Razz of Mataz and Ytterhavn: a grassy plain with a worn dirt track, fences,
-// wildflowers, a few trees, hay and a signpost, low hills behind.
+// The road between Razz of Mataz and Ytterhavn: a proper road of packed earth with cart ruts and
+// a stone kerb, running through land that turns from Razz's desert (left) into Ytterhavn's
+// grassland (right): dunes, palms and cacti on one side, meadow, trees and flowers on the other.
 function plainRoad() {
   const v = new Vox(SIZE, { corner: 8 });
-  const path = (x, z) => Math.abs(x - (30 + Math.sin(z / 9) * 5)) < 3 + (hash(x, z, 4) > 0.8 ? 1 : 0);
-  slab(v, (x, z, h) => (h > 0 ? pick(x, z, 21, ['#86b85a', '#7aac50', '#94c464']) : path(x, z) ? (hash(x, z, 5) > 0.8 ? '#8a7a56' : '#a68e64') : pick(x, z, 22, ['#8cc35c', '#7fb553', '#98cb66', '#86bd58'])),
-    { height: (x, z) => (z < 12 ? Math.round(Math.max(0, noise(x, z, 9, 6) * 9 - z * 0.4)) : 0) });
-  // Wildflowers on the grass.
-  for (let x = 0; x < SIZE; x++) for (let z = 12; z < SIZE; z++) if (v.inside(x, z, 9) && !path(x, z) && hash(x, z, 23) > 0.94) v.set(x, 1, z, ['#e8d24a', '#f2f2f2', '#d9503f', '#b98cd9'][Math.floor(hash(z, x, 24) * 4)]);
-  // Fences along the track, a signpost, hay bales, trees.
-  for (let z = 14; z < 40; z++) if (hash(z, 1, 25) > 0.25) for (const side of [-1, 1]) {
-    const x = Math.round(30 + Math.sin(z / 9) * 5 + side * 6);
-    v.set(x, 2, z, '#8a6440'); if (z % 3 === 0) v.set(x, 1, z, '#6b4a2e');
+  const mid = (z) => 30 + Math.sin(z / 11) * 3;
+  const onRoad = (x, z) => Math.abs(x - mid(z)) <= 4;
+  // 0 = desert, 1 = grass; the border wanders with noise.
+  const green = (x, z) => Math.max(0, Math.min(1, (x - 24 + (noise(x, z, 7, 31) - 0.5) * 16 + (z - 30) * 0.15) / 10));
+  const sand = ['#e8cf96', '#dfc489', '#ecd7a2'], grass = ['#8cc35c', '#7fb553', '#98cb66', '#86bd58'];
+  slab(v, (x, z, h) => {
+    if (onRoad(x, z)) {
+      const d = Math.abs(x - mid(z));
+      if (d > 3.5) return '#9a948a'; // the kerb stones
+      if (Math.abs(d - 2) < 0.6) return '#8a7050'; // cart ruts
+      return hash(x, z, 5) > 0.85 ? '#a08060' : '#b09470';
+    }
+    const t = green(x, z);
+    if (t <= 0.15) return pick(x, z, 21, sand);
+    if (t >= 0.85) return pick(x, z, 22, grass);
+    return hash(x, z, 26) < t ? '#b8c47a' : '#d8c890'; // dry, patchy grass between
+  }, { height: (x, z) => {
+    if (z >= 12 || onRoad(x, z)) return 0;
+    return green(x, z) > 0.5 ? Math.round(Math.max(0, noise(x, z, 9, 6) * 9 - z * 0.4)) : Math.round(Math.max(0, noise(x, z, 6, 8) * 5 - z * 0.25)); // hills or dunes behind
+  } });
+  for (let x = 0; x < SIZE; x++) for (let z = 12; z < SIZE; z++) {
+    if (!v.inside(x, z, 9) || onRoad(x, z)) continue;
+    const t = green(x, z), r = hash(x, z, 23);
+    if (t > 0.85 && r > 0.94) v.set(x, 1, z, ['#e8d24a', '#f2f2f2', '#d9503f', '#b98cd9'][Math.floor(hash(z, x, 24) * 4)]);
+    else if (t > 0.15 && t < 0.85 && r > 0.9) v.set(x, 1, z, '#9aa85a'); // dry tufts
+    else if (t <= 0.15 && r > 0.97) v.set(x, 1, z, '#c4a878'); // pebbles in the sand
   }
-  for (let y = 1; y <= 6; y++) v.set(40, y, 30, '#6b4a2e');
-  for (let x = 41; x <= 44; x++) v.set(x, 6, 30, '#a8784a');
-  for (let x = 37; x <= 39; x++) v.set(x, 5, 30, '#a8784a');
-  for (const [x, z] of [[10, 22], [50, 20], [47, 40]]) { v.box(x, 1, z, x + 3, 3, z + 2, '#e3c46a'); v.box(x, 3, z, x + 3, 4, z + 2, '#d4b45a'); }
-  for (const [x, z, s] of [[6, 16, 2], [52, 14, 2], [8, 34, 1], [54, 32, 1], [16, 8, 1], [44, 6, 2]]) tree(v, x, v.groundY(x, z), z, { size: s });
+  // Milestones and a signpost by the road, a fence on the grass side.
+  for (const z of [16, 40]) { const x = Math.round(mid(z) + 6); v.set(x, 1, z, '#cfc6b6'); v.set(x, 2, z, '#cfc6b6'); v.set(x, 3, z, '#b8b0a2'); }
+  { const x = Math.round(mid(28) - 6); for (let y = 1; y <= 7; y++) v.set(x, y, 28, '#6b4a2e'); for (let i = 1; i <= 4; i++) v.set(x - i, 7, 28, '#a8784a'); for (let i = 1; i <= 4; i++) v.set(x + i, 6, 28, '#a8784a'); }
+  for (let z = 14; z < 50; z++) if (hash(z, 1, 25) > 0.3) { const x = Math.round(mid(z) + 9); if (green(x, z) > 0.7) { v.set(x, 2, z, '#8a6440'); if (z % 3 === 0) v.set(x, 1, z, '#6b4a2e'); } }
+  // The desert side: palms and cacti; the grass side: trees and hay.
+  for (const [x, z] of [[6, 18], [12, 34], [4, 44]]) if (green(x, z) < 0.3) palm(v, x, 0, z, { lean: 1 });
+  for (const [x, z] of [[14, 22], [8, 28], [16, 46]]) if (green(x, z) < 0.3) { for (let y = 1; y <= 4; y++) v.set(x, y, z, '#6aa257'); v.set(x - 1, 3, z, '#6aa257'); v.set(x - 1, 4, z, '#6aa257'); v.set(x + 1, 2, z, '#6aa257'); v.set(x + 1, 3, z, '#6aa257'); }
+  for (const [x, z, sz] of [[50, 20, 2], [54, 34, 1], [46, 44, 1], [52, 50, 2]]) if (green(x, z) > 0.6) tree(v, x, 0, z, { size: sz });
+  for (const [x, z] of [[46, 26], [50, 40]]) if (green(x, z) > 0.6) { v.box(x, 1, z, x + 3, 3, z + 2, '#e3c46a'); v.box(x, 3, z, x + 3, 4, z + 2, '#d4b45a'); }
+  // A cart left by the roadside.
+  v.box(40, 2, 32, 44, 4, 36, '#8a5a34'); v.box(40, 4, 32, 44, 5, 33, '#7a4e2c');
+  for (const [x, z] of [[40, 31], [43, 31], [40, 36], [43, 36]]) { v.set(x, 1, z, '#4a3426'); v.set(x, 2, z, '#4a3426'); }
+  crate(v, 41, 4, 34);
   return {
     v, heroSpots: HERO_SPOTS,
-    npcSpots: [[30, 24], [24, 20], [36, 20], [22, 28], [38, 28], [30, 16], [26, 32], [34, 33], [18, 24]],
-    mood: { bg: 'linear-gradient(#8cc6e8, #e8f2e0)', sky: '#fff6e8', ground: '#8aa86a', hemi: 1.5, sun: '#fff0d4', sunPower: 2.5, sunAt: [-40, 70, 50], exposure: 1.05 },
+    npcSpots: [[30, 24], [25, 20], [35, 20], [23, 28], [36, 28], [30, 16], [26, 33], [33, 34], [20, 22]],
+    mood: { bg: 'linear-gradient(#8cc6e8, #f2e8d0)', sky: '#fff6e8', ground: '#b8a878', hemi: 1.5, sun: '#fff0d4', sunPower: 2.5, sunAt: [-40, 70, 50], exposure: 1.05 },
   };
 }
 
@@ -382,6 +414,22 @@ function ytterCentre() {
   v.set(30, 6, 21, '#8a7a4a'); v.set(30, 7, 21, '#8a7a4a'); v.set(31, 7, 21, '#8a7a4a'); v.set(30, 8, 21, '#9a8a5a');
   for (const [x, z] of [[14, 16], [46, 16], [14, 40], [46, 42]]) lamp(v, x, z);
   for (const [x, z] of [[18, 12], [42, 12]]) { v.box(x - 1, 1, z - 1, x + 2, 2, z + 2, '#9a948a'); tree(v, x, 1, z, { size: 1 }); }
+  // Market stalls with striped awnings and goods.
+  for (const [x0, cl] of [[10, '#3f6fa8'], [43, '#c94a3a']]) {
+    v.box(x0, 1, 13, x0 + 6, 3, 15, '#8a5a34');
+    for (let x = x0; x < x0 + 6; x++) { v.set(x, 3, 13, ['#e8b84a', '#c9302a', '#7aa84a', '#e89a5a'][x % 4]); v.set(x, 3, 14, ['#7aa84a', '#e8b84a', '#c9302a'][x % 3]); }
+    for (const x of [x0, x0 + 5]) for (let y = 3; y <= 6; y++) v.set(x, y, 15, '#5b4a3a');
+    for (let x = x0 - 1; x <= x0 + 6; x++) for (let z = 12; z <= 16; z++) v.set(x, 7, z, Math.floor(x / 2) % 2 ? cl : '#f2ece0');
+  }
+  // Bunting strung across the square.
+  for (let x = 9; x <= 49; x++) { const y = 13 - Math.round(Math.sin((x - 9) / 40 * Math.PI) * 3); if (x % 2 === 0) v.set(x, y, 12, ['#c94a3a', '#e8b84a', '#3f6fa8', '#f2ece0'][(x / 2) % 4]); }
+  // Bollards along the canal, a little arched bridge across it, benches, a well-dressed flower bed.
+  for (let z = 12; z < 58; z += 4) { v.set(8, 1, z, '#4a4a50'); v.set(8, 2, z, '#4a4a50'); }
+  for (let x = 0; x <= 8; x++) { const y = 1 + (x > 1 && x < 7 ? 1 : 0); for (let z = 46; z <= 48; z++) v.set(x, y, z, '#cfc6b6'); v.set(x, y + 1, 46, '#b8b0a2'); v.set(x, y + 1, 48, '#b8b0a2'); }
+  for (const [x, z] of [[22, 16], [37, 16]]) { v.box(x, 1, z, x + 3, 2, z + 1, '#6b4528'); v.box(x, 2, z - 1, x + 3, 3, z, '#6b4528'); }
+  for (let a = 0; a < 20; a++) { const x = 30 + Math.round(Math.cos(a / 20 * 6.28) * 6), z = 21 + Math.round(Math.sin(a / 20 * 6.28) * 6); v.set(x, 1, z, a % 2 ? '#d9503f' : '#e86aa0'); }
+  // Pigeons on the square.
+  for (const [x, z] of [[26, 27], [27, 28], [35, 26], [33, 29], [24, 15]]) v.set(x, 1, z, '#8a8a92');
   return {
     v, heroSpots: HERO_SPOTS,
     npcSpots: [[30, 30], [22, 28], [38, 28], [19, 22], [41, 22], [24, 35], [36, 35], [14, 32], [45, 34]],
@@ -544,6 +592,20 @@ function shop() {
   // Outside: barrels of apples, crates, a bench, lanterns, houses on both sides.
   for (const [x, z] of [[11, 18], [48, 19]]) { barrel(v, x, 0, z); v.set(x, 4, z, '#c9302a'); v.set(x + 1, 4, z + 1, '#d9503f'); v.set(x + 1, 4, z, '#7aa84a'); }
   crate(v, 8, 0, 22); crate(v, 50, 0, 23, 2, '#8a5a34');
+  // Pots, rope and herbs hanging from the awning; flower pots by the door; a sandwich board.
+  for (const [x, c] of [[17, '#a8784a'], [20, '#5aa86a'], [41, '#c4a878'], [44, '#5aa86a']]) { v.set(x, 7, 17, '#4a3020'); v.set(x, 6, 17, c); }
+  for (const x of [15, 46]) { v.set(x, 1, 14, '#b8552f'); v.set(x, 2, 14, '#d9503f'); }
+  v.box(23, 1, 21, 26, 4, 22, '#4a3020'); for (let x = 23; x < 26; x++) { v.set(x, 3, 22, '#e8e2d6'); v.set(x, 2, 22, '#e8e2d6'); }
+  // Bolts of cloth and a barrel of fish, a hand cart, a sleeping cat on the apple barrel.
+  for (let i = 0; i < 3; i++) for (let x = 6; x <= 9; x++) v.set(x, 3 + 0, 26 + i, ['#3f6fa8', '#c94a3a', '#e8b84a'][i]);
+  v.box(6, 1, 26, 10, 3, 29, '#8a5a34');
+  barrel(v, 52, 0, 28); for (const [dx, dz] of [[0, 0], [1, 0], [0, 1]]) v.set(52 + dx, 4, 28 + dz, '#b8c4c8');
+  v.box(45, 2, 34, 50, 4, 38, '#9a6c40'); for (const [x, z] of [[45, 34], [49, 34]]) { v.set(x, 1, z + 4, '#4a3426'); v.set(x, 1, z, '#4a3426'); }
+  for (let z = 38; z <= 41; z++) v.set(47, 3, z, '#6b4528');
+  v.set(11, 4, 19, '#2a2a2e'); v.set(12, 4, 19, '#2a2a2e'); v.set(12, 5, 19, '#2a2a2e');
+  // A lantern hung inside, and window boxes on the shop wall.
+  v.light(30, 14, 8, '#ffd27a');
+  for (let x = 17; x <= 44; x += 3) v.set(x, 9, 14, hash(x, 9, 63) > 0.5 ? '#d9503f' : '#e86aa0');
   for (const [x, z] of [[14, 20], [46, 20]]) lamp(v, x, z, 5);
   row(v, 'z', 0, 16, { x: 0, d: 13, face: 'east', h: [13, 17], seed: 19 });
   row(v, 'z', 0, 16, { x: 47, d: 13, face: 'west', h: [13, 17], seed: 23 });
@@ -554,19 +616,24 @@ function shop() {
   };
 }
 
+// `town`: where the place belongs, for grouping in the lists (TOWNS gives the order).
 export const AREAS = {
-  camp: { name: 'The camp of the Man Who Makes Himself Known', short: 'The camp', build: camp },
-  wolf: { name: 'The Wolf', short: 'The Wolf', build: wolf },
-  port: { name: 'The port of Razz of Mataz', short: 'The port', build: port },
-  alley: { name: 'Hooknose Alley', short: 'Hooknose Alley', build: alley },
-  gate: { name: 'Outside the city gates', short: 'The city gates', build: gate },
-  road: { name: 'The road from Razz to Ytterhavn', short: 'The road', build: plainRoad },
-  ytter: { name: 'Ytterhavn city centre', short: 'Ytterhavn', build: ytterCentre },
-  ytterport: { name: 'The port of Ytterhavn', short: 'Ytterhavn port', build: ytterPort },
-  ship: { name: 'Aboard a small ship', short: 'The ship', build: ship },
-  tavern: { name: 'A sailors’ bar in Ytterhavn', short: 'The bar', build: tavern },
-  shop: { name: 'A street shop', short: 'The shop', build: shop },
+  camp: { town: 'Razz of Mataz', name: 'The camp of the Man Who Makes Himself Known', short: 'The camp', build: camp },
+  wolf: { town: 'Razz of Mataz', name: 'The Wolf', short: 'The Wolf', build: wolf },
+  port: { town: 'Razz of Mataz', name: 'The port of Razz of Mataz', short: 'The port', build: port },
+  alley: { town: 'Razz of Mataz', name: 'Hooknose Alley', short: 'Hooknose Alley', build: alley },
+  gate: { town: 'Razz of Mataz', name: 'Outside the city gates', short: 'The city gates', build: gate },
+  road: { town: 'On the road', name: 'The road from Razz to Ytterhavn', short: 'The road', build: plainRoad },
+  ytter: { town: 'Ytterhavn', name: 'Ytterhavn city centre', short: 'Ytterhavn', build: ytterCentre },
+  ytterport: { town: 'Ytterhavn', name: 'The port of Ytterhavn', short: 'Ytterhavn port', build: ytterPort },
+  tavern: { town: 'Ytterhavn', name: 'A sailors’ bar in Ytterhavn', short: 'The bar', build: tavern },
+  shop: { town: 'Ytterhavn', name: 'A street shop in Ytterhavn', short: 'The shop', build: shop },
+  ship: { town: 'At sea', name: 'Aboard a small ship', short: 'The ship', build: ship },
 };
+export const TOWNS = [...new Set(Object.values(AREAS).map((a) => a.town))];
+// <option>s for a place picker, grouped by town.
+export const areaOptions = (selected, esc) => TOWNS.map((t) => `<optgroup label="${esc(t)}">${Object.entries(AREAS).filter(([, a]) => a.town === t)
+  .map(([k, a]) => `<option value="${k}"${k === selected ? ' selected' : ''}>${esc(a.name)}</option>`).join('')}</optgroup>`).join('');
 
 // World position → slab voxel, and back.
 export const toVox = ([x, z]) => [Math.round(x / SCALE + SIZE / 2 - 0.5), Math.round(z / SCALE + SIZE / 2 - 0.5)];
