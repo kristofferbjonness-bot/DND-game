@@ -483,46 +483,74 @@ function ytterPort() {
   };
 }
 
-// A small wooden ship at sea (on the way to Sirivik): its deck fills the scene, two masts with
-// square sails, a raised bow, barrels, rope and the helm at the stern.
+// A small wooden ship at sea (on the way to Sirivik), riding high so its hull shows: planked sides
+// with a gold stripe and gun ports, a red bottom, a raised bow with a figurehead and an anchor,
+// stern windows, two masts with sails and rigging, a hatch, the helm, a bell, barrels and rope.
+// Its deck is at y = D (`standY`), so everyone stands on it.
 function ship() {
+  const D = 4;
   const v = new Vox(SIZE, { corner: 10 });
   v.waterColour = '#2f86b0';
-  slab(v, () => '#3a6a80', { height: () => -4, water: -1, bed: () => '#2a4a5a', bottom: -6 });
+  slab(v, () => '#3a6a80', { height: () => -6, water: -1, bed: () => '#2a4a5a', bottom: -8 });
   const half = (z) => (z > 30 ? 16 * Math.sqrt(Math.max(0, 1 - ((z - 30) / 32) ** 2)) : 16 * Math.sqrt(Math.max(0, 1 - ((z - 30) / 27) ** 2)));
+  const width = (z, y) => half(z) * (0.5 + 0.5 * Math.min(1, (y + 6) / (D + 6)) ** 0.7); // the hull narrows below
   for (let z = 3; z <= 57; z++) {
     const hw = half(z);
     for (let x = 0; x < SIZE; x++) {
       const off = Math.abs(x + 0.5 - 30);
-      if (off > hw) continue;
-      const edge = off > hw - 1.2;
-      for (let y = -4; y <= 0; y++) v.set(x, y, z, y === 0 ? (edge ? '#5a3a22' : x % 2 ? '#a8784a' : '#9a6c40') : y === -1 ? '#c9a44a' : '#6b4528');
-      if (edge && !(z > 20 && z < 26)) { v.set(x, 1, z, '#5a3a22'); v.set(x, 2, z, '#7a5032'); } // the rail (a gap amidships)
-      if (z < 9 && !edge) { v.set(x, 1, z, '#9a6c40'); v.set(x, 2, z, '#a8784a'); } // the raised bow
+      for (let y = -6; y <= D; y++) {
+        const w = width(z, y);
+        if (off > w) continue;
+        const side = off > w - 1.3 || z === 57 && y < D;
+        let c;
+        if (y === D) c = off > hw - 1.2 ? '#5a3a22' : x % 2 ? '#a8784a' : '#9a6c40';
+        else if (y < -1) c = '#7a3a2a'; // the red bottom
+        else if (y === 1) c = '#c9a44a'; // the gold stripe
+        else if (side && y === 2 && z % 6 === 0 && z > 12 && z < 54) c = '#1e140c'; // gun ports
+        else c = y % 2 ? '#6b4528' : '#5e3c22';
+        v.set(x, y, z, c);
+      }
+      const edge = off > hw - 1.2 && off <= hw;
+      if (edge && !(z > 20 && z < 26)) { v.set(x, D + 1, z, z % 3 ? '#7a5032' : '#4a3020'); v.set(x, D + 2, z, '#5a3a22'); }
+      if (z < 9 && off <= hw - 1.2) { v.set(x, D + 1, z, '#9a6c40'); v.set(x, D + 2, z, '#a8784a'); } // the raised bow
+      if (off <= hw && off > hw - 1.5 && hash(x, z, 71) > 0.6) v.set(x, -1, z + (z < 30 ? -1 : 1), '#e8f4f8'); // foam at the waterline
     }
   }
-  for (let z = 57; z <= 57; z++) for (let x = 20; x <= 40; x++) if (Math.abs(x + 0.5 - 30) <= half(57)) { v.set(x, 1, z, '#5a3a22'); v.set(x, 2, z, '#5a3a22'); }
-  for (let z = 2; z >= -4; z--) v.set(30, 3 + Math.round((2 - z) * 0.3), z, '#4a3020'); // the bowsprit
-  // Masts and sails.
+  // The transom with lit windows and lanterns at the stern corners.
+  for (let x = 22; x <= 38; x++) if (Math.abs(x + 0.5 - 30) <= half(57)) { v.set(x, D + 1, 57, '#5a3a22'); v.set(x, D + 2, 57, '#5a3a22'); }
+  for (const x of [25, 28, 31, 34]) for (const y of [2, 3]) v.light(x, y, 58, '#ffcf70');
+  for (const x of [24, 36]) { v.set(x, D + 3, 57, '#2e2a2e'); v.light(x, D + 4, 57, '#ffd27a'); }
+  // The bowsprit with a golden figurehead, and an anchor hanging at the bow.
+  for (let z = 2; z >= -5; z--) v.set(30, D + 2 + Math.round((2 - z) * 0.35), z, '#4a3020');
+  for (const [y, z] of [[D - 1, 2], [D, 2], [D + 1, 1], [D, 1]]) v.set(30, y, z, '#d9a63a');
+  { const ax = Math.round(30 + half(8)); for (let y = D - 4; y <= D; y++) v.set(ax, y, 8, '#4a4a50'); v.set(ax, D - 4, 7, '#4a4a50'); v.set(ax, D - 4, 9, '#4a4a50'); v.set(ax, D - 3, 6, '#4a4a50'); v.set(ax, D - 3, 10, '#4a4a50'); }
+  // Masts, sails, yards, crow's nests, and rigging down to the rails.
   for (const [mz, h] of [[12, 30], [34, 36]]) {
-    for (let y = 1; y <= h; y++) v.set(30, y, mz, '#4a3020');
+    for (let y = D + 1; y <= D + h; y++) v.set(30, y, mz, '#4a3020');
     for (const [a, b, w] of [[h - 18, h - 9, 9], [h - 8, h - 2, 7]]) {
-      for (let x = 30 - w; x <= 30 + w; x++) v.set(x, b + 1, mz, '#4a3020');
-      for (let y = a; y <= b; y++) for (let x = 30 - w; x <= 30 + w; x++) v.set(x, y, mz + 1 + (Math.abs(x - 30) < w - 2 && y > a && y < b ? 1 : 0), '#f4ecdc');
+      for (let x = 30 - w - 1; x <= 30 + w + 1; x++) v.set(x, D + b + 1, mz, '#4a3020');
+      for (let y = a; y <= b; y++) for (let x = 30 - w; x <= 30 + w; x++) v.set(x, D + y, mz + 1 + (Math.abs(x - 30) < w - 2 && y > a && y < b ? 1 : 0), (y - a) % 4 === 3 ? '#e4dccb' : '#f4ecdc');
     }
-    v.box(29, h - 1, mz - 1, 32, h, mz + 2, '#6b4528'); // crow's nest
+    v.box(28, D + h - 1, mz - 2, 33, D + h, mz + 3, '#6b4528');
+    const hw = half(mz);
+    for (const s of [-1, 1]) for (let i = 0; i <= 14; i++) {
+      const t = i / 14;
+      v.set(Math.round(30 + s * (1 + t * (hw - 2))), Math.round(D + h - 3 - t * (h - 6)), mz - 1, '#3a2a1e');
+    }
   }
-  for (let x = 31; x <= 34; x++) for (let j = 0; j < 2; j++) v.set(x, 36 - j, 34, '#3f6fa8'); // pennant
-  // The helm, barrels, crates and coiled rope.
-  for (let y = 1; y <= 3; y++) v.set(30, y, 56, '#4a3020');
-  for (const [dx, dy] of [[-1, 3], [1, 3], [0, 4], [0, 2], [-1, 4], [1, 4], [-1, 2], [1, 2]]) v.set(30 + dx, dy + 1, 55, '#6b4528');
-  barrel(v, 20, 0, 14); barrel(v, 38, 0, 15); crate(v, 21, 0, 42); crate(v, 37, 0, 41, 2, '#8a5a34');
-  for (const [x, z] of [[24, 28], [36, 18]]) for (let a = 0; a < 8; a++) v.set(x + Math.round(Math.cos(a) * 1.2), 1, z + Math.round(Math.sin(a) * 1.2), '#c4a878');
-  v.light(30, 4, 57, '#ffd27a');
+  for (let x = 31; x <= 35; x++) for (let j = 0; j < 2; j++) v.set(x, D + 36 - j, 34, x === 35 && j ? '#f4ecdc' : '#3f6fa8'); // the pennant
+  // A hatch with a grating, the helm, a bell, barrels, crates and coiled rope.
+  for (let x = 27; x <= 33; x++) for (let z = 39; z <= 43; z++) v.set(x, D, z, x === 27 || x === 33 || z === 39 || z === 43 ? '#5a3a22' : (x + z) % 2 ? '#3a2416' : '#7a5032');
+  for (let y = D + 1; y <= D + 3; y++) v.set(30, y, 56, '#4a3020');
+  for (let a = 0; a < 12; a++) v.set(30 + Math.round(Math.cos(a / 12 * 6.28) * 2), D + 4 + Math.round(Math.sin(a / 12 * 6.28) * 2), 55, '#6b4528');
+  v.set(30, D + 4, 55, '#c9a44a');
+  for (let y = D + 3; y <= D + 5; y++) v.set(26, y, 8, '#4a3020'); v.set(27, D + 5, 8, '#4a3020'); v.set(27, D + 4, 8, '#c9a44a');
+  barrel(v, 20, D, 14); barrel(v, 38, D, 15); barrel(v, 39, D, 18); crate(v, 21, D, 42); crate(v, 37, D, 41, 2, '#8a5a34'); crate(v, 37, D + 2, 41, 2, '#a87a48');
+  for (const [x, z] of [[24, 28], [36, 18]]) for (let a = 0; a < 8; a++) v.set(x + Math.round(Math.cos(a) * 1.2), D + 1, z + Math.round(Math.sin(a) * 1.2), '#c4a878');
   return {
-    v,
+    v, standY: D,
     heroSpots: [[26, 46], [34, 46], [22, 50], [38, 50], [30, 50], [26, 53], [34, 53]],
-    npcSpots: [[30, 22], [23, 24], [37, 24], [22, 30], [38, 30], [25, 38], [35, 38], [30, 28], [20, 20]],
+    npcSpots: [[30, 22], [23, 24], [37, 24], [22, 30], [38, 30], [25, 36], [35, 36], [30, 28], [20, 20]],
     mood: { bg: 'linear-gradient(#6aaad8, #cfe8f4 70%, #3a86b0 71%)', sky: '#f4f8ff', ground: '#3a6a80', hemi: 1.45, sun: '#fff0d4', sunPower: 2.5, sunAt: [-40, 70, 40], exposure: 1.05 },
   };
 }

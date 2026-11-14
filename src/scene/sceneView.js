@@ -10,7 +10,6 @@ import { AREAS, SCALE, SIZE } from './areas.js';
 const TOUCH = window.matchMedia('(pointer: coarse)').matches;
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
 const world = ([x, z]) => [(x - SIZE / 2 + 0.5) * SCALE, (z - SIZE / 2 + 0.5) * SCALE];
-const GROUND = SCALE; // figures stand on the top of the ground voxels
 
 export function createSceneView(container, { onPick } = {}) {
   const tags = document.createElement('div');
@@ -80,7 +79,7 @@ export function createSceneView(container, { onPick } = {}) {
   function place(figure, spot, face, key, name, kind) {
     const [x, z] = world(spot);
     const holder = new THREE.Group();
-    holder.position.set(x, GROUND, z);
+    holder.position.set(x, (1 + (current.standY ?? 0)) * SCALE, z); // on top of the ground (or a ship's deck)
     holder.add(figure.group);
     holder.rotation.y = Math.atan2(face[0] - x, face[1] - z);
     holder.userData.key = key;

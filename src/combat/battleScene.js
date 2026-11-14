@@ -101,7 +101,7 @@ export function createBattleScene(container) {
     areaId = id;
     disposeTree(ground); scene.remove(ground);
     area = id ? AREAS[id].build() : null;
-    if (area) { ground = new THREE.Group(); area.v.render(ground); ground.scale.setScalar(SCALE); standY = SCALE; } else { ground = arena(); standY = 0; }
+    if (area) { ground = new THREE.Group(); area.v.render(ground); ground.scale.setScalar(SCALE); standY = (1 + (area.standY ?? 0)) * SCALE; } else { ground = arena(); standY = 0; }
     scene.add(ground);
     const m = area?.mood ?? PLAIN;
     container.style.background = m.bg;

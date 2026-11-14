@@ -257,7 +257,7 @@ The original assets (hand-drawn world map, location art, character art, lore doc
 - **Scene** (`src/scene/`, a tab for everyone): a 3D place where the heroes stand with the people they meet.
   - Areas (`areas.js`): voxel dioramas on a 60×60 slab at 2 world units per voxel: the Man's camp, The Wolf, the road Razz–Ytterhavn, Ytterhavn's centre and port, a small ship at sea, a sailors' bar, a street shop (`townhouse`/`row` build the gabled houses),
     the port of Razz, Hooknose Alley, outside the city gates. Each has a `town` (lists are grouped by it: `TOWNS`, `areaOptions`) and a mood (light, background), hero spots at
-    the front and NPC spots further in. Add an area by writing a builder and listing it in `AREAS`.
+    the front and NPC spots further in; `standY` lifts everyone onto a deck (the ship). Add an area by writing a builder and listing it in `AREAS`.
   - `sceneView.js`: renderer (made on first start), OrbitControls, name tags (HTML) over each figure, tap to pick.
     `setInset` keeps the picture centred beside the DM's panel.
   - `sceneScreen.js`: scenes are journal rows (`quests`, `data.kind: 'scene'`, `{ title, area, heroes?, people:
