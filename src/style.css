@@ -709,11 +709,17 @@ body.is-placing .hud-stack { opacity: 0.4; }
   --pp-box: rgba(255, 250, 235, 0.55); --pp-accent: #8a2e1f; --pp-bronze: #9a6b1f;
   background: transparent; color: var(--pp-ink);
 }
-.status__hero, .status .tile, .status .sheet-card {
+.status__hero {
   border: 14px solid transparent; border-radius: 0; box-shadow: none; background: none;
   border-image: url('/art/ui/paper/wide-sheet.webp') 26 fill / 22px / 0 stretch;
 }
-.status .tile, .status .sheet-card { filter: drop-shadow(0 5px 8px rgba(20, 10, 0, 0.35)); }
+/* The whole sheet on the right is one piece of ledger paper (like Party and the Journal):
+   the stat cells, Abilities and the tabs inside are split by thin inked lines, not boxes. */
+.status__paper {
+  border: 22px solid transparent; border-image: url('/art/ui/paper/ledger-sheet.webp') 34 fill / 30px / 0 stretch;
+  padding: 2px 6px 6px; filter: drop-shadow(0 6px 10px rgba(20, 10, 0, 0.35)); color: var(--pp-ink);
+}
+.status .tile, .status .sheet-card { border: 0; border-radius: 0; box-shadow: none; background: none; filter: none; }
 .status__hero { padding: 14px; }
 
 /* The hero card is the framed sheet (an inked border line), the four small cards wide sheets. */
@@ -721,7 +727,6 @@ body.is-placing .hud-stack { opacity: 0.4; }
   position: relative; border-width: 22px; padding: 10px 12px;
   border-image: url('/art/ui/paper/framed-sheet.webp') 44 fill / 40px / 0 stretch;
 }
-.status .tile { border-width: 12px; border-image: url('/art/ui/paper/wide-sheet.webp') 26 fill / 20px / 0 stretch; }
 .status .sheet-card { position: relative; }
 
 /* The level number on a red wax seal, next to the name. */
@@ -756,15 +761,18 @@ body.is-placing .hud-stack { opacity: 0.4; }
 .status .status__tagline { font-size: 17px; color: var(--pp-soft); margin-top: 4px; }
 
 /* The four small cards on top. */
-.status .tiles { gap: 14px; }
-.status .tile { padding: 4px 8px; column-gap: 12px; border-width: 12px; border-image-width: 22px; }
+.status .tiles { gap: 0; padding-bottom: 12px; border-bottom: 1.5px solid var(--pp-line); }
+.status .tile { padding: 6px 10px; column-gap: 12px; }
+.status .tile + .tile { border-left: 1px solid var(--pp-line); }
+.status .tiles--small { margin-top: 14px; padding: 10px 0 0; border-bottom: 0; border-top: 1px solid var(--pp-line); }
 .status .tile .ic { width: 28px; height: 28px; }
 .status .tile b { font: 700 28px/1 var(--font-body); color: var(--pp-ink); }
 .status .tile b small { font-size: 15px; color: var(--pp-ink); }
 .status .tile span { font: 700 11px var(--font-display); letter-spacing: 0.08em; color: var(--pp-soft); margin-top: 3px; }
 
 /* The big cards: Abilities, and the details with the tabs. */
-.status .sheet-card { margin-top: 18px; padding: 10px 12px 8px; }
+.status .sheet-card { margin-top: 0; padding: 14px 4px 12px; }
+.status .sheet-card + .sheet-card { border-top: 1.5px solid var(--pp-line); }
 .sheet-card__head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
 .sheet-card__head h3 { margin: 0; font: 700 16px var(--font-display); letter-spacing: 0.1em; text-transform: uppercase; color: var(--pp-ink); }
 .sheet-card__head small { font-size: 15px; color: var(--pp-soft); }
@@ -835,7 +843,6 @@ body.is-placing .hud-stack { opacity: 0.4; }
 .status .skill.is-prof .skill__mod, .status .mark--on, .status .skill.is-prof .mark { color: var(--pp-accent); }
 .status .mark--star, .status .skill.is-expert .mark { color: var(--pp-bronze); }
 .status .mark { color: #a8956f; }
-.status .tiles--small .tile { border-width: 10px; border-image-width: 22px; }
 .status .slot__label { color: var(--pp-soft); }
 .status .slot__select {
   color: var(--pp-ink); background-color: rgba(255, 252, 240, 0.8); border: 1px solid var(--pp-line-dark); box-shadow: none;
@@ -1757,7 +1764,7 @@ button.jr-tick { cursor: pointer; }
 
 /* Phones and tablets: no soft shadow (CSS filter) on big paper sheets. iPhone Safari redraws
    filtered areas slowly and leaves them blank while scrolling. */
-.is-touch .status .tile, .is-touch .status .sheet-card, .is-touch .party__inner, .is-touch .bst, .is-touch .jr,
+.is-touch .status__paper, .is-touch .party__inner, .is-touch .bst, .is-touch .jr,
 .is-touch .combat__setup, .is-touch .combat__init, .is-touch .combat .attack__card { filter: none; }
 
 /* ==========================================================================
@@ -1992,12 +1999,15 @@ button.jr-tick { cursor: pointer; }
   .slot { grid-template-columns: auto 70px 1fr; gap: 8px; }
   .story { grid-template-columns: 1fr; gap: 0; padding: 14px 16px; }
   .story dd { margin-bottom: 10px; }
-  .status .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .status .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0; }
+  .status .tile:nth-child(odd) { border-left: 0; }
+  .status .tile:nth-child(n+3) { border-top: 1px solid var(--pp-line); }
+  .status__paper { border-width: 16px; border-image-width: 24px; padding: 0 2px 4px; }
   .status .tile { grid-template-columns: auto 1fr; justify-items: start; text-align: left; padding: 2px 6px; }
   .status .tile .ic { grid-row: span 2; width: 24px; height: 24px; }
   .status .tile b { font-size: 24px; }
   .status .tile span { font-size: 10px; }
-  .status .sheet-card { margin-top: 12px; padding: 8px 8px 6px; }
+  .status .sheet-card { margin-top: 0; padding: 10px 2px 8px; }
   .status .sheet-card__head small { font-size: 13px; }
   .status .abils { gap: 8px; }
   .status .abil { padding: 8px 8px 0; gap: 2px 4px; }

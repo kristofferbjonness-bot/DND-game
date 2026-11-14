@@ -157,7 +157,7 @@ function sheet(c, tab, editable, dm, pending) {
 
   const panels = { combat, skills, gear, story };
 
-  return `
+  return `<div class="status__paper">
     <div class="tiles">
       ${tile('ac', 'Armour', d.ac)}
       ${tile('init', 'Initiative', signed(d.initiative))}
@@ -175,7 +175,7 @@ function sheet(c, tab, editable, dm, pending) {
         ${TABS.map((t) => `<button type="button" role="tab" class="tab${t.id === tab ? ' is-active' : ''}" data-tab="${t.id}">${icon(t.icon)}<span>${t.label}</span></button>`).join('')}
       </nav>
       ${TABS.map((t) => `<section class="tabpanel" data-panel="${t.id}"${t.id === tab ? '' : ' hidden'}>${panels[t.id]}</section>`).join('')}
-    </section>`;
+    </section></div>`;
 }
 
 // `onChange(character)` is called after the gear changes, to save it.
