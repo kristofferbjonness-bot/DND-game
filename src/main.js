@@ -10,7 +10,7 @@ import { grid, WATER_LEVEL, pixelToCell, nearestLand, cellToWorld } from './worl
 import { buildTerrain, surfaceY } from './world/terrain.js';
 import { buildPlants, buildClouds } from './world/scatter.js';
 import { buildLandmark } from './world/landmarks.js';
-import { buildLighthouse, buildShadowMist } from './world/features.js';
+import { buildLighthouse, buildShadowMist, buildCabin, buildBridge } from './world/features.js';
 import { LOCATIONS } from './world/locations.js';
 import { CITIES } from './city/cities.js';
 import { createTiltShiftPasses } from './fx/tiltShift.js';
@@ -135,7 +135,13 @@ function buildWorldView() {
     return { ...loc, cx, cz, x, z, ground, hasTown };
   });
   const towns = places.filter((p) => p.hasTown);
-  const plants = buildPlants((x, z) => towns.some((p) => Math.abs(p.cx - x) <= 3 && Math.abs(p.cz - z) <= 3));
+  // Where the extra features stand (cells): the old cabin deep in Sortland's dark forest, and a
+  // bridge over the river that runs out of the mountains east of Ytterhavn.
+  const sortCell = places.find((p) => p.id === 'sortland') ? nearestLand(...pixelToCell(places.find((p) => p.id === 'sortland').px)) : null;
+  const BRIDGE = { cx: 104, from: 106, to: 108 };
+  const clear = [...(sortCell ? [[sortCell[0], sortCell[1], 2]] : []), [BRIDGE.cx, BRIDGE.from, 0], [BRIDGE.cx, BRIDGE.to, 0]];
+  const plants = buildPlants((x, z) => towns.some((p) => Math.abs(p.cx - x) <= 3 && Math.abs(p.cz - z) <= 3)
+    || clear.some(([cx, cz, r]) => Math.abs(cx - x) <= r && Math.abs(cz - z) <= r));
   scene.add(plants);
   const clouds = buildClouds();
   scene.add(clouds);
@@ -161,6 +167,22 @@ function buildWorldView() {
   if (gap) { const lh = buildLighthouse(); lh.position.set(gap.x, WATER_LEVEL, gap.z); lh.scale.setScalar(1.2); scene.add(lh); features.push(lh); }
   const sortland = places.find((p) => p.id === 'sortland');
   if (sortland) { const mist = buildShadowMist(9); mist.position.set(sortland.x, sortland.ground, sortland.z); scene.add(mist); features.push(mist); }
+  if (sortCell) {
+    const cabin = buildCabin();
+    const [x, z] = cellToWorld(...sortCell);
+    cabin.position.set(x, surfaceY(...sortCell), z);
+    cabin.rotation.y = 0.5;
+    cabin.scale.setScalar(1.7);
+    scene.add(cabin);
+  }
+  const sirivik = places.find((p) => p.id === 'sirivik');
+  if (sirivik) { const fog = buildShadowMist(5, { grey: true }); fog.position.set(sirivik.x, sirivik.ground, sirivik.z); scene.add(fog); features.push(fog); }
+  {
+    const [x, z0] = cellToWorld(BRIDGE.cx, BRIDGE.from), [, z1] = cellToWorld(BRIDGE.cx, BRIDGE.to);
+    const bridge = buildBridge(z1 - z0 + 1.2);
+    bridge.position.set(x, Math.max(surfaceY(BRIDGE.cx, BRIDGE.from), surfaceY(BRIDGE.cx, BRIDGE.to)) + 0.08, (z0 + z1) / 2);
+    scene.add(bridge);
+  }
 
   const camera = new THREE.PerspectiveCamera(35, 1, 1, 1200);
   const view = {

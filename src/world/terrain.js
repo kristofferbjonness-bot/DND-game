@@ -4,7 +4,7 @@
 import * as THREE from 'three';
 import { bevelBox } from '../fx/bevelBox.js';
 import {
-  grid, LAYER, WATER_LEVEL, BIOME, idx, heightAt, cellToWorld, distToSea, hash, inDarkForest,
+  grid, LAYER, WATER_LEVEL, BIOME, idx, heightAt, cellToWorld, distToSea, hash, darkForest,
 } from './grid.js';
 
 const C = (hex) => new THREE.Color(hex);
@@ -22,7 +22,7 @@ const RIVERBED = C('#6f9fae');
 const ROCK = C('#a59c90');
 const RED_ROCK = C('#bf8f66');
 const SNOWCAP = C('#f7f9fb');
-const DARK_FLOOR = C('#2c3d2a'), DARK_MOSS = C('#3a4a2c'), DARK_SOIL = C('#4a3a2c'); // dark forests
+const DARK_FLOOR = C('#43473f'), DARK_MOSS = C('#4c5244'), DARK_SOIL = C('#4d463d'); // dark forests: grey
 const SEA = [C('#8fd8d6'), C('#5cbcc9'), C('#3c9bbd'), C('#2d7fa8')];
 
 const MOUNTAIN_FROM = 7; // layers; above this a column is bare rock
@@ -50,10 +50,10 @@ function cubeColor(k, x, z, layer, top, out) {
     if (top >= SNOWCAP_FROM || (b === BIOME.SNOW && top >= MOUNTAIN_FROM)) out.copy(SNOWCAP);
     else if (top >= MOUNTAIN_FROM) out.copy(b === BIOME.DESERT ? RED_ROCK : ROCK);
     else if (distToSea[k] <= 1 && top <= 2 && b !== BIOME.SNOW) out.copy(SAND);
-    else if (inDarkForest(x, z)) out.copy(hash(x, z, 78) > 0.7 ? DARK_MOSS : DARK_FLOOR);
-    else out.copy(pal.top);
+    else out.copy(pal.top).lerp(hash(x, z, 78) > 0.7 ? DARK_MOSS : DARK_FLOOR, darkForest(x, z));
   } else {
-    out.copy(layer >= MOUNTAIN_FROM - 2 ? (b === BIOME.DESERT ? RED_ROCK : ROCK) : inDarkForest(x, z) ? DARK_SOIL : pal.side);
+    if (layer >= MOUNTAIN_FROM - 2) out.copy(b === BIOME.DESERT ? RED_ROCK : ROCK);
+    else out.copy(pal.side).lerp(DARK_SOIL, darkForest(x, z));
     out.multiplyScalar(0.82 + 0.03 * Math.min(layer, 6));
   }
   // A little per-block variation keeps big areas from looking flat.

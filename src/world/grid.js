@@ -33,13 +33,19 @@ export const cellToWorld = (x, z) => [x - cols / 2 + 0.5, z - rows / 2 + 0.5];
 export const worldToCell = (wx, wz) => [Math.floor(wx + cols / 2), Math.floor(wz + rows / 2)];
 export const pixelToCell = ([px, py]) => [Math.floor(px / grid.cell), Math.floor(py / grid.cell)];
 
-// Dark forests: dense gloomy woods with dark ground (Sortland, under its mist). Centre in map
-// pixels, radius in cells; the edge is ragged.
-const DARK_FORESTS = [{ px: [595, 492], r: 10 }];
-export const inDarkForest = (x, z) => DARK_FORESTS.some(({ px, r }) => {
-  const [cx, cz] = pixelToCell(px);
-  return Math.hypot(x - cx, z - cz) <= r - 1.5 + hash(x, z, 77) * 3;
-});
+// Dark forests: dense, grey, gloomy woods (Sortland, under its mist). Centre in map pixels,
+// radius in cells. `darkForest` is 1 deep inside and fades to 0 over `fade` cells at the
+// edge (with a little noise), so the woods turn dark gradually.
+const DARK_FORESTS = [{ px: [595, 492], r: 9, fade: 6 }];
+export function darkForest(x, z) {
+  let best = 0;
+  for (const { px, r, fade } of DARK_FORESTS) {
+    const [cx, cz] = pixelToCell(px);
+    const d = Math.hypot(x - cx, z - cz) + (hash(x, z, 77) - 0.5) * 2.5;
+    best = Math.max(best, Math.min(1, Math.max(0, (r + fade / 2 - d) / fade)));
+  }
+  return best;
+}
 
 // Number of cells to the nearest sea cell (0 for sea).
 export const distToSea = (() => {

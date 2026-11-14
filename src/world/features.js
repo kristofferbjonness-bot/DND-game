@@ -54,11 +54,54 @@ export function buildLighthouse() {
   return g;
 }
 
-// A shadowy mist lying low over a land: dark, slow-drifting voxel puffs within `radius`.
-// Stands on y = 0 at the ground. `update(dt)` lets it drift and breathe.
-export function buildShadowMist(radius = 9) {
+// An old, weathered log cabin with a mossy roof, a stone chimney and one dimly lit window.
+export function buildCabin() {
   const g = new THREE.Group();
-  const layers = [
+  const log = solid('#8a7058'), logDark = solid('#76604c'), moss = solid('#7a8462'), mossDark = solid('#687254'), stone = solid('#8f8a82'), door = solid('#3a2f27');
+  for (let i = 0; i < 4; i++) block(g, [1.1, 0.13, 0.85], [0, i * 0.13, 0], i % 2 ? logDark : log);
+  block(g, [1.24, 0.08, 0.98], [0, 0.52, 0], mossDark);
+  block(g, [1.16, 0.12, 0.72], [0, 0.6, 0], moss);
+  block(g, [1.08, 0.12, 0.42], [0.02, 0.72, 0], mossDark);
+  block(g, [1.0, 0.08, 0.14], [0.03, 0.84, 0], moss);
+  block(g, [0.2, 0.62, 0.2], [0.38, 0.3, -0.22], stone); // chimney
+  block(g, [0.24, 0.32, 0.04], [-0.15, 0, 0.43], door);
+  const win = new THREE.Mesh(bevelBox(0.18, 0.14, 0.04, 0.01).clone().translate(0, 0.07, 0), new THREE.MeshBasicMaterial({ color: '#f0b45a', toneMapped: false }));
+  win.position.set(0.25, 0.22, 0.43);
+  g.add(win);
+  block(g, [0.12, 0.25, 0.12], [-0.68, 0, 0.3], logDark); // a woodpile
+  block(g, [0.3, 0.12, 0.14], [-0.66, 0, 0.12], log);
+  return g;
+}
+
+// A little wooden bridge with stone ends, along z, `length` long. y = 0 is the deck.
+export function buildBridge(length = 3.4) {
+  const g = new THREE.Group();
+  const plank = solid('#8a6440'), plankDark = solid('#7a5636'), rail = solid('#5b4a3a'), stone = solid('#9a948a');
+  const n = Math.round(length / 0.22);
+  for (let i = 0; i < n; i++) {
+    const z = -length / 2 + (i + 0.5) * (length / n);
+    const lift = Math.cos((z / length) * Math.PI) * 0.18; // a gentle arch
+    block(g, [0.62, 0.07, length / n * 0.92], [0, lift - 0.07, z], i % 2 ? plank : plankDark);
+    if (i % 3 === 0) for (const x of [-0.3, 0.3]) block(g, [0.06, 0.28, 0.06], [x, lift, z], rail);
+  }
+  for (const x of [-0.3, 0.3]) for (let i = 0; i < 3; i++) {
+    const z0 = -length / 2 + (i + 0.5) * (length / 3);
+    block(g, [0.05, 0.05, length / 3], [x, 0.24 + Math.cos((z0 / length) * Math.PI) * 0.18, z0], rail);
+  }
+  for (const z of [-length / 2, length / 2]) block(g, [0.8, 0.5, 0.45], [0, -0.55, z], stone);
+  return g;
+}
+
+// A shadowy mist lying low over a land: dark, slow-drifting voxel puffs within `radius`.
+// Stands on y = 0 at the ground. `update(dt)` lets it drift and breathe. `grey` makes a pale
+// grey fog instead (Sirivik).
+export function buildShadowMist(radius = 9, { grey = false } = {}) {
+  const g = new THREE.Group();
+  const k = radius / 9;
+  const layers = grey ? [
+    { colour: '#8a8a92', opacity: 0.24, n: Math.round(22 * k), y: [0.6, 1.8], s: [1.8, 3.0] },
+    { colour: '#a2a2aa', opacity: 0.16, n: Math.round(16 * k), y: [1.8, 3.2], s: [2.2, 3.6] },
+  ] : [
     { colour: '#4a4458', opacity: 0.22, n: 26, y: [0.8, 2.0], s: [2.0, 3.2] },
     { colour: '#5a5468', opacity: 0.16, n: 20, y: [2.2, 3.6], s: [2.4, 4.0] },
   ];

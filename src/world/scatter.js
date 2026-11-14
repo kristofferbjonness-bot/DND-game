@@ -1,7 +1,7 @@
 // Trees, pines and cacti scattered across the land, and drifting voxel clouds.
 import * as THREE from 'three';
 import { bevelBox } from '../fx/bevelBox.js';
-import { grid, BIOME, idx, cellToWorld, distToSea, hash, LAYER, inDarkForest } from './grid.js';
+import { grid, BIOME, idx, cellToWorld, distToSea, hash, LAYER, darkForest } from './grid.js';
 
 // Chance of a plant per cell, by biome.
 const DENSITY = {
@@ -35,17 +35,17 @@ const KINDS = {
   ],
   // The dark forest: tall black-green pines and bare dead trees.
   darkpine: [
-    [0.2, 0.4, 0.2, 0.2, '#3a2a1e'],
-    [0.85, 0.45, 0.85, 0.6, '#1f3326'],
-    [0.62, 0.45, 0.62, 1.0, '#223a2a'],
-    [0.38, 0.45, 0.38, 1.4, '#1b2e22'],
-    [0.16, 0.3, 0.16, 1.75, '#1b2e22'],
+    [0.2, 0.4, 0.2, 0.2, '#3e3630'],
+    [0.85, 0.45, 0.85, 0.6, '#3a443d'],
+    [0.62, 0.45, 0.62, 1.0, '#3f4a42'],
+    [0.38, 0.45, 0.38, 1.4, '#36403a'],
+    [0.16, 0.3, 0.16, 1.75, '#36403a'],
   ],
   deadtree: [
-    [0.2, 1.3, 0.2, 0.65, '#4a3e36'],
-    [0.5, 0.1, 0.1, 0.95, '#4a3e36'],
-    [0.1, 0.1, 0.42, 1.2, '#433832'],
-    [0.32, 0.08, 0.08, 1.4, '#433832'],
+    [0.2, 1.3, 0.2, 0.65, '#6a645c'],
+    [0.5, 0.1, 0.1, 0.95, '#6a645c'],
+    [0.1, 0.1, 0.42, 1.2, '#5e5852'],
+    [0.32, 0.08, 0.08, 1.4, '#5e5852'],
   ],
 };
 
@@ -67,9 +67,10 @@ export function buildPlants(avoid) {
     if (distToSea[k] <= 1) continue;
     if (avoid(x, z)) continue;
     const b = grid.biome[k];
-    const dark = inDarkForest(x, z);
-    if (hash(x, z, 1) > (dark ? 0.8 : DENSITY[b])) continue;
-    const kind = dark ? (hash(x, z, 6) > 0.82 ? 'deadtree' : 'darkpine') : pickKind(b, h);
+    // Towards a dark forest, trees grow thicker and turn into grey pines and dead trees.
+    const dark = darkForest(x, z);
+    if (hash(x, z, 1) > DENSITY[b] + (0.75 - DENSITY[b]) * dark) continue;
+    const kind = hash(x, z, 7) < dark ? (hash(x, z, 6) > 0.55 ? 'deadtree' : 'darkpine') : pickKind(b, h);
     const [wx, wz] = cellToWorld(x, z);
     spots[kind].push({
       x: wx + (hash(x, z, 2) - 0.5) * 0.5,
