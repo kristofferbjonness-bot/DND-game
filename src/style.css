@@ -2493,3 +2493,7 @@ body[data-screen="combat"]:not(:has(#combat.is-battle)) .tags-toggle { display: 
   .tags-toggle { right: max(10px, var(--safe-r)); bottom: calc(var(--nav) + 96px); }
   .combat.is-battle .combat__boxes--heroes { left: max(10px, var(--safe-l)); }
 }
+/* Computers: pages keep clear of the book and dice buttons at the bottom left. */
+@media (min-width: 601px) and (min-height: 501px) {
+  .screen:not(.scn):not(.combat) { padding-left: calc(max(20px, var(--safe-l)) + 58px); }
+}
