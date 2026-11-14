@@ -255,7 +255,7 @@ The original assets (hand-drawn world map, location art, character art, lore doc
   list, full body on the page): `data.figure`, or by name (`match`); the person form has a "3D figure" picker.
   Lord Wolf and Silk Sister are also Bestiary enemies (monsters.js).
 - **Scene** (`src/scene/`, a tab for everyone): a 3D place where the heroes stand with the people they meet.
-  - Areas (`areas.js`): voxel dioramas on a 60×60 slab at 2 world units per voxel: the Man's camp, The Wolf,
+  - Areas (`areas.js`): voxel dioramas on a 60×60 slab at 2 world units per voxel: the Man's camp, The Wolf, the road Razz–Ytterhavn, Ytterhavn's centre and port, a small ship at sea, a sailors' bar, a street shop (`townhouse`/`row` build the gabled houses),
     the port of Razz, Hooknose Alley, outside the city gates. Each has a mood (light, background), hero spots at
     the front and NPC spots further in. Add an area by writing a builder and listing it in `AREAS`.
   - `sceneView.js`: renderer (made on first start), OrbitControls, name tags (HTML) over each figure, tap to pick.
