@@ -654,6 +654,57 @@ function shop() {
 // wooden lift down to the ships, gibbet cages hanging over the drop with crows on them, a wall of
 // black obsidian, a statue with an arm and its face broken off, and a
 // small shrine with candles and an empty cradle.
+// A shabby, broken wooden house for Sirivik, sized to the figures: grey weathered planks, gaps and
+// holes in the walls, broken windows (one boarded up), a sagging roof missing shingles, a crooked
+// door and a lean. Same arguments as townhouse (x, z, w, d, face); `seed` varies the damage.
+function shack(v, { x, z, w, d, face = 'south', seed = 1, wall = '#8a8070' }) {
+  const P = (u, y, t, c) => {
+    if (face === 'south') v.set(x + u, y, z + d - 1 - t, c);
+    else if (face === 'east') v.set(x + d - 1 - t, y, z + u, c);
+    else v.set(x + t, y, z + u, c);
+  };
+  const C = (u, y, t) => {
+    if (face === 'south') v.clear(x + u, y, z + d - 1 - t);
+    else if (face === 'east') v.clear(x + d - 1 - t, y, z + u);
+    else v.clear(x + t, y, z + u);
+  };
+  const h = 24, hole = '#1a1614', post = '#3e3630';
+  const plank = (u, y, t) => { const n = hash(u + seed * 7, y, t + seed); return n > 0.88 ? shade(wall, 0.7) : n > 0.6 ? shade(wall, 0.88) : wall; };
+  const lean = hash(seed, 1, 2) > 0.5 ? 1 : -1;
+  for (let u = 0; u < w; u++) for (let t = 0; t < d; t++) for (let y = 1; y <= h; y++) {
+    if (t > 0 && t < d - 1 && u > 0 && u < w - 1) continue; // hollow inside
+    const uu = u + (y > h * 0.6 ? lean : 0); // the top leans a little
+    P(uu, y, t, u === 0 || u === w - 1 || y === 13 ? post : plank(u, y, t));
+  }
+  // Holes and missing planks in the front.
+  for (let i = 0; i < 4; i++) {
+    const hu = 1 + Math.floor(hash(seed, i, 3) * (w - 3)), hy = 2 + Math.floor(hash(seed, i, 4) * (h - 6));
+    for (let k = 0; k < 2 + Math.floor(hash(i, seed, 5) * 3); k++) C(hu, hy + k, 0);
+    P(hu, hy - 1, -1, shade(wall, 0.7)); // a broken plank hanging off
+  }
+  // The door, crooked and dark, and broken windows: jagged holes with a few shards; some boarded up.
+  const mid = Math.floor(w / 2);
+  for (let u = mid - 2; u <= mid + 1; u++) for (let y = 1; y <= 12; y++) P(u, y, 0, u === mid + 1 && y > 9 ? hole : '#3a2e26');
+  for (const [wu, wy, boarded] of [[2, 6, false], [w - 5, 6, hash(seed, 9, 9) > 0.5], [3, 17, false], [w - 5, 17, true]]) {
+    if (wu < 1 || wu + 2 >= w - 1) continue;
+    for (let u = wu; u <= wu + 2; u++) for (let y = wy; y <= wy + 4; y++) {
+      if (boarded) P(u, y, 0, (y - wy) % 2 ? '#5a4632' : hole);
+      else P(u, y, 0, hash(u, y, seed) > 0.75 ? '#8a9aa4' : hole);
+    }
+  }
+  // A sagging, gappy roof.
+  for (let i = 0; ; i++) {
+    const lo = i, hi = w - 1 - i;
+    if (lo > hi) break;
+    for (let u = lo; u <= hi; u++) for (let t = 0; t < d; t++) {
+      if (hash(u + seed, i, t) > 0.86) continue; // missing shingles
+      P(u + lean, h + 1 + i, t, t === 0 ? post : i % 2 ? '#3a3632' : '#2e2a28');
+    }
+  }
+  for (let y = h + 1; y <= h + 6; y++) P(w - 3, y, Math.floor(d / 2), '#4a4642');
+  P(w - 2, h + 6, Math.floor(d / 2), '#4a4642');
+}
+
 // (the cliff edge of Sirivik)
 function sirivikSquare() {
   const v = new Vox(SIZE, { corner: 5 });
@@ -664,7 +715,7 @@ function sirivikSquare() {
     { height: (x, z) => (cliff(z) ? -12 : 0), water: -10, bed: () => '#1a2a30', bottom: -14, side: (x, z, y) => (hash(x, y, z) > 0.85 ? '#3e3a48' : '#24202c') });
   for (let x = 0; x < SIZE; x++) for (let y = -11; y <= 0; y++) if (v.inside(x, 14)) v.set(x, y, 14, hash(x, y, 52) > 0.85 ? '#3e3a48' : '#24202c'); // the cliff face
   // Houses of dark stone down the left side.
-  for (const [i, z0] of [[0, 18], [1, 32], [2, 46]]) townhouse(v, { x: 0, z: z0, w: 14, d: 10, face: 'east', floors: 2, wall: ['#4a4650', '#3e3a44', '#55505a'][i], roof: '#2a2830', trim: '#6a6670', door: '#2a2024', shutters: '#2a2830' });
+  for (const [i, z0] of [[0, 18], [1, 32], [2, 46]]) shack(v, { x: 0, z: z0, w: 14, d: 10, face: 'east', seed: i + 3, wall: ['#8a8070', '#7e7464', '#928674'][i] });
   // A wall of black obsidian down the right side.
   for (let x = 52; x < SIZE; x++) for (let z = 16; z < 52; z++) for (let y = 1; y <= 14; y++) v.set(x, y, z, hash(x, y, z) > 0.9 ? '#2e2a38' : '#1e1a24');
   // The lift: a wooden tower at the edge, a beam over the drop, ropes, the platform far below.
@@ -957,15 +1008,14 @@ function sirivikCentre() {
   const v = new Vox(SIZE, { corner: 5 });
   v.mistColour = '#a8acb4';
   slab(v, (x, z) => (hash(x, z, 61) > 0.85 ? '#4e4a58' : (x + 2 * z) % 9 === 0 ? '#3a3644' : '#46424e'));
-  const dark = { roof: '#2a2830', trim: '#6a6670', door: '#2a2024', shutters: '#2a2830' };
-  townhouse(v, { x: 0, z: 0, w: 15, d: 10, floors: 2, wall: '#4a4650', ...dark });
-  townhouse(v, { x: 15, z: 0, w: 14, d: 10, floors: 2, wall: '#55505a', ...dark }); // the hostel
-  townhouse(v, { x: 29, z: 0, w: 16, d: 10, floors: 2, wall: '#3e3a44', ...dark }); // the bar
-  townhouse(v, { x: 45, z: 0, w: 15, d: 10, floors: 2, wall: '#4e4a54', ...dark });
-  townhouse(v, { x: 0, z: 10, w: 14, d: 10, face: 'east', floors: 2, wall: '#504c56', ...dark }); // Paul's shop
-  townhouse(v, { x: 0, z: 24, w: 16, d: 10, face: 'east', floors: 2, wall: '#46424c', ...dark });
-  townhouse(v, { x: 50, z: 12, w: 16, d: 10, face: 'west', floors: 2, wall: '#4a4650', ...dark });
-  townhouse(v, { x: 50, z: 28, w: 14, d: 10, face: 'west', floors: 2, wall: '#3e3a44', ...dark });
+  shack(v, { x: 0, z: 0, w: 15, d: 10, seed: 1, wall: '#8a8070' });
+  shack(v, { x: 15, z: 0, w: 14, d: 10, seed: 2, wall: '#7e7464' }); // the hostel
+  shack(v, { x: 29, z: 0, w: 16, d: 10, seed: 3, wall: '#928674' }); // the bar
+  shack(v, { x: 45, z: 0, w: 15, d: 10, seed: 4, wall: '#867c6c' });
+  shack(v, { x: 0, z: 10, w: 14, d: 10, face: 'east', seed: 5, wall: '#7e7464' }); // Paul's shop
+  shack(v, { x: 0, z: 24, w: 16, d: 10, face: 'east', seed: 6, wall: '#8a8070' });
+  shack(v, { x: 50, z: 12, w: 16, d: 10, face: 'west', seed: 7, wall: '#928674' });
+  shack(v, { x: 50, z: 28, w: 14, d: 10, face: 'west', seed: 8, wall: '#7e7464' });
   // Hanging signs: a bed (the hostel), a mug (the bar), a lantern lit in Paul's window.
   for (const [x, c] of [[22, '#c8c0b0'], [37, '#8a6440']]) { for (let z = 10; z <= 13; z++) v.set(x, 18, z, '#2e2a2e'); v.box(x - 2, 13, 13, x + 3, 17, 14, '#4a3020'); v.box(x - 1, 14, 13, x + 2, 16, 14, c); }
   v.light(10, 9, 14, '#ffb347'); v.light(10, 10, 14, '#ffb347');
@@ -996,12 +1046,17 @@ function sirivikCentre() {
 // fire, and an empty chair with a crow feather left on it.
 function sirivikBar() {
   const v = new Vox(SIZE, { corner: 3 });
-  slab(v, (x, z) => (hash(x, z, 71) > 0.85 ? '#3a2e24' : Math.floor(z / 2) % 2 ? '#4a3a2c' : '#433426'));
-  const plank = (x, y, z) => (hash(x, y, z) > 0.85 ? '#3a2e24' : y % 4 === 0 ? '#2e241c' : '#4a3a2c');
+  // Grey, rotten floorboards with gaps and a broken hole.
+  slab(v, (x, z) => (Math.hypot(x - 22, z - 40) < 2.5 ? '#141210' : z % 3 === 0 && hash(x, z, 72) > 0.6 ? '#1e1a18' : hash(x, z, 71) > 0.85 ? '#4a4640' : Math.floor(z / 3) % 2 ? '#5a554e' : '#524d46'));
+  for (let x = 20; x <= 24; x++) v.set(x, 1, 42, '#5a554e'); v.set(25, 1, 39, '#524d46');
+  const plank = (x, y, z) => (hash(x, y, z) > 0.9 ? '#4a4640' : y % 4 === 0 ? '#5a554e' : hash(x, y, z) > 0.6 ? '#726c62' : '#7c766a');
   for (let x = 0; x < SIZE; x++) for (let z = 0; z <= 2; z++) for (let y = 1; y <= 20; y++) v.set(x, y, z, plank(x, y, z));
   for (const [x0, x1] of [[0, 2], [SIZE - 3, SIZE - 1]]) for (let x = x0; x <= x1; x++) for (let z = 3; z <= 44; z++) for (let y = 1; y <= 13; y++) v.set(x, y, z, plank(x, y, z));
+  // Holes in the walls where planks have rotted away, and a broken window boarded up.
+  for (const [x, y, z, n] of [[48, 14, 0, 4], [9, 4, 0, 3], [0, 8, 34, 3], [SIZE - 3, 5, 10, 4]]) for (let k = 0; k < n; k++) for (let t = 0; t <= 2; t++) { if (z === 0) v.clear(x + k, y, t); else v.clear(x + t, y + k, z); }
+  for (let x = 38; x <= 46; x++) for (let y = 10; y <= 16; y++) v.set(x, y, 2, (y - 10) % 2 ? '#6a5a44' : (hash(x, y, 73) > 0.7 ? '#8a9aa4' : '#141210'));
   // The bar: scarred wood, a few dusty bottles, one keg, a lantern.
-  v.box(14, 1, 9, 44, 5, 12, '#3a2c20'); v.box(13, 5, 9, 45, 6, 12, '#4e3a28');
+  v.box(14, 1, 9, 44, 5, 12, '#45403a'); v.box(13, 5, 9, 45, 6, 12, '#5a554e'); v.clear(20, 5, 11); v.clear(21, 5, 11); // a chunk broken off the bar top
   for (let x = 16; x <= 42; x++) v.set(x, 8, 3, '#2e241c');
   for (const x of [18, 23, 27, 34, 39]) { v.set(x, 9, 3, hash(x, 1, 2) > 0.5 ? '#3a5a3a' : '#5a3a2a'); v.set(x, 10, 3, '#3a5a3a'); }
   v.box(30, 1, 3, 34, 5, 6, '#5a3a22'); v.set(32, 3, 6, '#2a2a2e');
@@ -1016,15 +1071,15 @@ function sirivikBar() {
   v.light(54, 1, 15, '#c8602a'); v.light(54, 1, 16, '#a8502a');
   // Crooked tables with a candle each, stools, one empty chair with a crow feather.
   for (const [x, z] of [[12, 24], [26, 30], [44, 26], [16, 38], [40, 38]]) {
-    v.box(x, 1, z, x + 1, 4, z + 1, '#3a2c20'); v.box(x - 2, 4, z - 1, x + 3, 5, z + 2, '#4e3a28');
+    v.box(x, 1, z, x + 1, 4, z + 1, '#45403a'); v.box(x - 2, 4, z - 1, x + 3, 5, z + 2, '#5a554e');
     v.set(x, 5, z, '#d8cfbe'); v.light(x, 6, z, '#e8a050');
-    for (const [dx, dz] of [[-4, 0], [4, 1], [0, 4]]) v.box(x + dx, 1, z + dz, x + dx + 1, 3, z + dz + 1, '#3a2c20');
+    for (const [dx, dz] of [[-4, 0], [4, 1], [0, 4]]) v.box(x + dx, 1, z + dz, x + dx + 1, 3, z + dz + 1, '#45403a');
   }
   v.box(33, 1, 30, 35, 4, 32, '#3a2c20'); for (let y = 4; y <= 8; y++) v.set(33, y, 30, '#3a2c20'); v.set(34, 4, 31, '#141216');
   return {
     v, heroSpots: HERO_SPOTS,
     npcSpots: [[30, 7], [22, 18], [38, 18], [14, 30], [44, 32], [24, 25], [36, 24], [20, 42], [40, 43]],
-    mood: { bg: 'radial-gradient(ellipse at 50% 30%, #2e241c, #0e0a08)', sky: '#e8c8a0', ground: '#2e241c', hemi: 1.3, sun: '#e8c090', sunPower: 1.4, sunAt: [-20, 70, 50], exposure: 1.2 },
+    mood: { bg: 'radial-gradient(ellipse at 50% 30%, #2e2c2a, #0c0c0c)', sky: '#c8ccd0', ground: '#3a3836', hemi: 1.4, sun: '#d8d4cc', sunPower: 1.4, sunAt: [-20, 70, 50], exposure: 1.2 },
   };
 }
 

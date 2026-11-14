@@ -2422,3 +2422,16 @@ body[data-screen="combat"]:not(:has(#combat.is-battle)) .tags-toggle { display: 
 .scn__sep { height: 0; border-top: 1.5px solid var(--pp-line-dark); margin: 4px 0; }
 .scn__clear { background: none; border: 0; padding: 0; cursor: pointer; font: inherit; color: var(--pp-accent); text-decoration: underline; }
 .scn__panel.is-folded .scn__form { display: none; }
+
+/* The place's name: a small card hanging from the top bar, dropping down when a scene opens or changes. */
+.scn__plate {
+  top: calc(var(--top) - 16px); left: 50%; right: auto; transform: translateX(-50%); max-width: min(360px, calc(100% - 140px));
+  flex-direction: row; flex-wrap: nowrap; align-items: center; gap: 8px; padding: 6px 12px 3px; border-width: 9px; border-image-width: 14px;
+  animation: scn-drop 0.45s cubic-bezier(.2, 1.4, .4, 1);
+}
+.scn__plate small { flex-basis: auto; font-size: 9.5px; }
+.scn__plate b { font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.scn__plate .scn__tags { width: 22px; height: 22px; }
+@keyframes scn-drop { from { transform: translate(-50%, -110%); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
+@media (orientation: portrait) and (max-width: 600px) { .scn__plate { top: calc(var(--safe-t, 0px) + 6px); left: 50%; max-width: calc(100% - 24px); } }
+@media (max-height: 500px) and (orientation: landscape) { .scn__plate { top: calc(var(--top) - 10px); left: 50%; max-width: 46%; } }

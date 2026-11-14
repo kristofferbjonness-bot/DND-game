@@ -89,6 +89,7 @@ export function createSceneScreen(root, { entries, heroes, monsters, canEdit, li
         <small>${esc(area.town)}</small>
         <b>${esc(area.name)}</b>
         <button type="button" class="scn__tags" title="Hide or show the names" aria-label="Hide or show the names"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h11l4 5-4 5H4z" /><path d="M8 12h5" /></svg></button>`;
+      if (plate.dataset.area !== s.data.area) { plate.dataset.area = s.data.area; plate.style.animation = 'none'; void plate.offsetWidth; plate.style.animation = ''; } // drop down again for a new place
       const people = cast(s.data), crew = heroesIn(s.data);
       const key = JSON.stringify([s.data.area, people.map((p) => p.key + p.model), crew.map((c) => `${c.id}|${JSON.stringify(c.equipped)}|${c.figure ? 1 : 0}`)]);
       if (key !== shownKey) { shownKey = key; view.show({ area: s.data.area, heroes: crew, npcs: people }); card.hidden = true; }
@@ -247,7 +248,7 @@ export function createSceneScreen(root, { entries, heroes, monsters, canEdit, li
   panel.addEventListener('submit', (e) => e.preventDefault());
 
   return {
-    start() { running = true; view.start(); draw(); },
+    start() { running = true; plate.dataset.area = ''; view.start(); draw(); },
     stop() { running = false; view.stop(); },
     // The journal, the party or the live scene changed somewhere.
     refresh() { if (running) draw(); else shownKey = shownKey && 'stale'; },
