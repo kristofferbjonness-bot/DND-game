@@ -2,6 +2,7 @@
 import * as THREE from 'three';
 import { bevelBox } from '../fx/bevelBox.js';
 import { grid, BIOME, idx, cellToWorld, distToSea, hash, LAYER, darkForest } from './grid.js';
+import { road } from './roads.js';
 
 // Chance of a plant per cell, by biome.
 const DENSITY = {
@@ -65,7 +66,7 @@ export function buildPlants(avoid) {
     const h = grid.heights[k];
     if (!grid.land[k] || grid.river[k] || h < 1 || h >= 7) continue;
     if (distToSea[k] <= 1) continue;
-    if (avoid(x, z)) continue;
+    if (avoid(x, z) || road[k]) continue;
     const b = grid.biome[k];
     // Towards a dark forest, trees grow thicker and turn into grey pines and dead trees.
     const dark = darkForest(x, z);

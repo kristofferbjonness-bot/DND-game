@@ -102,8 +102,8 @@ function flat(x, z, r = 1) {
   return true;
 }
 
-function homes(kind, spec, avoid) {
-  const out = [];
+function homes(kind, spec, avoid, extra) {
+  const out = extra.filter((e) => e.kind === kind).map((e) => e.cell); // herds kept by people (camps)
   const cells = [];
   const seed = 90 + [...kind].reduce((n, ch) => n * 7 + ch.charCodeAt(0), 0) % 997; // a different spread per kind
   for (let z = 3; z < grid.rows - 3; z++) for (let x = 3; x < grid.cols - 3; x++) {
@@ -125,11 +125,12 @@ function homes(kind, spec, avoid) {
   return out;
 }
 
-export function buildAnimals(avoid = () => false) {
+// `extra`: [{ kind, cell: [x, z] }] herds placed by hand (the nomads' horses and camels).
+export function buildAnimals(avoid = () => false, extra = []) {
   const group = new THREE.Group();
   const kinds = [];
   for (const [name, spec] of Object.entries(KINDS)) {
-    const herds = homes(name, spec, avoid);
+    const herds = homes(name, spec, avoid, extra);
     const animals = [];
     herds.forEach(([hx, hz], h) => {
       const n = spec.size[0] + Math.floor(hash(hx, hz, 91) * (spec.size[1] - spec.size[0] + 1));

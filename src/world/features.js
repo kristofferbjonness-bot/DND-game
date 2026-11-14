@@ -241,3 +241,104 @@ export function buildMountainMist(spots) {
   g.userData.update = update;
   return g;
 }
+
+// A big mine dug into a mountainside: a timbered tunnel mouth, a wooden headframe with its wheel,
+// spoil heaps, a little rail track with an ore cart, a shed and lanterns. Faces +z (the way out).
+export function buildMine() {
+  const g = new THREE.Group();
+  const timber = solid('#6b4a2e'), timberDark = solid('#4e3520'), rock = solid('#7a726a'), spoil = solid('#8a8276'), spoilDark = solid('#6e675e');
+  const rail = solid('#4a4a50'), cart = solid('#5a5a62'), ore = solid('#3a3632'), shed = solid('#9a7a54'), roof = solid('#5a4a3e');
+  const black = new THREE.MeshBasicMaterial({ color: '#0e0b0a' });
+  // The tunnel mouth in a heap of rock.
+  block(g, [2.2, 1.3, 1.2], [0, 0, -0.9], rock);
+  const hole = new THREE.Mesh(bevelBox(0.8, 0.85, 0.1, 0.02).clone().translate(0, 0.43, 0), black);
+  hole.position.set(0, 0, -0.28);
+  g.add(hole);
+  block(g, [0.12, 0.95, 0.12], [-0.48, 0, -0.25], timber); block(g, [0.12, 0.95, 0.12], [0.48, 0, -0.25], timber);
+  block(g, [1.15, 0.13, 0.16], [0, 0.95, -0.25], timberDark);
+  // The headframe tower with its wheel.
+  for (const [x, z] of [[1.3, -0.5], [1.9, -0.5], [1.3, 0.1], [1.9, 0.1]]) block(g, [0.09, 1.9, 0.09], [x, 0, z], timber);
+  block(g, [0.75, 0.09, 0.75], [1.6, 1.9, -0.2], timberDark);
+  block(g, [0.75, 0.09, 0.09], [1.6, 1.0, -0.5], timberDark); block(g, [0.75, 0.09, 0.09], [1.6, 1.0, 0.1], timberDark);
+  const wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.08, 10), timberDark);
+  wheel.rotation.x = Math.PI / 2;
+  wheel.position.set(1.6, 2.3, -0.2);
+  g.add(wheel);
+  // Spoil heaps.
+  block(g, [1.0, 0.45, 0.9], [-1.6, 0, 0.1], spoil); block(g, [0.6, 0.3, 0.55], [-1.6, 0.45, 0.1], spoilDark);
+  block(g, [0.7, 0.3, 0.6], [-1.2, 0, 0.9], spoilDark);
+  // Rails out of the tunnel with an ore cart.
+  for (const x of [-0.18, 0.18]) block(g, [0.04, 0.04, 1.8], [x, 0.02, 0.6], rail);
+  for (let i = 0; i < 6; i++) block(g, [0.5, 0.04, 0.08], [0, 0, -0.15 + i * 0.3], timberDark);
+  block(g, [0.42, 0.28, 0.5], [0, 0.08, 0.85], cart); block(g, [0.34, 0.08, 0.4], [0, 0.36, 0.85], ore);
+  // A shed and lanterns.
+  block(g, [0.8, 0.5, 0.6], [1.5, 0, 1.0], shed); block(g, [0.92, 0.1, 0.72], [1.5, 0.5, 1.0], roof); block(g, [0.6, 0.1, 0.5], [1.5, 0.6, 1.0], roof);
+  const lamp = new THREE.MeshBasicMaterial({ color: '#ffcf70', toneMapped: false });
+  for (const x of [-0.65, 0.65]) {
+    block(g, [0.06, 0.7, 0.06], [x, 0, 0.1], timber);
+    const l = new THREE.Mesh(bevelBox(0.12, 0.12, 0.12, 0.02).clone().translate(0, 0.06, 0), lamp);
+    l.position.set(x, 0.7, 0.1);
+    g.add(l);
+  }
+  g.userData.update = (dt) => { wheel.rotation.y += dt * 0.6; };
+  return g;
+}
+
+// A camp of horse nomads (Mongolian-style felt tents): round white gers with domed roofs, a red
+// roof ring and painted doors, a horse corral, a fire and a pole with blue streamers.
+export function buildYurtCamp(n = 5) {
+  const g = new THREE.Group();
+  const felt = solid('#efe8d8'), feltShade = solid('#ddd4c0'), ring = solid('#b8462a'), doorRed = solid('#b8462a'), doorBlue = solid('#2f6aa8');
+  const fence = solid('#7a5636'), blue = solid('#3f7fc8'), pole = solid('#5b4a3a'), stone = solid('#7a7068');
+  for (let i = 0; i < n; i++) {
+    const a = (i / n) * Math.PI * 2 + 0.4, r = 1.3 + hash(i, 1, 101) * 0.3;
+    const x = Math.cos(a) * r, z = Math.sin(a) * r * 0.8, s = 0.85 + hash(i, 2, 101) * 0.3;
+    const wall = new THREE.Mesh(new THREE.CylinderGeometry(0.42 * s, 0.42 * s, 0.32 * s, 10), felt);
+    wall.position.set(x, 0.16 * s, z);
+    const dome = new THREE.Mesh(new THREE.ConeGeometry(0.46 * s, 0.26 * s, 10), feltShade);
+    dome.position.set(x, 0.32 * s + 0.13 * s, z);
+    const crown = new THREE.Mesh(new THREE.CylinderGeometry(0.08 * s, 0.1 * s, 0.06 * s, 8), ring);
+    crown.position.set(x, 0.58 * s, z);
+    for (const m of [wall, dome, crown]) { m.castShadow = m.receiveShadow = true; g.add(m); }
+    // The door faces the middle of the camp.
+    const door = block(g, [0.16 * s, 0.22 * s, 0.04], [x - Math.cos(a) * 0.42 * s, 0, z - Math.sin(a) * 0.42 * s * 0.8], i % 2 ? doorRed : doorBlue);
+    door.rotation.y = -a + Math.PI / 2;
+  }
+  // The fire in the middle, a pole with streamers, and a corral to one side.
+  for (let i = 0; i < 6; i++) block(g, [0.08, 0.06, 0.08], [Math.cos(i) * 0.18, 0, Math.sin(i) * 0.18], stone);
+  const fire = new THREE.Mesh(bevelBox(0.12, 0.14, 0.12, 0.02).clone().translate(0, 0.07, 0), new THREE.MeshBasicMaterial({ color: '#ffb347', toneMapped: false }));
+  g.add(fire);
+  block(g, [0.05, 1.2, 0.05], [0.4, 0, -0.3], pole);
+  block(g, [0.04, 0.5, 0.18], [0.4, 0.7, -0.4], blue);
+  for (let i = 0; i <= 8; i++) {
+    const a = (i / 8) * Math.PI * 2, x = 2.9 + Math.cos(a) * 0.8, z = 0.4 + Math.sin(a) * 0.6;
+    block(g, [0.05, 0.22, 0.05], [x, 0, z], fence);
+  }
+  return g;
+}
+
+// A desert nomads' camp: long low tents of dark, striped goat-hair cloth, rugs, a fire and a palm.
+export function buildDesertCamp(n = 3) {
+  const g = new THREE.Group();
+  const cloth = [solid('#4a3428'), solid('#6a4a34'), solid('#3a2a22')], stripe = solid('#c9a26a'), pole = solid('#5b4a3a');
+  const rugs = [solid('#9b2f2a'), solid('#2f4f7a'), solid('#c9902a')];
+  for (let i = 0; i < n; i++) {
+    const x = (i - (n - 1) / 2) * 1.4, z = (hash(i, 3, 102) - 0.5) * 1.2, rot = (hash(i, 4, 102) - 0.5) * 0.8;
+    const t = new THREE.Group();
+    t.position.set(x, 0, z);
+    t.rotation.y = rot;
+    block(t, [1.1, 0.06, 0.8], [0, 0.32, 0], cloth[i % 3]); // the flat roof
+    block(t, [1.1, 0.04, 0.06], [0, 0.36, 0], stripe);
+    block(t, [1.1, 0.32, 0.05], [0, 0, -0.38], cloth[(i + 1) % 3]); // back wall
+    for (const [px, pz] of [[-0.5, 0.36], [0.5, 0.36], [-0.5, -0.36], [0.5, -0.36], [0, 0.36]]) block(t, [0.04, 0.34, 0.04], [px, 0, pz], pole);
+    block(t, [0.7, 0.02, 0.5], [0, 0, 0.05], rugs[i % 3]);
+    g.add(t);
+  }
+  const fire = new THREE.Mesh(bevelBox(0.12, 0.14, 0.12, 0.02).clone().translate(0, 0.07, 0), new THREE.MeshBasicMaterial({ color: '#ffb347', toneMapped: false }));
+  fire.position.set(0, 0, 1.0);
+  g.add(fire);
+  const trunk = solid('#9b7348'), leaf = solid('#4fb35a');
+  block(g, [0.12, 1.0, 0.12], [-2.0, 0, 0.6], trunk);
+  for (const [dx, dz] of [[0.35, 0], [-0.35, 0], [0, 0.35], [0, -0.35]]) block(g, [Math.abs(dx) ? 0.5 : 0.12, 0.08, Math.abs(dz) ? 0.5 : 0.12], [-2.0 + dx * 0.6, 0.98, 0.6 + dz * 0.6], leaf);
+  return g;
+}

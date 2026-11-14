@@ -11,7 +11,8 @@ import { buildTerrain, surfaceY } from './world/terrain.js';
 import { buildPlants, buildClouds } from './world/scatter.js';
 import { buildLandmark } from './world/landmarks.js';
 import { buildAnimals } from './world/animals.js';
-import { buildLighthouse, buildShadowMist, buildCabin, buildBridge, buildVolcanoSparks, buildCloudCap, buildMountainMist } from './world/features.js';
+import { MINE, crossings } from './world/roads.js';
+import { buildLighthouse, buildShadowMist, buildCabin, buildBridge, buildVolcanoSparks, buildCloudCap, buildMountainMist, buildMine, buildYurtCamp, buildDesertCamp } from './world/features.js';
 import { LOCATIONS } from './world/locations.js';
 import { CITIES } from './city/cities.js';
 import { createTiltShiftPasses } from './fx/tiltShift.js';
@@ -140,11 +141,27 @@ function buildWorldView() {
   // bridge over the river that runs out of the mountains east of Ytterhavn.
   const sortCell = places.find((p) => p.id === 'sortland') ? nearestLand(...pixelToCell(places.find((p) => p.id === 'sortland').px)) : null;
   const BRIDGE = { cx: 104, from: 106, to: 108 };
-  const clear = [...(sortCell ? [[sortCell[0], sortCell[1], 2]] : []), [BRIDGE.cx, BRIDGE.from, 0], [BRIDGE.cx, BRIDGE.to, 0]];
+  // Horse nomads on Lama's east side by the Strait of Skinder; desert nomads in Rama's desert.
+  const NOMADS = [[90, 90], [86, 80]].map(([x, z]) => nearestLand(x, z));
+  const DESERT = (() => {
+    const out = [];
+    for (let z = 90; z < grid.rows - 4 && out.length < 3; z += 3) for (let x = 115; x < grid.cols - 4 && out.length < 3; x += 3) {
+      const k = z * grid.cols + x;
+      if (!grid.land[k] || grid.biome[k] !== 3 || grid.heights[k] < 1 || grid.heights[k] > 5 || cellHash(x, z, 103) < 0.75) continue;
+      let flatHere = true;
+      for (let dz = -2; dz <= 2 && flatHere; dz++) for (let dx = -2; dx <= 2; dx++) { const j = (z + dz) * grid.cols + x + dx; if (!grid.land[j] || Math.abs(grid.heights[j] - grid.heights[k]) > 1) { flatHere = false; break; } }
+      if (!flatHere || towns.some((p) => Math.hypot(p.cx - x, p.cz - z) < 12) || out.some(([ox, oz]) => Math.hypot(ox - x, oz - z) < 22)) continue;
+      out.push([x, z]);
+    }
+    return out;
+  })();
+  const clear = [...(sortCell ? [[sortCell[0], sortCell[1], 2]] : []), [BRIDGE.cx, BRIDGE.from, 0], [BRIDGE.cx, BRIDGE.to, 0],
+    [MINE.cx, MINE.cz, 2], ...NOMADS.map(([x, z]) => [x, z, 3]), ...DESERT.map(([x, z]) => [x, z, 3])];
   const plants = buildPlants((x, z) => towns.some((p) => Math.abs(p.cx - x) <= 3 && Math.abs(p.cz - z) <= 3)
     || clear.some(([cx, cz, r]) => Math.abs(cx - x) <= r && Math.abs(cz - z) <= r));
   scene.add(plants);
-  const animals = buildAnimals((x, z) => towns.some((p) => Math.abs(p.cx - x) <= 4 && Math.abs(p.cz - z) <= 4));
+  const animals = buildAnimals((x, z) => towns.some((p) => Math.abs(p.cx - x) <= 4 && Math.abs(p.cz - z) <= 4) || clear.some(([cx, cz, r]) => Math.abs(cx - x) <= r + 1 && Math.abs(cz - z) <= r + 1),
+    [...NOMADS.map(([x, z]) => ({ kind: 'horse', cell: [x + 4, z + 1] })), ...DESERT.map(([x, z]) => ({ kind: 'camel', cell: [x + 3, z + 2] }))]);
   scene.add(animals);
   const clouds = buildClouds();
   scene.add(clouds);
@@ -177,6 +194,25 @@ function buildWorldView() {
     cabin.rotation.y = 0.5;
     cabin.scale.setScalar(1.7);
     scene.add(cabin);
+  }
+  // The mine, facing Bartedalen; the nomads' camps; plank bridges where a road fords a river.
+  {
+    const mine = buildMine();
+    const [x, z] = cellToWorld(MINE.cx, MINE.cz);
+    const bart = places.find((p) => p.id === 'bartedalen');
+    mine.position.set(x, surfaceY(MINE.cx, MINE.cz), z);
+    if (bart) mine.rotation.y = Math.atan2(bart.x - x, bart.z - z);
+    mine.scale.setScalar(1.7);
+    scene.add(mine); features.push(mine);
+  }
+  for (const [cx, cz] of NOMADS) { const camp = buildYurtCamp(5); const [x, z] = cellToWorld(cx, cz); camp.position.set(x, surfaceY(cx, cz), z); camp.scale.setScalar(1.7); scene.add(camp); }
+  for (const [cx, cz] of DESERT) { const camp = buildDesertCamp(3); const [x, z] = cellToWorld(cx, cz); camp.position.set(x, surfaceY(cx, cz), z); camp.rotation.y = cellHash(cx, cz, 104) * 6; camp.scale.setScalar(1.5); scene.add(camp); }
+  for (const [cx, cz, alongX] of crossings) {
+    const b = buildBridge(1.6);
+    const [x, z] = cellToWorld(cx, cz);
+    b.position.set(x, surfaceY(cx, cz) + 0.35, z);
+    if (alongX) b.rotation.y = Math.PI / 2;
+    scene.add(b);
   }
   // The volcano smokes from its lava crater; the ice mountain's summit is lost in cloud.
   for (const p of PEAKS) {
