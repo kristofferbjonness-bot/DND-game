@@ -339,7 +339,6 @@ body[data-role="player"][data-fight="on"] .topnav__tab--dm { color: var(--paper-
 /* You: your hero (or the Dungeon Master). Opens the menu. */
 .bar__me { display: flex; align-items: center; gap: 9px; padding: 4px 8px 4px 4px !important; border-radius: 6px; max-width: 220px; }
 .bar__me:hover { background: rgba(156, 47, 34, 0.07); }
-.bar__me.is-previewing { background: rgba(91, 69, 144, 0.14); box-shadow: inset 0 0 0 1px rgba(91, 69, 144, 0.55); }
 .bar__me-text { display: flex; flex-direction: column; min-width: 0; text-align: left; line-height: 1.15; }
 .bar__me-text small { font-size: 11px; color: var(--paper-ink-soft); white-space: nowrap; }
 .bar__me-text b { font: 700 13px var(--font-display); color: var(--paper-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
