@@ -5,7 +5,7 @@
 import { ABILITIES, SKILLS, derive, signed, modifier } from '../character/rules.js';
 import { createCharacterViewer } from './viewer.js';
 import { ITEMS } from '../data/items.js';
-import { SLOTS, optionsFor, equip } from '../character/equipment.js';
+import { SLOTS, companionLoad, optionsFor, equip } from '../character/equipment.js';
 import { itemInfo, spendAbilityPoints, MAX_SCORE } from '../character/progress.js';
 import { icon } from '../ui/icons.js';
 import { heroPortrait, portraitImg } from '../ui/portraits.js';
@@ -115,9 +115,9 @@ function sheet(c, tab, editable, dm, pending) {
   const gear = `
     <h3 class="sheet__h">Equipped</h3>
     <div class="slots">
-      ${SLOTS.map((slot) => {
+      ${SLOTS.filter((slot) => !slot.only || slot.only(c)).map((slot) => {
         const { ids, reason } = optionsFor(c, slot.id);
-        const current = c.equipped[slot.id];
+        const current = slot.id === 'companion' ? companionLoad(c) : c.equipped[slot.id];
         return `
         <label class="slot">
           <span class="slot__icon">${icon(SLOT_ICON[slot.id] ?? 'bag')}</span>

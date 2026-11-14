@@ -304,9 +304,10 @@ export const NPC_FIGURES = {
   'per-hul-oye': { name: 'Per Hul Øye', match: /per hul/i, build: perHulOye },
   paul: { name: 'Three-Fingered Paul', match: /three.fingered paul/i, build: threeFingeredPaul },
   'hostel-owner': { name: 'The hostel owner', match: /hostel owner/i, build: hostelOwner },
+  varg: { name: 'Varg (Edbart’s wolf)', match: /^varg$/i, build: null }, // built in model.js (MONSTER_LOOKS)
 };
 
-for (const [id, f] of Object.entries(NPC_FIGURES)) registerRecipe(`npc-${id}`, f.build());
+for (const [id, f] of Object.entries(NPC_FIGURES)) if (f.build) registerRecipe(`npc-${id}`, f.build());
 
 // The figure id for a journal person: their chosen figure, or one matching their name.
 export function npcFigureId(data) {

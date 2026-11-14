@@ -11,6 +11,7 @@ import * as THREE from 'three';
 import { bevelBox } from '../fx/bevelBox.js';
 import { hash } from '../city/vox.js';
 import { ITEMS, has } from '../data/items.js';
+import { companionLoad } from './equipment.js';
 
 const solidMat = new THREE.MeshStandardMaterial({ roughness: 0.85 });
 const glowMat = new THREE.MeshBasicMaterial({ toneMapped: false });
@@ -420,7 +421,10 @@ function flameSlinger() {
 }
 
 // --- Varg, Edbart's wolf ----------------------------------------------------------------
-function buildVarg(x0, z0) {
+// Varg, Edbart's wolf. `load` is what he carries on his back: 'young-hooknose' (the captured
+// Hooknose riding him, strapped on), a weapon (lashed along his back), any other item (saddle
+// bags), or nothing.
+function buildVarg(x0, z0, load = null) {
   const C = { fur: '#8e959d', furLight: '#d6dade', furDark: '#5f666e', nose: '#2a2628', eye: '#f2c94c' };
   const group = new THREE.Group();
   const body = new Part();
@@ -440,6 +444,31 @@ function buildVarg(x0, z0) {
   const headMesh = head.build();
   group.add(headMesh);
 
+  const item = load && ITEMS[load];
+  if (item) {
+    const strap = new Part();
+    for (let y = 3; y <= 7; y++) { strap.set(x0 - 1, y, z0 + 2, '#5e3d27'); strap.set(x0 + 3, y, z0 + 2, '#5e3d27'); }
+    strap.box(x0, 7, z0 + 2, x0 + 2, 7, z0 + 2, '#5e3d27');
+    group.add(strap.build());
+    if (load === 'young-hooknose') {
+      const rider = buildHooknose();
+      rider.group.scale.setScalar(0.6);
+      rider.group.position.set(x0 + 1, 6.4, z0 + 2);
+      group.add(rider.group);
+      group.userData.rider = rider;
+    } else if (item.kind === 'weapon' || item.kind === 'shield') {
+      const w = heldWeapon(item, 1, [0, 0, 0]);
+      w.rotation.set(Math.PI / 2, 0, 0);
+      w.position.set(x0 + 1, 7.6, z0 + 2.5);
+      group.add(w);
+    } else {
+      const bags = new Part();
+      for (const x of [x0 - 1, x0 + 3]) bags.box(x, 4, z0 + 1, x, 6, z0 + 3, x === x0 - 1 ? '#7a5236' : '#6b4a30');
+      bags.box(x0, 7, z0 + 1, x0 + 2, 7, z0 + 3, '#8a6440');
+      group.add(bags.build());
+    }
+  }
+
   const tail = new Part([x0 + 1, 6, z0 - 2]);
   tail.set(x0 + 1, 6, z0 - 2, C.fur).set(x0 + 1, 6, z0 - 3, C.fur).set(x0 + 1, 5, z0 - 4, C.fur).set(x0 + 1, 4, z0 - 5, C.furLight);
   const tailMesh = tail.build();
@@ -448,6 +477,7 @@ function buildVarg(x0, z0) {
   return {
     group,
     update(t) {
+      group.userData.rider?.update(t * 0.5);
       tailMesh.rotation.y = Math.sin(t * 5) * 0.35;
       headMesh.rotation.y = Math.sin(t * 0.6 + 2) * 0.25;
       headMesh.rotation.x = Math.sin(t * 0.4) * 0.06;
@@ -458,7 +488,7 @@ function buildVarg(x0, z0) {
 // --- Edbart Frostvarg ----------------------------------------------------------------------
 // A hunter from the mountains of Fjellene av Ferran: a wolf-pelt hood, a great
 // dark beard, a long pelt cloak, and Varg at his side.
-function edbart() {
+function edbart(c) {
   const C = {
     skin: '#e2a982', beard: '#5a3a24', beardDark: '#43291a',
     pelt: '#9aa3ad', peltLight: '#d7dce0', peltDark: '#6f7882', snout: '#2f2b2c',
@@ -505,7 +535,7 @@ function edbart() {
     legs, body, cloak, head,
     clothes: (x, y, z) => (x === 0 && z === 1 ? C.leatherDark : z === -1 ? C.shirtShade : C.shirt),
     sleeves: { sleeve: C.shirt, cuff: C.leather, cuffLine: C.leatherDark, skin: C.skin },
-    extras: [buildVarg(5, -3)],
+    extras: [buildVarg(5, -3, c ? companionLoad(c) : 'young-hooknose')],
     offsetX: -2.5, // keep Edbart and Varg centred on the stage
     stage: 9, zoom: 1.2,
   };
@@ -517,7 +547,7 @@ const LOOKS = { rikart, 'flame-slinger': flameSlinger, edbart };
 // in the character creator carry a recipe Claude designed (`figure`).
 export function buildFigure(character) {
   if (character.figure) return buildRecipeHero(character.figure, character);
-  const look = LOOKS[character.model]?.();
+  const look = LOOKS[character.model]?.(character);
   if (!look) return null;
   const figure = dress(look, character);
   figure.group.position.x = look.offsetX ?? 0;
@@ -595,7 +625,12 @@ function buildHooknose() {
   };
 }
 
-const MONSTER_LOOKS = { hooknose: buildHooknose };
+// Varg on his own, for scenes (centred, carrying nothing).
+function vargAlone() {
+  const v = buildVarg(-1, -4);
+  return { ...v, stage: 5, zoom: 0.6 };
+}
+const MONSTER_LOOKS = { hooknose: buildHooknose, 'npc-varg': vargAlone };
 
 // --- Recipe figures (made by the monster generator) ----------------------------------------------
 // A recipe describes a figure as parts made of coloured boxes:

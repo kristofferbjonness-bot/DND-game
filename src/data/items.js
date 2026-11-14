@@ -69,6 +69,8 @@ export const ITEMS = {
   whetstone: { name: 'Whetstone', kind: 'gear' },
   bedroll: { name: 'Bedroll', kind: 'gear' },
   waterskin: { name: 'Waterskin', kind: 'gear' },
+  // Not an item to carry: the young Hooknose riding on Varg (Varg's load, see the 'companion' slot).
+  'young-hooknose': { name: 'The young Hooknose (riding)', kind: 'passenger' },
   'hooknose-map': { name: 'Map', kind: 'gear', note: 'Taken from a dead Hooknose' },
   'magnum-condoms': { name: 'Magnum condoms', kind: 'gear', note: 'From the corpse of the Toucher of Girls' },
   'thieves-tools': { name: "Thieves' tools", kind: 'gear' },

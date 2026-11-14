@@ -9,13 +9,21 @@ export const SLOTS = [
   { id: 'mainHand', label: 'Main hand' },
   { id: 'offHand', label: 'Off hand' },
   { id: 'armour', label: 'Armour' },
+  // Edbart's wolf Varg carries one thing on his back: the young Hooknose, a weapon, or any item (saddle bags).
+  { id: 'companion', label: 'Varg carries', only: (c) => c.model === 'edbart' },
 ];
+// What Varg carries when nothing has been chosen yet: the young Hooknose, as in the story.
+export const companionLoad = (c) => ('companion' in (c.equipped ?? {}) ? c.equipped.companion : 'young-hooknose');
 
 const owned = (c) => c.items.map((i) => i.id).filter((id) => ITEMS[id]);
 
 // What may go in a slot right now, and why a slot is unavailable.
 export function optionsFor(c, slot) {
   const ids = owned(c);
+  if (slot === 'companion') {
+    const inUse = new Set([c.equipped.mainHand, c.equipped.offHand, c.equipped.armour]);
+    return { ids: ['young-hooknose', ...new Set(ids.filter((id) => !inUse.has(id)))] };
+  }
   if (slot === 'armour') return { ids: ids.filter((id) => ITEMS[id].kind === 'armour') };
   const weapons = ids.filter((id) => ITEMS[id].kind === 'weapon');
   if (slot === 'mainHand') return { ids: weapons };
