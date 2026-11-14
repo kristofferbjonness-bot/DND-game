@@ -1561,6 +1561,16 @@ input.is-bad { box-shadow: inset 0 0 0 2px #e2634e; }
 .jr-face--friendly { background: #5f8a45; }
 .jr-face--hostile { background: var(--pp-accent); }
 .jr-face--neutral { background: #a07a3a; }
+.jr-face.has-pic { overflow: hidden; background: radial-gradient(circle at 50% 40%, #fbf1d8, #d8c08f); }
+.jr-face.has-pic img { width: 100%; height: 100%; object-fit: cover; }
+.jr-face--hostile.has-pic { box-shadow: 0 0 0 2px rgba(255, 252, 240, 0.8), 0 0 0 3px var(--pp-accent); }
+.jr-face--friendly.has-pic { box-shadow: 0 0 0 2px rgba(255, 252, 240, 0.8), 0 0 0 3px #5f8a45; }
+/* A person's whole figure, standing on the right of their page. */
+.jr-figure {
+  float: right; width: 150px; height: 190px; margin: 0 0 10px 14px; border-radius: 10px; overflow: hidden;
+  background: radial-gradient(ellipse at 50% 85%, #e2cc9a, #fbf1d8 60%); box-shadow: 0 0 0 2px var(--pp-line-dark), 0 0 0 5px #efe0bd, 0 0 0 6.5px var(--pp-line-dark);
+}
+.jr-figure img { width: 100%; height: 100%; object-fit: contain; }
 .jr-group small { font: 600 11px var(--font-body); letter-spacing: 0; color: #8a7458; margin-left: 2px; }
 .jr-item.is-child { padding-left: 26px; }
 .jr-item.is-child .jr-mark { width: 22px; height: 22px; }
@@ -1914,6 +1924,7 @@ button.jr-tick { cursor: pointer; }
    The bar becomes a dock along the bottom: sky, place, dice and you on top,
    the screens below. Side-by-side screens stack and scroll. */
 @media (orientation: portrait) and (max-width: 600px) {
+  .jr-figure { width: 120px; height: 152px; margin-left: 10px; }
   :root {
     --top: calc(max(12px, var(--safe-t)) + 2px);
     --nav: calc(var(--safe-b) + 118px);

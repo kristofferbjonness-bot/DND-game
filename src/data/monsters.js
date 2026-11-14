@@ -14,6 +14,30 @@ export const MONSTERS = {
     note: 'Maze-born robbers of Razz of Mataz, wrapped in indigo cloth. They rob rather than kill.',
     model: 'hooknose',
   },
+  'lord-wolf': {
+    name: 'Lord Wolf',
+    short: 'Lord Wolf',
+    kind: 'Humanoid · crime lord',
+    ac: 14,
+    hp: 60,
+    initiative: 1,
+    speed: 30,
+    attacks: [{ name: 'Wrestling slam', toHit: 5, dice: '1d8', bonus: 3, type: 'bludgeoning' }],
+    note: 'The enormous, oiled master of The Wolf in Razz of Mataz: half gym, half palace of silk.',
+    model: 'npc-lord-wolf',
+  },
+  'silk-sister': {
+    name: 'Silk Sister',
+    short: 'Silk Sister',
+    kind: 'Humanoid · guard',
+    ac: 13,
+    hp: 13,
+    initiative: 2,
+    speed: 30,
+    attacks: [{ name: 'Golden dumbbell', toHit: 3, dice: '1d6', bonus: 1, type: 'bludgeoning' }],
+    note: "Lord Wolf's inner guard, in red and gold silk. They treat a fight like a party.",
+    model: 'npc-silk-sister',
+  },
 };
 
 // Generated monsters from the bestiary (database) join the built-in ones here.

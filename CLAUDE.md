@@ -207,6 +207,12 @@ The original assets (hand-drawn world map, location art, character art, lore doc
   - Saving uses the `create_character` RPC (`supabase/creator.sql`): a player's new hero is
     owned by them at once; the DM's hero is left free to claim.
   - The DM can delete a hero from the Story tab on Status.
+- **NPC figures** (`src/character/npcFigures.js`): voxel people drawn after the owner's character art (Lord Wolf
+  and the Man Who Makes Himself Known big and muscular, Habibi, a Silk Sister, Findus, Lord Eggen, and Sirivik's
+  Per Hul Øye, Three-Fingered Paul and the hostel owner). Recipes built with small helpers (`slim`, `stout`,
+  `huge` builds), registered as `npc-<id>` monster models. Journal people show the figure (round face in the
+  list, full body on the page): `data.figure`, or by name (`match`); the person form has a "3D figure" picker.
+  Lord Wolf and Silk Sister are also Bestiary enemies (monsters.js).
 - **Revealed places (fog of names)** in main.js:
   - World-map places the players haven't discovered show as "?" and are left out of their
     places list. The info card says "Unknown place". Unnamed dots and city maps aren't hidden.

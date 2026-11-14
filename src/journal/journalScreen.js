@@ -16,7 +16,8 @@
 // Players see entries marked shown (RLS) and only map places they have discovered. Secrets are
 // never shown, so the database never sends them to players.
 import { icon } from '../ui/icons.js';
-import { monsterPortrait, portraitImg } from '../ui/portraits.js';
+import { monsterPortrait, fullPortrait, portraitImg } from '../ui/portraits.js';
+import { NPC_FIGURES, npcFigureId, npcModel } from '../character/npcFigures.js';
 
 // On the dev server only: the owner's lore, ready for a one-time import (src/data/lore-import.local.js,
 // kept out of git and out of the built app because it holds DM secrets).
@@ -141,6 +142,12 @@ export function createJournalScreen(root, { entries, canEdit, mapPlaces, heroes 
     ].join('');
   }
 
+  // A person's little round face: their figure's portrait, or their first letter.
+  function personFace(n) {
+    const fig = npcFigureId(n.data), url = fig ? monsterPortrait(npcModel(fig)) : '';
+    return `<span class="jr-face jr-face--${n.data.attitude ?? 'unknown'}${url ? ' has-pic' : ''}" title="${ATTITUDE[n.data.attitude] ?? 'Unknown'}">${url ? `<img src="${url}" alt="" draggable="false" />` : esc(n.data.title[0] ?? '?')}</span>`;
+  }
+
   function peopleItems() {
     const ps = all('npc')
       .filter((n) => matches(n.data.title, n.data.role, n.data.body, placeRef(n.data.place)?.name))
@@ -149,7 +156,7 @@ export function createJournalScreen(root, { entries, canEdit, mapPlaces, heroes 
     const one = (n, showTown) => item('npc', n.id, {
       title: n.data.title,
       sub: [esc(n.data.role), showTown ? esc(placeRef(n.data.place)?.name ?? '') : esc(placeRef(n.data.place)?.type === 'place' ? placeRef(n.data.place).name : ''), n.data.shown === false ? '🔒 hidden' : ''].filter(Boolean).join(' · '),
-      mark: `<span class="jr-face jr-face--${n.data.attitude ?? 'unknown'}" title="${ATTITUDE[n.data.attitude] ?? 'Unknown'}">${esc(n.data.title[0] ?? '?')}</span>`,
+      mark: personFace(n),
       cls: `${n.data.status === 'dead' ? ' is-dead' : ''}${n.data.shown === false ? ' is-hidden' : ''}`,
     });
     const sortBar = `<div class="jr-sort">Sort by <button type="button" data-sort="town"${peopleSort === 'town' ? ' class="is-on"' : ''}>Town</button><button type="button" data-sort="name"${peopleSort === 'name' ? ' class="is-on"' : ''}>A–Z</button></div>`;
@@ -306,7 +313,9 @@ export function createJournalScreen(root, { entries, canEdit, mapPlaces, heroes 
   function npcPage(n) {
     const d = n.data;
     const others = d.place ? atPlace(d.place).people.filter((x) => x.id !== n.id) : [];
+    const fig = npcFigureId(d), pic = fig ? fullPortrait(npcModel(fig)) : '';
     return `
+      ${pic ? `<figure class="jr-figure"><img src="${pic}" alt="" draggable="false" /></figure>` : ''}
       <p class="jr-kicker">${esc(d.role || 'Person')}${d.shown === false ? ' · 🔒 hidden from players' : ''}</p>
       <h3 class="jr-name${d.status === 'dead' ? ' is-dead' : ''}">${esc(d.title)}</h3>
       <p class="jr-badges">
@@ -435,6 +444,11 @@ export function createJournalScreen(root, { entries, canEdit, mapPlaces, heroes 
           <label class="field"><span>Towards the party</span><select class="field__input" name="attitude">${Object.entries(ATTITUDE).map(([k, v]) => `<option value="${k}"${k === (d.attitude ?? 'neutral') ? ' selected' : ''}>${v}</option>`).join('')}</select></label>
           <label class="field"><span>Alive?</span><select class="field__input" name="status">${Object.entries(ALIVE).map(([k, v]) => `<option value="${k}"${k === (d.status ?? 'alive') ? ' selected' : ''}>${v}</option>`).join('')}</select></label>
         </div>
+        <label class="field"><span>3D figure</span><select class="field__input" name="figure">
+          <option value="auto"${d.figure === undefined ? ' selected' : ''}>Automatic (by name)</option>
+          <option value=""${d.figure === '' ? ' selected' : ''}>None</option>
+          ${[['hooknose', 'A Hooknose'], ...Object.entries(NPC_FIGURES).map(([k, f]) => [k, f.name])].map(([k, v]) => `<option value="${k}"${d.figure === k ? ' selected' : ''}>${esc(v)}</option>`).join('')}
+        </select></label>
         <label class="field"><span>What the party knows about them</span><textarea class="field__input" name="body" rows="5" maxlength="2000">${esc(d.body)}</textarea></label>
         ${secretField(editing.id)}${shownBox(d)}${formEnd}
       </form>`;
@@ -744,6 +758,7 @@ export function createJournalScreen(root, { entries, canEdit, mapPlaces, heroes 
       data = { title: f.title.value.trim() || 'Untitled quest', body: f.body.value.trim(), steps, place: f.place.value, status: f.status.value, shown };
     } else if (kind === 'npc') {
       data = { kind, title: f.title.value.trim() || 'Someone', role: f.role.value.trim(), place: f.place.value, attitude: f.attitude.value, status: f.status.value, body: f.body.value.trim(), shown };
+      if (f.figure.value !== 'auto') data.figure = f.figure.value;
     } else if (kind === 'place') {
       data = { kind, title: f.title.value.trim() || 'A place', place: f.place.value, body: f.body.value.trim(), shown };
     } else if (kind === 'creature') {

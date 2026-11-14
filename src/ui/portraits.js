@@ -52,14 +52,14 @@ export function snapshot(object, { half, center, dir = [0.38, 0.22, 1], size = S
 }
 
 // `crop`: how much of the figure, from the top, fills the picture (0.42 = head and shoulders).
-function draw(figure, crop) {
+function draw(figure, crop, px = SIZE) {
   if (!figure || !setup()) return '';
   figure.update?.(0.4);
   const box = new THREE.Box3().setFromObject(figure.group);
   const size = box.getSize(new THREE.Vector3());
   const h = Math.max(size.y * crop, size.x * 0.75, 4);
   const center = new THREE.Vector3((box.min.x + box.max.x) / 2, box.max.y - h / 2 + h * 0.04, 0);
-  const url = snapshot(figure.group, { half: h / 2, center });
+  const url = snapshot(figure.group, { half: h / 2, center, size: px });
   disposeTree(figure.group);
   return url;
 }
@@ -76,6 +76,13 @@ export function heroPortrait(c) {
 export function monsterPortrait(model, version = '') {
   const key = `m|${model}|${version}`;
   if (!cache.has(key)) cache.set(key, draw(buildMonsterFigure(model), 0.55));
+  return cache.get(key);
+}
+
+// The whole figure, head to toe, for a person's page (256 px).
+export function fullPortrait(model) {
+  const key = `f|${model}`;
+  if (!cache.has(key)) cache.set(key, draw(buildMonsterFigure(model), 1.06, 256));
   return cache.get(key);
 }
 

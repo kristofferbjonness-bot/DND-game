@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import './character/npcFigures.js'; // registers the NPC figures before anything builds them
 import { MapControls } from 'three/addons/controls/MapControls.js';
 import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
