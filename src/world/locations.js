@@ -103,6 +103,15 @@ export const LOCATIONS = [
     image: 'art/places/ytterhavn.jpg',
   },
   {
+    id: 'fiskesund',
+    name: 'Fiskesund',
+    tier: 'local',
+    style: 'fishing',
+    px: [607, 627],
+    subtitle: 'Rama · on the south coast',
+    text: 'A small fishing village between Razz of Mataz and Kolaveri Di. Boats are pulled up on the shingle and fish hang drying on wooden racks.',
+  },
+  {
     id: 'sirivik',
     name: 'Sirivik',
     tier: 'local',

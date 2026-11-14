@@ -9,9 +9,9 @@ import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { grid, WATER_LEVEL, pixelToCell, nearestLand, cellToWorld, PEAKS, hash as cellHash } from './world/grid.js';
 import { buildTerrain, surfaceY } from './world/terrain.js';
 import { buildPlants, buildClouds } from './world/scatter.js';
-import { buildLandmark } from './world/landmarks.js';
+import { buildLandmark, buildTine } from './world/landmarks.js';
 import { buildAnimals } from './world/animals.js';
-import { MINE, BRIDGE, crossings } from './world/roads.js';
+import { MINE, BRIDGE, crossings, road } from './world/roads.js';
 import { buildLighthouse, buildShadowMist, buildCabin, buildBridge, buildVolcanoSparks, buildCloudCap, buildMountainMist, buildMine, buildYurtCamp, buildDesertCamp } from './world/features.js';
 import { LOCATIONS } from './world/locations.js';
 import { CITIES } from './city/cities.js';
@@ -156,7 +156,7 @@ function buildWorldView() {
   })();
   const clear = [...(sortCell ? [[sortCell[0], sortCell[1], 2]] : []), [BRIDGE.cx, BRIDGE.from, 0], [BRIDGE.cx, BRIDGE.to, 0],
     [MINE.cx, MINE.cz, 2], ...NOMADS.map(([x, z]) => [x, z, 3]), ...DESERT.map(([x, z]) => [x, z, 3])];
-  const reach = (p) => (p.style === 'empire' ? 5 : 3); // how far a town keeps trees away
+  const reach = (p) => (p.style === 'empire' ? 7 : 3); // how far a town keeps trees away
   const plants = buildPlants((x, z) => towns.some((p) => Math.abs(p.cx - x) <= reach(p) && Math.abs(p.cz - z) <= reach(p))
     || clear.some(([cx, cz, r]) => Math.abs(cx - x) <= r && Math.abs(cz - z) <= r));
   scene.add(plants);
@@ -171,6 +171,15 @@ function buildWorldView() {
   const spinners = [];
   const townGroup = new THREE.Group();
   for (const p of towns) {
+    if (p.style === 'empire') { // Tine is built to fit its land, round the Strait of Skinder
+      townGroup.add(buildTine({
+        cx: 110, cz: 73, r: 6.5, keep: [114, 75], cathedral: [104, 72], bridges: [[73, 107, 110], [70, 109, 114]],
+        at: (x, z) => { const k = z * grid.cols + x; return { dry: Boolean(grid.land[k]) && !grid.river[k] && grid.heights[k] <= 6, y: surfaceY(x, z) }; },
+        toWorld: cellToWorld,
+        skip: (x, z) => road[z * grid.cols + x] > 0 && Math.hypot(x - 112, z - 73) > 2,
+      }));
+      continue;
+    }
     const town = buildLandmark(p.style);
     town.scale.setScalar(p.style === 'empire' ? 1.6 : p.tier === 'city' ? 1.5 : 1.2);
     town.position.set(p.x, p.ground, p.z);

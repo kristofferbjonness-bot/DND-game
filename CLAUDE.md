@@ -69,7 +69,7 @@ The original assets (hand-drawn world map, location art, character art, lore doc
   Lama's east side by the Strait of Skinder (`NOMADS`, `buildYurtCamp`, with horse herds), and three desert nomad
   camps found in Rama's desert (`DESERT`, `buildDesertCamp`, with camels).
 - Land tweaks in grid.js: grey ash round the volcano (`ashField`; dead trees only), jungle at Lama's south end. Snow-capped
-  trees grow only in cold lands (`fir` elsewhere). Tine is the `empire` landmark (a big walled city).
+  trees grow only in cold lands (`fir` elsewhere). Tine is built to fit its land by `buildTine` (landmarks.js): houses on dry cells on both banks of the Strait of Skinder, walls and towers at the edge, keep, cathedral and stone bridges. Fiskesund (`fishing` style) is a fishing village on the south coast between Razz and Kolaveri Di.
 - `src/world/animals.js`: horses, sheep, camels, goats, deer, seals and whales placed by biome/height (`KINDS`,
   herds kept 14 cells apart and away from towns), one instanced mesh per body part; they wander and graze near home,
   whales circle and surface. Hidden when the camera is far (> 170).

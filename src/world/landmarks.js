@@ -105,6 +105,27 @@ const STYLES = {
     tower(g, -1.6, -2.0, { r: 0.3, h: 1.4, wall: '#e3d9c6', roof });
     flag(g, 0, 2.7, -0.15, '#d9a23a');
   },
+  // Fiskesund: a little fishing village. Weathered huts, a pier with boats, racks of drying fish.
+  fishing(g) {
+    const wall = '#a88a64', wallGrey = '#9a948a', roof = '#5a6a7a', roofRed = '#9a4a3a';
+    house(g, -0.4, -0.3, { w: 0.45, d: 0.4, h: 0.28, wall, roof });
+    house(g, 0.35, -0.45, { w: 0.4, d: 0.4, h: 0.26, wall: wallGrey, roof: roofRed });
+    house(g, -0.15, 0.4, { w: 0.42, d: 0.38, h: 0.25, wall, roof: roofRed });
+    house(g, 0.6, 0.2, { w: 0.36, d: 0.36, h: 0.24, wall: wallGrey, roof });
+    // Drying racks with fish.
+    for (const z of [-0.9, -1.15]) {
+      for (const x of [-0.55, 0.05]) block(g, [0.04, 0.32, 0.04], [x, 0, z], '#5b4a3a');
+      block(g, [0.64, 0.04, 0.04], [-0.25, 0.3, z], '#5b4a3a');
+      for (let i = 0; i < 5; i++) block(g, [0.05, 0.14, 0.03], [-0.5 + i * 0.12, 0.15, z], '#b8c4c8');
+    }
+    // A pier out to sea (south) with two little boats.
+    block(g, [0.24, 0.06, 1.5], [0.15, -0.12, 1.3], '#8a6440');
+    for (const z of [0.8, 1.4, 2.0]) block(g, [0.06, 0.3, 0.06], [0.3, -0.4, z], '#5b4a3a');
+    block(g, [0.24, 0.12, 0.6], [-0.2, -0.28, 1.6], '#7a4f30');
+    block(g, [0.22, 0.12, 0.5], [0.55, -0.28, 1.9], '#4f6d8f');
+    block(g, [0.03, 0.4, 0.03], [-0.2, -0.16, 1.6], '#5b4a3a');
+    block(g, [0.02, 0.26, 0.24], [-0.2, -0.05, 1.6], '#f2ecdf');
+  },
   'castle-small'(g) {
     const wall = '#b9bcc2', roof = '#4b5d8a';
     tower(g, 0, 0, { r: 0.6, h: 0.95, wall, roof });
@@ -171,5 +192,55 @@ const STYLES = {
 export function buildLandmark(style) {
   const g = new THREE.Group();
   (STYLES[style] || STYLES.village)(g);
+  return g;
+}
+
+// The Empire of Tine, built to fit its land: houses on every dry, fairly flat cell round the
+// middle (on both banks of the Strait of Skinder), walls and towers round the edge where there is
+// land, the keep and the cathedral on firm ground, and stone bridges joining the banks.
+//   at(x, z) → { dry, water, y }  for a map cell; toWorld(x, z) → [wx, wz].
+export function buildTine({ cx, cz, r, keep, cathedral, bridges, at, toWorld, skip = () => false }) {
+  const g = new THREE.Group();
+  const wall = '#b9bcc2', wallDark = '#a3a6ad', roofs = ['#9a3b3b', '#a8503a', '#8a3a44', '#4b5d8a'];
+  const put = (x, z, fn) => { const c = at(x, z); const [wx, wz] = toWorld(x, z); const s = new THREE.Group(); s.position.set(wx, c.y, wz); fn(s); g.add(s); };
+  const n = (x, z, k) => { let h = (x * 374761393 + z * 668265263 + k * 1442695041) | 0; h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967296; };
+  const near = (x, z, [px, pz], d) => Math.hypot(x - px, z - pz) < d;
+  for (let z = Math.floor(cz - r); z <= cz + r; z++) for (let x = Math.floor(cx - r); x <= cx + r; x++) {
+    const d = Math.hypot(x - cx, z - cz);
+    if (d > r + 0.4 || !at(x, z).dry || skip(x, z)) continue;
+    if (d > r - 0.8) { // the wall, with a tower now and then
+      put(x, z, (s) => (n(x, z, 1) > 0.72 ? tower(s, 0, 0, { r: 0.42, h: 0.85, wall, roof: roofs[0] }) : block(s, [1, 0.42, 1], [0, 0, 0], wallDark)));
+      continue;
+    }
+    if (near(x, z, keep, 1.6) || near(x, z, cathedral, 1.2)) continue;
+    put(x, z, (s) => {
+      const k = Math.floor(n(x, z, 2) * 4);
+      house(s, (n(x, z, 3) - 0.5) * 0.3, (n(x, z, 4) - 0.5) * 0.3, { w: 0.5 + n(x, z, 5) * 0.2, d: 0.5 + n(x, z, 6) * 0.2, h: 0.24 + n(x, z, 7) * 0.22, wall: k % 2 ? '#e3d9c6' : '#d8ccb6', roof: roofs[k], rot: n(x, z, 8) > 0.5 ? Math.PI / 2 : 0 });
+      if (n(x, z, 9) > 0.7) house(s, 0.25, 0.25, { w: 0.3, d: 0.3, h: 0.2, wall: '#e3d9c6', roof: roofs[(k + 1) % 4] });
+    });
+  }
+  // The keep with four towers, and the cathedral with its spire.
+  put(keep[0], keep[1], (s) => {
+    for (const [x, z] of [[-0.75, -0.75], [0.75, -0.75], [-0.75, 0.75], [0.75, 0.75]]) block(s, [0.3, 0.55, 0.3], [x, 0, z], wallDark);
+    for (const t of [-1, 1]) { block(s, [1.8, 0.5, 0.16], [0, 0, t * 0.75], wallDark); block(s, [0.16, 0.5, 1.8], [t * 0.75, 0, 0], wallDark); }
+    tower(s, 0, 0, { r: 0.9, h: 2.0, wall: '#c9ccd2', roof: roofs[0] });
+    for (const [x, z] of [[-0.45, -0.45], [0.45, -0.45], [-0.45, 0.45], [0.45, 0.45]]) tower(s, x, z, { r: 0.3, h: 2.3, wall: '#c9ccd2', roof: roofs[0] });
+    flag(s, 0, 2.8, 0, '#d9a23a');
+  });
+  put(cathedral[0], cathedral[1], (s) => {
+    block(s, [0.6, 0.75, 1.2], [0, 0, 0], '#e3d9c6');
+    block(s, [0.68, 0.18, 1.28], [0, 0.75, 0], roofs[0]);
+    block(s, [0.4, 0.14, 1.1], [0, 0.93, 0], roofs[0]);
+    tower(s, 0, -0.75, { r: 0.34, h: 1.5, wall: '#e3d9c6', roof: roofs[0] });
+  });
+  // Stone bridges across the strait: [z, x from, x to] along x at row z.
+  for (const [bz, x0, x1] of bridges) {
+    const [wx0, wz] = toWorld(x0, bz), [wx1] = toWorld(x1, bz);
+    const y = Math.max(at(x0, bz).y, at(x1, bz).y) + 0.08;
+    const len = wx1 - wx0 + 0.8;
+    block(g, [len, 0.16, 0.7], [(wx0 + wx1) / 2, y - 0.16, wz], '#a3a6ad');
+    for (const t of [-1, 1]) block(g, [len, 0.12, 0.08], [(wx0 + wx1) / 2, y, wz + t * 0.31], '#8f9299');
+    for (let x = x0 + 1; x < x1; x++) { const [px] = toWorld(x, bz); block(g, [0.3, y - 0.1, 0.6], [px, -0.1, wz], '#8f9299'); }
+  }
   return g;
 }
