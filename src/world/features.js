@@ -142,3 +142,81 @@ export function buildShadowMist(radius = 9, { grey = false } = {}) {
   g.userData.update = update;
   return g;
 }
+
+// Smoke rising from a volcano's crater: grey puffs that rise, grow, drift with the wind and fade.
+// Stands at the crater floor (y = 0); a glowing lava pool sits there too. `update(dt)` animates.
+export function buildVolcanoSmoke({ height = 16, crater = 2 } = {}) {
+  const g = new THREE.Group();
+  const lava = new THREE.Mesh(new THREE.CylinderGeometry(crater, crater, 0.3, 10), new THREE.MeshBasicMaterial({ color: '#ff7a2e', toneMapped: false }));
+  lava.position.y = 0.15;
+  g.add(lava);
+  const glow = new THREE.PointLight('#ff7a2e', 6, 14, 1.6);
+  glow.position.y = 1.5;
+  g.add(glow);
+  const puffGeo = bevelBox(1, 1, 1, 0.3);
+  const puffs = [];
+  const N = 22;
+  for (let i = 0; i < N; i++) {
+    const mat = new THREE.MeshStandardMaterial({ color: i % 3 ? '#6a6460' : '#4a4542', roughness: 1, transparent: true, depthWrite: false });
+    const m = new THREE.Mesh(puffGeo, mat);
+    g.add(m);
+    puffs.push({ m, phase: i / N, spin: hash(i, 1, 41) * 6, side: (hash(i, 2, 41) - 0.5) * 2 });
+  }
+  let t = 0;
+  const PERIOD = 9; // seconds for a puff to rise all the way
+  function update(dt) {
+    t += dt;
+    for (const p of puffs) {
+      const a = (t / PERIOD + p.phase) % 1; // 0 at the crater, 1 at the top
+      const s = 1.2 + a * 4.5;
+      p.m.position.set(p.side * 0.8 + a * a * 6, 0.8 + a * height, p.side * 0.6 + a * 2);
+      p.m.scale.set(s * 1.1, s * 0.8, s);
+      p.m.rotation.y = p.spin + a * 1.5;
+      p.m.material.opacity = Math.min(1, a * 6) * (1 - a) * 0.75;
+    }
+    glow.intensity = 5 + Math.sin(t * 3.1) * 1.2 + Math.sin(t * 7.3) * 0.6;
+  }
+  update(0);
+  g.userData.update = update;
+  return g;
+}
+
+// A thick ring of cloud wrapped round a summit, so its top is lost in the clouds.
+// y = 0 is the middle of the cloud band. `update(dt)` lets it drift round slowly.
+export function buildCloudCap(radius = 7, band = 6) {
+  const g = new THREE.Group();
+  const layers = [
+    { colour: '#f4f7fa', opacity: 0.75, n: 34, r: [0, radius], y: [-band * 0.15, band * 0.5], s: [3.0, 5.0] },
+    { colour: '#e2e8ee', opacity: 0.55, n: 30, r: [radius * 0.4, radius * 1.3], y: [-band * 0.5, band * 0.2], s: [2.6, 4.4] },
+  ];
+  const meshes = [];
+  layers.forEach((L, li) => {
+    const mesh = new THREE.InstancedMesh(bevelBox(1, 1, 1, 0.3), new THREE.MeshStandardMaterial({ color: L.colour, roughness: 1, transparent: true, opacity: L.opacity, depthWrite: false }), L.n);
+    mesh.frustumCulled = false;
+    const puffs = [];
+    for (let i = 0; i < L.n; i++) {
+      const s = L.s[0] + hash(i, li, 52) * (L.s[1] - L.s[0]);
+      puffs.push({ a: hash(i, li, 50) * Math.PI * 2, r: L.r[0] + Math.sqrt(hash(i, li, 51)) * (L.r[1] - L.r[0]), y: L.y[0] + hash(i, li, 53) * (L.y[1] - L.y[0]), sx: s * 1.5, sy: s * 0.6, sz: s, speed: 0.02 + hash(i, li, 54) * 0.03 });
+    }
+    meshes.push({ mesh, puffs });
+    g.add(mesh);
+  });
+  const m = new THREE.Matrix4(), q = new THREE.Quaternion(), pos = new THREE.Vector3(), scl = new THREE.Vector3();
+  let t = 0;
+  function update(dt) {
+    t += dt;
+    for (const { mesh, puffs } of meshes) {
+      puffs.forEach((p, i) => {
+        const a = p.a + t * p.speed;
+        pos.set(Math.cos(a) * p.r, p.y + Math.sin(t * 0.3 + p.a) * 0.3, Math.sin(a) * p.r);
+        scl.set(p.sx, p.sy, p.sz);
+        q.setFromAxisAngle(THREE.Object3D.DEFAULT_UP, a);
+        mesh.setMatrixAt(i, m.compose(pos, q, scl));
+      });
+      mesh.instanceMatrix.needsUpdate = true;
+    }
+  }
+  update(0);
+  g.userData.update = update;
+  return g;
+}

@@ -148,6 +148,8 @@ for (let cy = 0; cy < H; cy++) {
 const SEA_CUTS = [
   { width: 16, points: [[890, 400], [935, 378], [980, 357], [1025, 343], [1065, 333]] },
   { width: 14, points: [[890, 432], [912, 450], [935, 465], [962, 480]] },
+  // the south end of the Strait of Skinder (and the river running into it) opened into Siri's Gap.
+  { width: 12, points: [[502, 470], [492, 482], [483, 494], [478, 506], [478, 514]] },
 ];
 for (const { width, points } of SEA_CUTS) {
   for (let i = 0; i < points.length - 1; i++) {

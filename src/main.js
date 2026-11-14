@@ -6,11 +6,11 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 
-import { grid, WATER_LEVEL, pixelToCell, nearestLand, cellToWorld } from './world/grid.js';
+import { grid, WATER_LEVEL, pixelToCell, nearestLand, cellToWorld, PEAKS } from './world/grid.js';
 import { buildTerrain, surfaceY } from './world/terrain.js';
 import { buildPlants, buildClouds } from './world/scatter.js';
 import { buildLandmark } from './world/landmarks.js';
-import { buildLighthouse, buildShadowMist, buildCabin, buildBridge } from './world/features.js';
+import { buildLighthouse, buildShadowMist, buildCabin, buildBridge, buildVolcanoSmoke, buildCloudCap } from './world/features.js';
 import { LOCATIONS } from './world/locations.js';
 import { CITIES } from './city/cities.js';
 import { createTiltShiftPasses } from './fx/tiltShift.js';
@@ -174,6 +174,19 @@ function buildWorldView() {
     cabin.rotation.y = 0.5;
     cabin.scale.setScalar(1.7);
     scene.add(cabin);
+  }
+  // The volcano smokes from its lava crater; the ice mountain's summit is lost in cloud.
+  for (const p of PEAKS) {
+    const [x, z] = cellToWorld(p.cx, p.cz);
+    if (p.kind === 'volcano') {
+      const smoke = buildVolcanoSmoke({ height: 22, crater: p.crater * 0.8 });
+      smoke.position.set(x, surfaceY(p.cx, p.cz), z);
+      scene.add(smoke); features.push(smoke);
+    } else {
+      const cap = buildCloudCap(8, 8);
+      cap.position.set(x, surfaceY(p.cx, p.cz) - 3, z);
+      scene.add(cap); features.push(cap);
+    }
   }
   const sirivik = places.find((p) => p.id === 'sirivik');
   if (sirivik) { const fog = buildShadowMist(5, { grey: true }); fog.position.set(sirivik.x, sirivik.ground, sirivik.z); scene.add(fog); features.push(fog); }
