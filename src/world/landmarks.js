@@ -74,6 +74,37 @@ const STYLES = {
     house(g, 0.5, -0.45, { w: 0.4, d: 0.4, h: 0.3, wall: '#e3d9c6', roof });
     flag(g, 0, 2.0, 0, '#d9a23a');
   },
+  // The Empire of Tine: a great walled city. An outer wall with towers and a gate, streets of houses
+  // with red roofs, an inner wall and a tall keep with four towers, and a cathedral.
+  empire(g) {
+    const wall = '#b9bcc2', wallDark = '#a3a6ad', roof = '#9a3b3b', roofs = ['#9a3b3b', '#a8503a', '#8a3a44', '#4b5d8a'];
+    const R = 2.4;
+    for (const s of [-1, 1]) {
+      block(g, [R * 2, 0.4, 0.24], [0, 0, s * R], wall);
+      block(g, [0.24, 0.4, R * 2], [s * R, 0, 0], wall);
+    }
+    for (const [x, z] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) tower(g, x * R, z * R, { r: 0.45, h: 0.85, wall, roof });
+    for (const [x, z] of [[0, -1], [-1, 0], [1, 0]]) tower(g, x * R, z * R, { r: 0.34, h: 0.65, wall: wallDark, roof });
+    // The gate on the south side.
+    block(g, [0.7, 0.62, 0.36], [0, 0, R], wallDark);
+    block(g, [0.32, 0.36, 0.38], [0, 0, R + 0.01], '#4a3a2e');
+    // Houses filling the streets between the walls.
+    for (let i = -4; i <= 4; i++) for (let j = -4; j <= 4; j++) {
+      const x = i * 0.5, z = j * 0.5;
+      if (Math.max(Math.abs(i), Math.abs(j)) < 2 || Math.abs(i) === 0 && j > 1) continue; // the inner ward and the main street
+      const n = (i * 31 + j * 17 + 100) % 7;
+      if (n === 0) continue;
+      house(g, x, z, { w: 0.36, d: 0.36, h: 0.22 + (n % 3) * 0.08, wall: n % 2 ? '#e3d9c6' : '#d8ccb6', roof: roofs[n % roofs.length] });
+    }
+    // The inner ward: a wall, the keep and its towers, and a cathedral.
+    for (const s of [-1, 1]) { block(g, [1.9, 0.5, 0.18], [0, 0, s * 0.9], wallDark); block(g, [0.18, 0.5, 1.9], [s * 0.9, 0, 0], wallDark); }
+    tower(g, 0, -0.15, { r: 0.85, h: 1.9, wall: '#c9ccd2', roof });
+    for (const [x, z] of [[-0.5, -0.65], [0.5, -0.65], [-0.5, 0.35], [0.5, 0.35]]) tower(g, x, z, { r: 0.3, h: 2.2, wall: '#c9ccd2', roof });
+    block(g, [0.5, 0.7, 1.0], [-1.6, 0, -1.4], '#e3d9c6');
+    block(g, [0.58, 0.2, 1.08], [-1.6, 0.7, -1.4], roof);
+    tower(g, -1.6, -2.0, { r: 0.3, h: 1.4, wall: '#e3d9c6', roof });
+    flag(g, 0, 2.7, -0.15, '#d9a23a');
+  },
   'castle-small'(g) {
     const wall = '#b9bcc2', roof = '#4b5d8a';
     tower(g, 0, 0, { r: 0.6, h: 0.95, wall, roof });

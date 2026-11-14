@@ -72,6 +72,32 @@ export function iceField(x, z) {
 // Rama's one snowy summit (around its highest point).
 export const RAMA_SUMMIT = { cx: 136, cz: 67, r: 7 };
 
+// Ash round the volcano (Fjellene av Ferran): grey, dead land, 1 near the volcano fading to 0.
+export function ashField(x, z) {
+  const p = PEAKS.find((q) => q.kind === 'volcano');
+  const d = Math.hypot(x - p.cx, z - p.cz) + (hash(x, z, 105) - 0.5) * 4;
+  return Math.max(0, Math.min(1, (26 - d) / 10));
+}
+
+// The south end of Lama (the western continent) is jungle.
+{
+  const lama = new Uint8Array(cols * rows), q = [Math.floor(420 / grid.cell) * cols + Math.floor(436 / grid.cell)];
+  while (q.length) {
+    const k = q.pop();
+    if (lama[k] || !grid.land[k]) continue;
+    lama[k] = 1;
+    const x = k % cols;
+    if (x > 0) q.push(k - 1);
+    if (x < cols - 1) q.push(k + 1);
+    if (k >= cols) q.push(k - cols);
+    if (k < cols * (rows - 1)) q.push(k + cols);
+  }
+  for (let k = 0; k < cols * rows; k++) {
+    const z = (k / cols) | 0;
+    if (lama[k] && z > 104 + hash(k % cols, z, 106) * 10) grid.biome[k] = BIOME.JUNGLE;
+  }
+}
+
 // Which great peak (if any) a cell belongs to: { kind, d (distance from the middle), t (0 edge – 1 middle) }.
 export function peakAt(x, z) {
   for (const p of PEAKS) {

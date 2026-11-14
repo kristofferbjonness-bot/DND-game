@@ -11,7 +11,7 @@ import { buildTerrain, surfaceY } from './world/terrain.js';
 import { buildPlants, buildClouds } from './world/scatter.js';
 import { buildLandmark } from './world/landmarks.js';
 import { buildAnimals } from './world/animals.js';
-import { MINE, crossings } from './world/roads.js';
+import { MINE, BRIDGE, crossings } from './world/roads.js';
 import { buildLighthouse, buildShadowMist, buildCabin, buildBridge, buildVolcanoSparks, buildCloudCap, buildMountainMist, buildMine, buildYurtCamp, buildDesertCamp } from './world/features.js';
 import { LOCATIONS } from './world/locations.js';
 import { CITIES } from './city/cities.js';
@@ -140,7 +140,6 @@ function buildWorldView() {
   // Where the extra features stand (cells): the old cabin deep in Sortland's dark forest, and a
   // bridge over the river that runs out of the mountains east of Ytterhavn.
   const sortCell = places.find((p) => p.id === 'sortland') ? nearestLand(...pixelToCell(places.find((p) => p.id === 'sortland').px)) : null;
-  const BRIDGE = { cx: 104, from: 106, to: 108 };
   // Horse nomads on Lama's east side by the Strait of Skinder; desert nomads in Rama's desert.
   const NOMADS = [[90, 90], [86, 80]].map(([x, z]) => nearestLand(x, z));
   const DESERT = (() => {
@@ -157,7 +156,8 @@ function buildWorldView() {
   })();
   const clear = [...(sortCell ? [[sortCell[0], sortCell[1], 2]] : []), [BRIDGE.cx, BRIDGE.from, 0], [BRIDGE.cx, BRIDGE.to, 0],
     [MINE.cx, MINE.cz, 2], ...NOMADS.map(([x, z]) => [x, z, 3]), ...DESERT.map(([x, z]) => [x, z, 3])];
-  const plants = buildPlants((x, z) => towns.some((p) => Math.abs(p.cx - x) <= 3 && Math.abs(p.cz - z) <= 3)
+  const reach = (p) => (p.style === 'empire' ? 5 : 3); // how far a town keeps trees away
+  const plants = buildPlants((x, z) => towns.some((p) => Math.abs(p.cx - x) <= reach(p) && Math.abs(p.cz - z) <= reach(p))
     || clear.some(([cx, cz, r]) => Math.abs(cx - x) <= r && Math.abs(cz - z) <= r));
   scene.add(plants);
   const animals = buildAnimals((x, z) => towns.some((p) => Math.abs(p.cx - x) <= 4 && Math.abs(p.cz - z) <= 4) || clear.some(([cx, cz, r]) => Math.abs(cx - x) <= r + 1 && Math.abs(cz - z) <= r + 1),
@@ -172,7 +172,7 @@ function buildWorldView() {
   const townGroup = new THREE.Group();
   for (const p of towns) {
     const town = buildLandmark(p.style);
-    town.scale.setScalar(p.tier === 'city' ? 1.5 : 1.2);
+    town.scale.setScalar(p.style === 'empire' ? 1.6 : p.tier === 'city' ? 1.5 : 1.2);
     town.position.set(p.x, p.ground, p.z);
     townGroup.add(town);
     if (town.userData.spin) spinners.push(town.userData.spin);
@@ -199,9 +199,8 @@ function buildWorldView() {
   {
     const mine = buildMine();
     const [x, z] = cellToWorld(MINE.cx, MINE.cz);
-    const bart = places.find((p) => p.id === 'bartedalen');
     mine.position.set(x, surfaceY(MINE.cx, MINE.cz), z);
-    if (bart) mine.rotation.y = Math.atan2(bart.x - x, bart.z - z);
+    mine.rotation.y = Math.atan2(MINE.face[0], MINE.face[1]);
     mine.scale.setScalar(1.7);
     scene.add(mine); features.push(mine);
   }

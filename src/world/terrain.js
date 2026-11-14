@@ -5,7 +5,7 @@ import * as THREE from 'three';
 import { bevelBox } from '../fx/bevelBox.js';
 import { road, roadAt } from './roads.js';
 import {
-  grid, LAYER, WATER_LEVEL, BIOME, idx, heightAt, cellToWorld, distToSea, hash, darkForest, peakAt, onRama, iceField, RAMA_SUMMIT,
+  grid, LAYER, WATER_LEVEL, BIOME, idx, heightAt, cellToWorld, distToSea, hash, darkForest, peakAt, onRama, iceField, RAMA_SUMMIT, ashField,
 } from './grid.js';
 
 const C = (hex) => new THREE.Color(hex);
@@ -25,6 +25,7 @@ const RED_ROCK = C('#bf8f66');
 const SNOWCAP = C('#f7f9fb');
 const CRATER = C('#4a4440'), EMBER = C('#a8502a'), BASALT = C('#6e665e'), BASALT_SIDE = C('#5e5750'), ASH = C('#8a837b');
 const DIRT = C('#8a6a44'), GRAVEL = C('#7a7064');
+const ASH_GROUND = C('#6a6662'), ASH_DARK = C('#55514e'), ASH_SIDE = C('#4a4744'); // the volcano's ash
 const ICE_SNOW = C('#f4f8fb'), ICE = C('#8fcbea'), ICE_PALE = C('#bfe5f6'), ICE_DEEP = C('#6aa8cc'), ICE_SUMMIT = C('#eef8fc');
 const DARK_FLOOR = C('#43473f'), DARK_MOSS = C('#4c5244'), DARK_SOIL = C('#4d463d'); // dark forests: grey
 const SEA = [C('#8fd8d6'), C('#5cbcc9'), C('#3c9bbd'), C('#2d7fa8')];
@@ -65,6 +66,13 @@ function cubeColor(k, x, z, layer, top, out) {
   const b = grid.biome[k];
   const pal = PALETTE[b];
   const isTop = layer === top;
+  // Round the volcano everything is grey with ash, like a dead land.
+  const ash = ashField(x, z);
+  if (ash > 0 && !grid.river[k]) {
+    if (isTop) out.copy(top >= MOUNTAIN_FROM ? ROCK : pal.top).lerp(hash(x, z, 107) > 0.7 ? ASH_DARK : ASH_GROUND, ash);
+    else out.copy(layer >= MOUNTAIN_FROM - 2 ? ROCK : pal.side).lerp(ASH_SIDE, ash).multiplyScalar(0.82 + 0.03 * Math.min(layer, 6));
+    return out.multiplyScalar(0.94 + hash(x, z, layer) * 0.1);
+  }
 
   if (grid.river[k]) out.copy(RIVERBED);
   else if (isTop) {

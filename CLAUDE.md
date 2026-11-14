@@ -60,13 +60,16 @@ The original assets (hand-drawn world map, location art, character art, lore doc
   Colours in `peakColor` (terrain.js). Only the densest mountain ranges have drifting haze (`buildMountainMist`).
   Rama's mountains (`onRama`) are bare rock, snowy only round their summit (`RAMA_SUMMIT`). The volcano has no smoke
   column, only haze and faint orange sparks (`buildVolcanoSparks`). The ice mountain's foot is icy (`iceField`).
-- `src/world/roads.js`: roads found with A* over the land at load (round mountains and the sea, fording rivers with
-  plank bridges at `crossings`): an old patchy dirt road Razz → Ikeheim → Tine with a fork to Sirivik, and a gravel
-  road from the mine (`MINE`, a flat yard cut into the mountain corner SE of Bartedalen) to Bartedalen. Road cells
+- `src/world/roads.js`: roads found with A* over the land at load (round mountains and the sea; rivers are crossed at
+  `BRIDGE` east of Ytterhavn, elsewhere plank bridges at `crossings`): an old patchy dirt road Razz → Ikeheim → Tine with
+  forks to Sirivik and Ytterhavn, and a gravel road from the Bartedalen Mine (`MINE`, at ground level in the corner SW of
+  Bartedalen where the brown and grey mountains meet) to Bartedalen. Road cells
   are coloured in terrain.js and kept free of trees.
 - Settlements in features.js placed in `buildWorldView`: the mine (`buildMine`), two horse-nomad camps of gers on
   Lama's east side by the Strait of Skinder (`NOMADS`, `buildYurtCamp`, with horse herds), and three desert nomad
   camps found in Rama's desert (`DESERT`, `buildDesertCamp`, with camels).
+- Land tweaks in grid.js: grey ash round the volcano (`ashField`; dead trees only), jungle at Lama's south end. Snow-capped
+  trees grow only in cold lands (`fir` elsewhere). Tine is the `empire` landmark (a big walled city).
 - `src/world/animals.js`: horses, sheep, camels, goats, deer, seals and whales placed by biome/height (`KINDS`,
   herds kept 14 cells apart and away from towns), one instanced mesh per body part; they wander and graze near home,
   whales circle and surface. Hidden when the camera is far (> 170).

@@ -1,7 +1,7 @@
 // Trees, pines and cacti scattered across the land, and drifting voxel clouds.
 import * as THREE from 'three';
 import { bevelBox } from '../fx/bevelBox.js';
-import { grid, BIOME, idx, cellToWorld, distToSea, hash, LAYER, darkForest } from './grid.js';
+import { grid, BIOME, idx, cellToWorld, distToSea, hash, LAYER, darkForest, ashField, iceField } from './grid.js';
 import { road } from './roads.js';
 
 // Chance of a plant per cell, by biome.
@@ -30,6 +30,13 @@ const KINDS = {
     [0.5, 0.4, 0.5, 0.92, '#357a52'],
     [0.26, 0.3, 0.26, 1.24, '#eef4f8'],
   ],
+  // A fir without snow, for warm lands' hills.
+  fir: [
+    [0.2, 0.35, 0.2, 0.17, '#6b4a2e'],
+    [0.75, 0.4, 0.75, 0.55, '#2f6f4a'],
+    [0.5, 0.4, 0.5, 0.92, '#357a52'],
+    [0.26, 0.3, 0.26, 1.24, '#3b8458'],
+  ],
   cactus: [
     [0.22, 0.75, 0.22, 0.37, '#6aa257'],
     [0.42, 0.14, 0.14, 0.45, '#6aa257'],
@@ -50,8 +57,9 @@ const KINDS = {
   ],
 };
 
-function pickKind(biome, h) {
-  if (biome === BIOME.SNOW || h >= 5) return 'pine';
+function pickKind(biome, h, x, z) {
+  if (biome === BIOME.SNOW || iceField(x, z) > 0) return 'pine'; // snow on the trees only in cold lands
+  if (h >= 5) return biome === BIOME.JUNGLE ? 'jungle' : 'fir';
   if (biome === BIOME.JUNGLE) return 'jungle';
   if (biome === BIOME.DESERT) return 'cactus';
   return 'tree';
@@ -59,7 +67,7 @@ function pickKind(biome, h) {
 
 export function buildPlants(avoid) {
   const { cols, rows } = grid;
-  const spots = { tree: [], jungle: [], pine: [], cactus: [], darkpine: [], deadtree: [] };
+  const spots = { tree: [], jungle: [], pine: [], fir: [], cactus: [], darkpine: [], deadtree: [] };
 
   for (let z = 0; z < rows; z++) for (let x = 0; x < cols; x++) {
     const k = idx(x, z);
@@ -69,9 +77,9 @@ export function buildPlants(avoid) {
     if (avoid(x, z) || road[k]) continue;
     const b = grid.biome[k];
     // Towards a dark forest, trees grow thicker and turn into grey pines and dead trees.
-    const dark = darkForest(x, z);
-    if (hash(x, z, 1) > DENSITY[b] + (0.75 - DENSITY[b]) * dark) continue;
-    const kind = hash(x, z, 7) < dark ? (hash(x, z, 6) > 0.55 ? 'deadtree' : 'darkpine') : pickKind(b, h);
+    const dark = darkForest(x, z), ash = ashField(x, z);
+    if (hash(x, z, 1) > (DENSITY[b] + (0.75 - DENSITY[b]) * dark) * (1 - ash * 0.75)) continue;
+    const kind = ash > 0.3 ? 'deadtree' : hash(x, z, 7) < dark ? (hash(x, z, 6) > 0.55 ? 'deadtree' : 'darkpine') : pickKind(b, h, x, z);
     const [wx, wz] = cellToWorld(x, z);
     spots[kind].push({
       x: wx + (hash(x, z, 2) - 0.5) * 0.5,

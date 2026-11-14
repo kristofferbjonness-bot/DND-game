@@ -4,19 +4,15 @@
 //   - an old, unkept dirt road from Razz of Mataz to Ikeheim and on to the Empire of Tine, with a
 //     fork to Sirivik;
 //   - a gravel road from the mine in the mountains to Bartedalen.
-import { grid, idx, inBounds, hash, darkForest } from './grid.js';
+import { grid, idx, inBounds, hash, darkForest, nearestLand } from './grid.js';
 import { LOCATIONS } from './locations.js';
 
-export const MINE = { cx: 165, cz: 86 }; // the mine's mouth, in the mountain corner south-east of Bartedalen
-// A flat yard cut into the mountainside round the mine, so its buildings stand on level ground.
-{
-  const yard = grid.heights[idx(MINE.cx, MINE.cz)];
-  for (let dz = -3; dz <= 3; dz++) for (let dx = -3; dx <= 3; dx++) {
-    if (Math.hypot(dx, dz) > 2.6 || !inBounds(MINE.cx + dx, MINE.cz + dz)) continue;
-    const k = idx(MINE.cx + dx, MINE.cz + dz);
-    if (grid.land[k] && grid.heights[k] > yard) grid.heights[k] = yard;
-  }
-}
+// The Bartedalen Mine: at ground level, tucked into the corner south-west of Bartedalen where the
+// brown (desert) mountains meet the grey ones; its tunnel runs into the mountain behind it.
+export const MINE = { cx: 158, cz: 86, face: [-0.35, -1] }; // face: the way out (world x, z)
+// The bridge east of Ytterhavn (cells along z): roads cross the river there.
+export const BRIDGE = { cx: 104, from: 106, to: 108 };
+const onBridge = (k) => k % grid.cols === BRIDGE.cx && ((k / grid.cols) | 0) >= BRIDGE.from && ((k / grid.cols) | 0) <= BRIDGE.to;
 
 const cellOf = (id) => { const p = LOCATIONS.find((l) => l.id === id).px; return [Math.floor(p[0] / grid.cell), Math.floor(p[1] / grid.cell)]; };
 
@@ -27,7 +23,8 @@ function cost(k, from) {
   const h = grid.heights[k];
   let c = 1 + Math.abs(h - grid.heights[from]) * 3;
   if (h >= 7) c += 10 + (h - 7) * 2;
-  if (grid.river[k]) c += 6;
+  if (onBridge(k)) return 1;
+  if (grid.river[k]) c += 40; // roads cross rivers at bridges if they can
   return c;
 }
 
@@ -70,7 +67,7 @@ export const crossings = []; // [cx, cz, along x?] where a road crosses a river:
 function lay(path, kind) {
   path.forEach((k, i) => {
     if (!road[k]) road[k] = kind;
-    if (grid.river[k]) {
+    if (grid.river[k] && !onBridge(k)) {
       const prev = path[i - 1] ?? k, next = path[i + 1] ?? k;
       crossings.push([k % grid.cols, (k / grid.cols) | 0, Math.abs((next % grid.cols) - (prev % grid.cols)) > 0]);
     }
@@ -78,6 +75,7 @@ function lay(path, kind) {
 }
 {
   const razz = cellOf('razz'), ikeheim = cellOf('ikeheim'), tine = cellOf('tine'), sirivik = cellOf('sirivik');
+  const ytterhavn = nearestLand(...cellOf('ytterhavn'));
   const main1 = route(razz, ikeheim), main2 = route(ikeheim, tine);
   lay(main1, 1); lay(main2, 1);
   // The fork to Sirivik leaves the road where it passes closest.
@@ -87,6 +85,7 @@ function lay(path, kind) {
     return d < best[0] ? [d, k] : best;
   }, [Infinity, -1])[1];
   if (fork >= 0) lay(route([fork % grid.cols, (fork / grid.cols) | 0], sirivik), 1);
+  lay(route(razz, ytterhavn), 1);
   lay(route([MINE.cx, MINE.cz], cellOf('bartedalen')), 2);
 }
 

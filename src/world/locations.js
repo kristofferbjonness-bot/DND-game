@@ -47,7 +47,7 @@ export const LOCATIONS = [
     id: 'tine',
     name: 'The Empire of Tine',
     tier: 'city',
-    style: 'castle',
+    style: 'empire',
     px: [562, 368],
     subtitle: 'Rama · north of the Strait',
     text: 'A grand medieval monarchy ruled by Torgrim the Glaced, the young lord Flame Slinger once saved. Rumours speak of civil war and usurpation.',

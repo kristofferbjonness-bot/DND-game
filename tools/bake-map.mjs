@@ -150,6 +150,8 @@ const SEA_CUTS = [
   { width: 14, points: [[890, 432], [912, 450], [935, 465], [962, 480]] },
   // the south end of the Strait of Skinder (and the river running into it) opened into Siri's Gap.
   { width: 12, points: [[502, 470], [492, 482], [483, 494], [478, 506], [478, 514]] },
+  // the mouth of the little river east of Ytterhavn, opened into the bay (so roads cross it at the bridge).
+  { width: 5, points: [[506, 542], [494, 543]] },
 ];
 for (const { width, points } of SEA_CUTS) {
   for (let i = 0; i < points.length - 1; i++) {
