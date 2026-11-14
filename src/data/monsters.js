@@ -75,6 +75,16 @@ export const MONSTERS = {
     attacks: [{ name: 'Swordfish dagger', toHit: 3, dice: '1d4', bonus: 1, type: 'piercing' }],
     note: 'Bobby’s cheerful younger brother, who sells fish of every kind.', model: 'npc-bob',
   },
+  'bridge-troll': {
+    name: 'Bridge troll', short: 'Troll', kind: 'Giant · troll', ac: 15, hp: 84, initiative: 1, speed: 30,
+    attacks: [{ name: 'Nail-studded club', toHit: 7, dice: '2d6', bonus: 4, type: 'bludgeoning' }, { name: 'Bite', toHit: 7, dice: '1d6', bonus: 4, type: 'piercing' }],
+    note: 'Lives under the bridge east of Ytterhavn and wants a toll from everyone who crosses. Heals fast unless burned.', model: 'npc-bridge-troll',
+  },
+  'lighthouse-keeper': {
+    name: 'The lighthouse keeper', short: 'Keeper', kind: 'Humanoid · lighthouse keeper', ac: 11, hp: 18, initiative: 0, speed: 25,
+    attacks: [{ name: 'Swinging lantern', toHit: 3, dice: '1d4', bonus: 1, type: 'fire' }, { name: 'Boat hook', toHit: 3, dice: '1d6', bonus: 1, type: 'piercing' }],
+    note: 'Keeps the light on the rock in Siri’s Gap. Old, weathered, and sees everything that sails past.', model: 'npc-lighthouse-keeper',
+  },
   'ytter-guard': {
     name: 'Ytterhavn guard', short: 'Guard', kind: 'Humanoid · town guard', ac: 15, hp: 26, initiative: 1, speed: 30,
     attacks: [{ name: 'Cutlass', toHit: 5, dice: '1d6', bonus: 3, type: 'slashing' }, { name: 'Boarding hook', toHit: 5, dice: '1d8', bonus: 3, type: 'piercing' }],

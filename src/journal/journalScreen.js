@@ -18,6 +18,10 @@
 import { icon } from '../ui/icons.js';
 import { monsterPortrait, fullPortrait, portraitImg } from '../ui/portraits.js';
 import { NPC_FIGURES, npcFigureId, npcModel } from '../character/npcFigures.js';
+import { registerRecipe } from '../character/model.js';
+import { MONSTERS, addMonster } from '../data/monsters.js';
+import { cleanMonster } from '../bestiary/bestiaryScreen.js';
+import { generateMonster, saveMonster, explain } from '../net/backend.js';
 
 // On the dev server only: the owner's lore, ready for a one-time import (src/data/lore-import.local.js,
 // kept out of git and out of the built app because it holds DM secrets).
@@ -49,7 +53,10 @@ const TIER_NAME = { continent: 'Continent', city: 'Town', local: 'Place', region
 // heroes(): the party [{ id, name }] for who holds an item.
 // monsters(): the Bestiary [{ id, name, kind, note, model, generated }].
 // onSave(entry) → saved row; onDelete(id); onShowPlace(mapPlaceId).
-export function createJournalScreen(root, { entries, canEdit, mapPlaces, heroes = () => [], monsters = () => [], onSave, onDelete, onShowPlace, onOpenBestiary }) {
+// `onMonstersChanged()`: a creature was added to the Bestiary from here (a person made with Claude).
+export function createJournalScreen(root, { entries, canEdit, mapPlaces, heroes = () => [], monsters = () => [], onSave, onDelete, onShowPlace, onOpenBestiary, onMonstersChanged }) {
+  // A person being made with Claude: their figure and fighting stats, saved to the Bestiary with them.
+  let genDraft = null, genBusy = false;
   root.innerHTML = `
     <div class="jr">
       <header class="jr__head">
@@ -447,8 +454,19 @@ export function createJournalScreen(root, { entries, canEdit, mapPlaces, heroes 
         <label class="field"><span>3D figure</span><select class="field__input" name="figure">
           <option value="auto"${d.figure === undefined ? ' selected' : ''}>Automatic (by name)</option>
           <option value=""${d.figure === '' ? ' selected' : ''}>None</option>
-          ${[['hooknose', 'A Hooknose'], ...Object.entries(NPC_FIGURES).map(([k, f]) => [k, f.name])].map(([k, v]) => `<option value="${k}"${d.figure === k ? ' selected' : ''}>${esc(v)}</option>`).join('')}
+          <optgroup label="People">${[['hooknose', 'A Hooknose'], ...Object.entries(NPC_FIGURES).map(([k, f]) => [k, f.name])].map(([k, v]) => `<option value="${k}"${d.figure === k ? ' selected' : ''}>${esc(v)}</option>`).join('')}</optgroup>
+          <optgroup label="From the Bestiary">${Object.entries(MONSTERS).filter(([, m]) => !m.model?.startsWith('npc-')).map(([k, m]) => `<option value="monster:${k}"${d.figure === `monster:${k}` ? ' selected' : ''}>${esc(m.name)}</option>`).join('')}</optgroup>
         </select></label>
+        <div class="jr-gen">
+          <p class="jr-gen__h">${icon('magic', 'inline')} Or let Claude make them: a 3D figure and fighting stats</p>
+          <textarea class="field__input" name="genprompt" rows="2" maxlength="600" placeholder="What they look like and how they fight, e.g. a scarred old harpooner with a peg leg and a rusty harpoon">${esc(d.genprompt ?? '')}</textarea>
+          <div class="jr-gen__row">
+            <button type="button" class="btn" data-do="gen"${genBusy ? ' disabled' : ''}>${icon('magic')}${genDraft ? 'Make another' : 'Create with Claude'}</button>
+            <span class="jr-gen__status">${genBusy ? 'Claude is sculpting them…' : genDraft ? 'Saving keeps this figure, and they can be fought.' : ''}</span>
+          </div>
+          ${genDraft ? `<div class="jr-gen__out"><span class="jr-gen__face">${portraitImg(monsterPortrait('jr-draft', genDraft.v), { name: genDraft.name })}</span>
+            <span><b>${esc(genDraft.kind)}</b><small>HP ${genDraft.hp} · AC ${genDraft.ac} · ${genDraft.attacks.map((a) => `${esc(a.name)} ${a.toHit >= 0 ? '+' : ''}${a.toHit} (${a.dice}${a.bonus ? `${a.bonus > 0 ? '+' : ''}${a.bonus}` : ''})`).join(', ')}</small></span></div>` : ''}
+        </div>
         <label class="field"><span>What the party knows about them</span><textarea class="field__input" name="body" rows="5" maxlength="2000">${esc(d.body)}</textarea></label>
         ${secretField(editing.id)}${shownBox(d)}${formEnd}
       </form>`;
@@ -683,6 +701,7 @@ export function createJournalScreen(root, { entries, canEdit, mapPlaces, heroes 
   });
 
   newBtn.addEventListener('click', () => {
+    genDraft = null;
     const kind = SECTIONS.find((s) => s.id === section).kind;
     const blank = {
       quest: { title: '', body: '', status: 'active', place: '', steps: [], shown: true },
@@ -702,7 +721,7 @@ export function createJournalScreen(root, { entries, canEdit, mapPlaces, heroes 
     const b = e.target.closest('[data-do], button.jr-tick');
     if (!b || !pageEl.contains(b)) return;
     if (b.dataset.do === 'back') { if (editing) editing = null; else open = null; render(); return; }
-    if (b.dataset.do === 'cancel') { editing = null; renderPage(); return; }
+    if (b.dataset.do === 'cancel') { editing = null; genDraft = null; renderPage(); return; }
     if (b.dataset.do === 'creatureshown' || b.dataset.do === 'creaturenote') {
       const m = open.id, e = creatureEntry(m);
       if (b.dataset.do === 'creaturenote') {
@@ -723,6 +742,7 @@ export function createJournalScreen(root, { entries, canEdit, mapPlaces, heroes 
       renderPage();
       return;
     }
+    if (b.dataset.do === 'gen') { makeWithClaude(b.closest('form')); return; }
     const entry = open && open.type !== 'map' ? byId(open.id) : null;
     if (!entry) return;
     if (b.classList.contains('jr-tick')) {
@@ -734,7 +754,7 @@ export function createJournalScreen(root, { entries, canEdit, mapPlaces, heroes 
       case 'done': save({ id: entry.id, data: { ...entry.data, status: 'done', steps: (entry.data.steps ?? []).map((s) => ({ ...s, done: true })) } }); break;
       case 'active': save({ id: entry.id, data: { ...entry.data, status: 'active' } }); break;
       case 'shown': save({ id: entry.id, data: { ...entry.data, shown: entry.data.shown === false } }); break;
-      case 'edit': editing = { id: entry.id, data: structuredClone(entry.data) }; renderPage(); break;
+      case 'edit': genDraft = null; editing = { id: entry.id, data: structuredClone(entry.data) }; renderPage(); break;
       case 'delete':
         if (!confirm(`Delete "${entry.data.title}" from the journal?`)) return;
         onDelete(entry.id).then(() => putSecret(entry.id, '')).then(() => {
@@ -759,6 +779,7 @@ export function createJournalScreen(root, { entries, canEdit, mapPlaces, heroes 
     } else if (kind === 'npc') {
       data = { kind, title: f.title.value.trim() || 'Someone', role: f.role.value.trim(), place: f.place.value, attitude: f.attitude.value, status: f.status.value, body: f.body.value.trim(), shown };
       if (f.figure.value !== 'auto') data.figure = f.figure.value;
+      if (genDraft) { saveWithFigure(data, f.secret ? f.secret.value.trim() : undefined); return; }
     } else if (kind === 'place') {
       data = { kind, title: f.title.value.trim() || 'A place', place: f.place.value, body: f.body.value.trim(), shown };
     } else if (kind === 'creature') {
@@ -770,6 +791,43 @@ export function createJournalScreen(root, { entries, canEdit, mapPlaces, heroes 
     }
     save({ id: editing.id, data }, f.secret ? f.secret.value.trim() : undefined);
   });
+
+  // Asks Claude for a figure and stats from the form (name, role, where, and the description).
+  async function makeWithClaude(f) {
+    if (genBusy || !f) return;
+    const name = f.title.value.trim(), role = f.role.value.trim(), what = f.genprompt.value.trim();
+    if (!name && !what) { f.genprompt.focus(); return; }
+    editing.data = { ...editing.data, title: name, role, body: f.body.value, place: f.place.value, attitude: f.attitude.value, status: f.status.value, genprompt: what };
+    genBusy = true;
+    renderPage();
+    try {
+      const place = mapPlaces().find((p) => p.id === f.place.value)?.name;
+      const prompt = `A person (a humanoid NPC, about human size, standing on two legs): ${name || 'unnamed'}${role ? `, ${role}` : ''}${place ? `, met at ${place}` : ''}. ${what}`;
+      const draft = cleanMonster(await generateMonster(prompt, () => {}), prompt);
+      genDraft = { ...draft, name: name || draft.name, short: (name || draft.short).split(' ')[0].slice(0, 12), v: Date.now() };
+      registerRecipe('jr-draft', genDraft.figure);
+    } catch (err) {
+      alert(explain(err));
+    } finally {
+      genBusy = false;
+      renderPage();
+    }
+  }
+  // Saves a person made with Claude: their creature in the Bestiary, then the person with that figure.
+  async function saveWithFigure(data, secret) {
+    const { v, ...monster } = genDraft;
+    const id = `gen-${monster.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 24)}-${Date.now().toString(36)}`;
+    try {
+      await saveMonster(id, monster);
+      registerRecipe(id, monster.figure);
+      addMonster(id, monster);
+      onMonstersChanged?.();
+      genDraft = null;
+      await save({ id: editing.id, data: { ...data, figure: `monster:${id}` } }, secret);
+    } catch (err) {
+      alert(explain(err));
+    }
+  }
 
   return {
     render,

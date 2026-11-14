@@ -795,6 +795,85 @@ function innRoom() {
   };
 }
 
+// The bridge east of Ytterhavn: a river running across the scene from the mountains (back) to the
+// sea, an arched wooden bridge with stone ends, the dirt road over it, reeds, rocks, and under the
+// bridge the troll's nook with bones and a stolen cart wheel.
+function bridgeArea() {
+  const v = new Vox(SIZE, { corner: 8 });
+  v.waterColour = '#3f9ac0';
+  const river = (x, z) => Math.abs(z - (26 + Math.sin(x / 8) * 3)) < 6;
+  const road = (x) => Math.abs(x - 30) < 4;
+  slab(v, (x, z, h) => (h < 0 ? '#7a8a8a' : road(x) ? (hash(x, z, 5) > 0.8 ? '#8a7050' : '#a68e64') : river(x, z + 1) || river(x, z - 1) ? '#8a9a5a' : pick(x, z, 22, ['#8cc35c', '#7fb553', '#98cb66'])),
+    { height: (x, z) => (river(x, z) ? -3 : z < 8 ? Math.round(Math.max(0, noise(x, z, 8, 3) * 10 - z * 0.6)) : 0), water: -1, bed: () => '#6a7a6a' });
+  // The bridge: an arch of planks with rails, on stone ends, at the figures' scale.
+  const zc = 26, half = 10;
+  for (let z = zc - half; z <= zc + half; z++) {
+    const lift = Math.round(Math.cos(((z - zc) / half) * Math.PI / 2) * 4);
+    for (let x = 26; x <= 34; x++) v.set(x, lift, z, (z + x) % 2 ? '#8a6440' : '#7a5636');
+    for (const x of [26, 34]) { if (z % 3 === 0) for (let y = lift + 1; y <= lift + 6; y++) v.set(x, y, z, '#5b4a3a'); v.set(x, lift + 6, z, '#6b4528'); }
+  }
+  for (const z of [zc - half - 1, zc + half + 1]) v.box(25, 0, z - 1, 36, 2, z + 2, '#9a948a');
+  for (const z of [zc - 2, zc + 2]) for (let y = -3; y <= 2; y++) { v.set(27, y, z, '#5a4632'); v.set(33, y, z, '#5a4632'); } // piers in the water
+  // The troll's nook under the bridge: bones, a cart wheel, a pot.
+  for (const [x, z] of [[22, 31], [23, 33], [38, 30]]) { v.set(x, 1, z, '#e8e0c8'); v.set(x + 1, 1, z, '#e8e0c8'); }
+  for (let a = 0; a < 12; a++) v.set(40 + Math.round(Math.cos(a / 12 * 6.28) * 3), 1 + Math.round(Math.sin(a / 12 * 6.28) * 3) + 3, 32, '#6b4528');
+  v.box(19, 1, 33, 22, 4, 36, '#3a3a40');
+  // Reeds and rocks along the banks, a few trees, a milestone.
+  for (let x = 2; x < SIZE - 2; x += 3) for (const s of [-1, 1]) { const z = Math.round(26 + Math.sin(x / 8) * 3 + s * 7); if (!road(x) && hash(x, z, 9) > 0.4) for (let y = 1; y <= 3; y++) v.set(x, y, z, '#6a8a3a'); }
+  for (const [x, z] of [[8, 40], [50, 12], [46, 44]]) v.box(x, 1, z, x + 3, 3, z + 2, '#9a948a');
+  for (const [x, z, sz] of [[6, 46, 2], [52, 46, 1], [10, 12, 1]]) tree(v, x, 0, z, { size: sz });
+  v.box(37, 1, 44, 39, 7, 46, '#cfc6b6');
+  return {
+    v, standY: 0,
+    heroSpots: [[28, 48], [32, 48], [24, 52], [36, 52], [30, 53], [20, 50], [40, 50]],
+    npcSpots: [[30, 26], [24, 28], [36, 27], [30, 12], [26, 10], [34, 10], [20, 40], [40, 40], [30, 40]],
+    mood: { bg: 'linear-gradient(#8cc6e8, #e8f2e0)', sky: '#fff6e8', ground: '#8aa86a', hemi: 1.5, sun: '#fff0d4', sunPower: 2.5, sunAt: [-40, 70, 50], exposure: 1.05 },
+  };
+}
+
+// The lighthouse in Siri's Gap: a rocky islet in the sea with the red-and-white tower, its lit
+// lamp, the keeper's cottage, a little jetty with a rowing boat, nets drying and gulls.
+function lighthouseArea() {
+  const v = new Vox(SIZE, { corner: 8 });
+  v.waterColour = '#2f86b0';
+  const rock = (x, z) => Math.hypot((x - 30) * 0.9, z - 26) < 21 + noise(x, z, 5, 4) * 6;
+  slab(v, (x, z, h) => (h < 0 ? '#3a6a80' : h > 2 ? '#7a746c' : hash(x, z, 7) > 0.7 ? '#8a847a' : '#6a655e'),
+    { height: (x, z) => (rock(x, z) ? Math.round(noise(x, z, 6, 2) * 3) : -4), water: -1, bed: () => '#2a4a5a', side: () => '#5a554e' });
+  // Flatten a yard round the tower and the cottage.
+  for (let x = 14; x <= 46; x++) for (let z = 8; z <= 40; z++) if (rock(x, z)) { for (let y = 1; y <= 4; y++) v.clear(x, y, z); v.set(x, 0, z, hash(x, z, 8) > 0.7 ? '#8a847a' : '#9a948a'); }
+  // The tower: red and white bands, a gallery, the lamp room with a glowing lamp, a dark cap.
+  const cx = 36, cz = 14;
+  for (let y = 1; y <= 40; y++) {
+    const r = 5 - Math.floor(y / 14);
+    for (let x = -r; x <= r; x++) for (let z = -r; z <= r; z++) if (x * x + z * z <= r * r + 1) v.set(cx + x, y, cz + z, Math.floor(y / 6) % 2 ? '#b8433a' : '#f1ece2');
+  }
+  for (let x = -4; x <= 4; x++) for (let z = -4; z <= 4; z++) if (x * x + z * z <= 17) v.set(cx + x, 41, cz + z, '#2f2a2e');
+  for (let y = 42; y <= 45; y++) for (let x = -2; x <= 2; x++) for (let z = -2; z <= 2; z++) if (x * x + z * z <= 5) { if (Math.abs(x) === 2 || Math.abs(z) === 2) v.set(cx + x, y, cz + z, '#2f2a2e'); else v.light(cx + x, y, cz + z, '#ffd98a'); }
+  for (let x = -3; x <= 3; x++) for (let z = -3; z <= 3; z++) if (x * x + z * z <= 10) v.set(cx + x, 46, cz + z, '#2f2a2e');
+  v.set(cx, 47, cz, '#2f2a2e');
+  v.box(cx - 1, 1, cz + 4, cx + 2, 9, cz + 6, '#5a3a22'); // the door
+  // The keeper's cottage: whitewashed stone, a dark roof, a chimney and a lit window.
+  v.box(16, 1, 12, 28, 10, 22, '#ece6da');
+  for (let i = 0; i <= 5; i++) v.box(15 + i, 10 + i, 11, 29 - i, 11 + i, 23, '#3e3a40');
+  v.box(25, 10, 14, 27, 19, 16, '#7a746c');
+  v.box(19, 1, 22, 22, 8, 23, '#3a5a7a'); v.light(24, 5, 22, '#ffcf70'); v.light(25, 5, 22, '#ffcf70'); v.light(24, 6, 22, '#ffcf70'); v.light(25, 6, 22, '#ffcf70');
+  // A jetty to the south-west with a rowing boat, nets drying on poles, barrels.
+  for (let z = 40; z <= 56; z++) for (let x = 12; x <= 16; x++) v.set(x, 0, z, (z + x) % 2 ? '#8a6440' : '#7a5636');
+  for (const z of [44, 50, 56]) for (const x of [12, 16]) for (let y = -4; y <= 0; y++) v.set(x, y, z, '#5a4632');
+  boat(v, 19, 0, 46, { length: 8, hull: '#3f6fa8', axis: 'z', mast: false });
+  for (const x of [38, 46]) for (let y = 1; y <= 9; y++) v.set(x, y, 32, '#5b4a3a');
+  for (let x = 39; x <= 45; x++) for (let y = 3; y <= 8; y++) if ((x + y) % 2) v.set(x, y, 32, '#9a8a6a');
+  barrel(v, 30, 0, 22); barrel(v, 33, 0, 23);
+  // Gulls on the rocks.
+  for (const [x, z] of [[10, 30], [48, 22], [44, 40]]) { v.set(x, 3, z, '#f4f4f4'); v.set(x + 1, 3, z, '#f4f4f4'); v.set(x, 4, z, '#f4f4f4'); }
+  return {
+    v, standY: 0,
+    heroSpots: [[22, 34], [28, 35], [18, 37], [33, 37], [25, 38], [14, 38], [38, 38]],
+    npcSpots: [[30, 27], [24, 26], [36, 26], [20, 29], [40, 30], [28, 31], [34, 32], [16, 30], [44, 34]],
+    mood: { bg: 'linear-gradient(#6a9ac0, #c8dce8)', sky: '#eef4ff', ground: '#5a6a70', hemi: 1.4, sun: '#fff0d4', sunPower: 2.3, sunAt: [-40, 70, 40], exposure: 1.05 },
+  };
+}
+
 // `town`: where the place belongs, for grouping in the lists (TOWNS gives the order).
 export const AREAS = {
   camp: { town: 'Razz of Mataz', name: 'The camp of the Man Who Makes Himself Known', short: 'The camp', build: camp },
@@ -810,6 +889,8 @@ export const AREAS = {
   inn: { town: 'Ytterhavn', name: 'A room at the inn', short: 'The inn room', build: innRoom },
   shop: { town: 'Ytterhavn', name: 'A street shop in Ytterhavn', short: 'The shop', build: shop },
   sirivik: { town: 'Sirivik', name: 'The square of Sirivik', short: 'Sirivik', build: sirivikSquare },
+  bridge: { town: 'On the road', name: 'The bridge east of Ytterhavn', short: 'The bridge', build: bridgeArea },
+  lighthouse: { town: 'At sea', name: 'The lighthouse in Siri’s Gap', short: 'The lighthouse', build: lighthouseArea },
   ship: { town: 'At sea', name: 'Aboard a small ship', short: 'The ship', build: ship },
 };
 export const TOWNS = [...new Set(Object.values(AREAS).map((a) => a.town))];

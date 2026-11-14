@@ -192,7 +192,7 @@ export function createSceneScreen(root, { entries, heroes, monsters, canEdit, li
   function journalFor(fig) {
     const [kind, id] = fig.split(':');
     const figId = kind === 'npc' ? id : id === 'hooknose' ? 'hooknose' : null;
-    const person = figId && entries.find((e) => e.data.kind === 'npc' && (dm() || e.data.shown !== false) && npcFigureId(e.data) === figId);
+    const person = entries.find((e) => e.data.kind === 'npc' && (dm() || e.data.shown !== false) && (figId ? npcFigureId(e.data) === figId : e.data.figure === fig));
     if (person) return { type: 'npc', id: person.id };
     if (kind === 'monster') {
       const c = entries.find((e) => e.data.kind === 'creature' && e.data.monster === id && (dm() || e.data.shown));

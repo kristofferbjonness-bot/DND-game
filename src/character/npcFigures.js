@@ -9,6 +9,7 @@
 //   stout — a round belly: shorter legs, a wider torso, arms at x ±3.
 //   huge  — big and muscular: 2×2 legs and arms, a deep chest, about 30 voxels tall.
 import { registerRecipe, sanitizeRecipe } from './model.js';
+import { MONSTERS } from '../data/monsters.js';
 
 // A small builder: parts by name, boxes as [x0, y0, z0, x1, y1, z1, colour key].
 function sculpt(palette) {
@@ -398,6 +399,43 @@ function ytterGuard() {
   return s.done();
 }
 
+// The bridge troll who lives under the bridge east of Ytterhavn: huge, hunched and mossy, with a
+// long nose, tusks, a mane of weedy hair, a belly, a rag round the waist and a club made of an
+// old bridge post with nails in it.
+function bridgeTroll() {
+  const p = { skin: '#7a8a5a', skinDark: '#5e6e44', moss: '#4a6a3a', hair: '#3e4a2e', tusk: '#e8e0c8', eye: '#f2d24a', rag: '#7a6448', club: '#6b4a2e', nail: '#8a8a90', nose: '#8a9a64' };
+  const s = huge(p, { skin: 'skin', torso: 'skin', chest: 'skin', legs: 'skinDark', feet: 'skinDark', belt: 'rag', upper: 'skin', bicep: 'skin', fore: 'skinDark', shoulder: 'moss' });
+  s.box('body', -3, 11, 2, 3, 15, 3, 'skin'); // the belly
+  s.box('body', -4, 10, -1, 4, 11, 2, 'rag'); s.box('legs', -3, 7, 1, 3, 9, 1, 'rag');
+  for (const [x, y] of [[-3, 19], [2, 17], [-1, 20], [3, 15], [-4, 16]]) s.box('body', x, y, -2, x, y, -2, 'moss');
+  s.parts.head.pivot = [0, 21, 2];
+  for (const b of s.parts.head.boxes) { b[2] += 2; b[5] += 2; b[1] -= 3; b[4] -= 3; } // the head hangs low and forward
+  s.box('head', 0, 21, 4, 0, 22, 6, 'nose'); s.box('head', 0, 20, 6, 0, 20, 6, 'nose');
+  s.box('head', -1, 22, 4, -1, 22, 4, 'eye'); s.box('head', 1, 22, 4, 1, 22, 4, 'eye');
+  s.pair('head', 1, 19, 4, 1, 20, 4, 'tusk');
+  s.box('head', -2, 23, 0, 2, 24, 3, 'hair'); s.box('head', -2, 16, 0, 2, 22, 0, 'hair');
+  // The club: a bridge post with nails, in the right fist.
+  s.box('armR', -6, 3, 1, -5, 9, 2, 'club'); s.box('armR', -6, 1, 1, -5, 2, 2, 'club');
+  for (const [y, z] of [[2, 3], [4, 0], [6, 3]]) s.box('armR', -6, y, z, -6, y, z, 'nail');
+  return s.done();
+}
+
+// The lighthouse keeper in Siri's Gap: an old, weathered man in a yellow oilskin coat and
+// sou'wester hat, a grey beard and a pipe, a lantern in one hand and a spyglass at his belt.
+function lighthouseKeeper() {
+  const p = { skin: '#d9a88a', beard: '#c8c4bc', oil: '#e8b83a', oilDark: '#c8982a', jumper: '#3a4a5a', trousers: '#4a4640', boot: '#2a2624', pipe: '#5a3a22', lamp: '#4a4a50', light: '#ffd27a', brass: '#c9a44a' };
+  const s = stout(p, { skin: 'skin', torso: 'oil', belly: 'oil', legs: 'trousers', feet: 'boot', sleeve: 'oil' });
+  s.box('body', -2, 9, -1, 2, 15, -1, 'oilDark'); s.box('body', 0, 12, 2, 0, 15, 2, 'jumper');
+  s.box('legs', -2, 6, -1, 2, 8, 1, 'oil'); // the long coat
+  s.box('body', 2, 9, 2, 2, 10, 2, 'brass'); // spyglass at the belt
+  s.box('head', -1, 16, 2, 1, 17, 2, 'beard'); s.pair('head', 1, 16, 1, 1, 17, 1, 'beard'); s.box('head', 0, 15, 2, 0, 15, 2, 'beard');
+  s.box('head', 1, 17, 3, 2, 17, 3, 'pipe'); s.box('head', 2, 18, 3, 2, 18, 3, 'pipe');
+  s.box('head', -2, 19, -2, 2, 19, 2, 'oil'); s.box('head', -1, 20, -1, 1, 20, 1, 'oil'); s.box('head', -1, 19, -3, 1, 19, -3, 'oilDark'); // sou'wester
+  s.box('armL', 3, 8, 1, 3, 9, 1, 'lamp'); s.box('armL', 3, 6, 1, 3, 7, 1, 'light'); s.box('armL', 3, 5, 1, 3, 5, 1, 'lamp');
+  s.parts.armL.glow.push('light');
+  return s.done();
+}
+
 // --- Sirivik ----------------------------------------------------------------------------------------
 
 // Lasse, the drunk at Per Hul Øye's bar: a nervous, hunched wreck in a stained shirt, clutching his mug.
@@ -493,6 +531,8 @@ export const NPC_FIGURES = {
   bobby: { name: 'Bobby (barman)', match: /^bobby$/i, build: bobby },
   bob: { name: 'Bob (fish shop)', match: /^bob$/i, build: bob },
   'sand-nug': { name: 'The Sand Nug', match: /sand nug/i, build: sandNug },
+  'bridge-troll': { name: 'The bridge troll', match: /bridge troll/i, build: bridgeTroll },
+  'lighthouse-keeper': { name: 'The lighthouse keeper', match: /lighthouse keeper/i, build: lighthouseKeeper },
   'ytter-guard': { name: 'An Ytterhavn guard', match: /ytterhavn guard|harbour guard/i, build: ytterGuard },
   lasse: { name: 'Lasse (bar drunk)', match: /^lasse$/i, build: lasse },
   accordion: { name: 'The Accordion', match: /accordion/i, build: accordion },
@@ -503,11 +543,13 @@ export const NPC_FIGURES = {
 for (const [id, f] of Object.entries(NPC_FIGURES)) if (f.build) registerRecipe(`npc-${id}`, f.build());
 
 // The figure id for a journal person: their chosen figure, or one matching their name.
+// A figure can also be any Bestiary creature: 'monster:<id>' (e.g. one Claude made in the Journal).
 export function npcFigureId(data) {
   if (data?.figure === '') return null;
+  if (data?.figure?.startsWith('monster:') && MONSTERS[data.figure.slice(8)]) return data.figure;
   if (data?.figure === 'hooknose' || NPC_FIGURES[data?.figure]) return data.figure;
   if (/hooknose/i.test(data?.title ?? '')) return 'hooknose';
   return Object.entries(NPC_FIGURES).find(([, f]) => f.match.test(data?.title ?? ''))?.[0] ?? null;
 }
 // The model name to build it with (buildMonsterFigure / monsterPortrait).
-export const npcModel = (id) => (id === 'hooknose' ? 'hooknose' : `npc-${id}`);
+export const npcModel = (id) => (id.startsWith('monster:') ? MONSTERS[id.slice(8)]?.model ?? id.slice(8) : id === 'hooknose' ? 'hooknose' : `npc-${id}`);

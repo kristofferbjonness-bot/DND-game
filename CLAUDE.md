@@ -259,6 +259,9 @@ The original assets (hand-drawn world map, location art, character art, lore doc
   list, full body on the page): `data.figure`, or by name (`match`); the person form has a "3D figure" picker.
   Every NPC of Razz and Ytterhavn with a figure is also a Bestiary enemy (monsters.js: Lord Wolf, Silk Sister, Habibi,
   the young Hooknose, the Man, the Sand Nug, Olemann, Bobby, Bob); stats other than the lore's are placeholders.
+  The bridge troll and the lighthouse keeper have figures and Bestiary entries; the bridge and the lighthouse are scene areas.
+  The Journal's person form can "Create with Claude" (same generator as the Bestiary, `cleanMonster`): saving adds the
+  creature to the Bestiary and sets the person's `figure` to 'monster:<id>' (any Bestiary creature can be a person's figure).
   Never put DM secrets in monster names or notes (the repo is public; players read notes in the Journal).
   Varg is a figure too (`npc-varg`, built by `vargAlone` in model.js, not a recipe). On Edbart he carries one thing:
   the `companion` slot ("Varg carries" on the Gear tab; default the young Hooknose tied up across his back, `companionLoad`), a weapon
