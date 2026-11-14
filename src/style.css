@@ -2462,3 +2462,34 @@ body[data-screen="combat"]:not(:has(#combat.is-battle)) .tags-toggle { display: 
   .party__card { padding-top: 6px; padding-bottom: 6px; }
 }
 @media (orientation: portrait) and (max-width: 600px) { .scn__plate small { display: none; } }
+
+/* Book and dice as round buttons like the map's, stacked tidily: on computers a column at the
+   bottom left (above "?"), sideways phones a column at the bottom right above the map buttons,
+   upright phones bottom left above "?". */
+.rb-toggle {
+  left: max(16px, var(--safe-l)); top: auto; bottom: calc(var(--nav) + 112px); transform: none;
+  width: 44px; height: 44px; padding: 9px; border-radius: 50%;
+  background: radial-gradient(circle at 50% 35%, #3f3446, #241d29); border: 1px solid #0c090e;
+  box-shadow: inset 0 0 0 2px rgba(201, 164, 92, 0.45), 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+.rb-toggle:hover, .rb-toggle.is-open { width: 44px; box-shadow: inset 0 0 0 2px var(--gold), 0 4px 12px rgba(0, 0, 0, 0.4); }
+.dt-toggle { bottom: calc(var(--nav) + 56px); padding: 7px; }
+.roll-pop { top: auto; bottom: calc(var(--nav) + 60px); left: calc(max(16px, var(--safe-l)) + 56px); }
+.combat.is-battle .combat__boxes--heroes { left: calc(max(16px, var(--safe-l)) + 56px); }
+@media (orientation: portrait) and (max-width: 600px) {
+  .rb-toggle { left: 10px; width: 42px; height: 42px; bottom: calc(var(--nav) + 110px); padding: 8px; }
+  .rb-toggle:hover, .rb-toggle.is-open { width: 42px; }
+  .dt-toggle { bottom: calc(var(--nav) + 60px); padding: 6px; }
+  .roll-pop { bottom: calc(var(--nav) + 60px); left: 62px; }
+}
+@media (max-height: 500px) and (orientation: landscape) {
+  .hud-stack { right: max(10px, var(--safe-r)); bottom: var(--nav); }
+  .rb-toggle { left: auto; right: max(10px, var(--safe-r)); width: 40px; height: 40px; padding: 8px; border-radius: 50%; bottom: calc(var(--nav) + 192px); box-shadow: inset 0 0 0 2px rgba(201, 164, 92, 0.45), 0 4px 12px rgba(0, 0, 0, 0.4); }
+  .rb-toggle:hover, .rb-toggle.is-open { width: 40px; }
+  .dt-toggle { bottom: calc(var(--nav) + 144px); padding: 6px; }
+  .dt, .roll-pop { right: calc(max(10px, var(--safe-r)) + 50px); }
+  .roll-pop { bottom: calc(var(--nav) + 144px); }
+  .screen { padding-right: calc(max(6px, var(--safe-r)) + 50px); }
+  .tags-toggle { right: max(10px, var(--safe-r)); bottom: calc(var(--nav) + 96px); }
+  .combat.is-battle .combat__boxes--heroes { left: max(10px, var(--safe-l)); }
+}
