@@ -213,6 +213,17 @@ The original assets (hand-drawn world map, location art, character art, lore doc
   `huge` builds), registered as `npc-<id>` monster models. Journal people show the figure (round face in the
   list, full body on the page): `data.figure`, or by name (`match`); the person form has a "3D figure" picker.
   Lord Wolf and Silk Sister are also Bestiary enemies (monsters.js).
+- **Scene** (`src/scene/`, a tab for everyone): a 3D place where the heroes stand with the people they meet.
+  - Areas (`areas.js`): voxel dioramas on a 60×60 slab at 2 world units per voxel: the Man's camp, The Wolf,
+    the port of Razz, Hooknose Alley, outside the city gates. Each has a mood (light, background), hero spots at
+    the front and NPC spots further in. Add an area by writing a builder and listing it in `AREAS`.
+  - `sceneView.js`: renderer (made on first start), OrbitControls, name tags (HTML) over each figure, tap to pick.
+    `setInset` keeps the picture centred beside the DM's panel.
+  - `sceneScreen.js`: scenes are journal rows (`quests`, `data.kind: 'scene'`, `{ title, area, heroes?, people:
+    [{ fig: 'npc:<id>' | 'monster:<id>', n }] }`; not listed in the Journal). The DM makes/edits/deletes them in a
+    side panel (folded at first on phones) and puts one live; the live id is `scene` in the world row (shared like
+    the sky). Going live sets the row shown. Players see only the live scene and are taken to it (with a toast)
+    when a new one goes live; tapping someone shows a card with "Read in the journal" when they know them.
 - **Revealed places (fog of names)** in main.js:
   - World-map places the players haven't discovered show as "?" and are left out of their
     places list. The info card says "Unknown place". Unnamed dots and city maps aren't hidden.

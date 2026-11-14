@@ -3,7 +3,7 @@
 // a name without a painted icon falls back to the flat drawings below.
 const PAINTED = new Set(['ac', 'armour', 'bag', 'bestiary', 'bow', 'cha', 'chart', 'check', 'cloud', 'coin', 'combat', 'con',
   'crown', 'dagger', 'dex', 'gem', 'hero', 'hp', 'init', 'int', 'journal', 'lock', 'longsword', 'magic', 'map', 'moon', 'party',
-  'pen', 'pin', 'plus', 'potion', 'prof', 'protection', 'rain', 'scroll', 'snow', 'speed', 'storm', 'str', 'sun', 'sword',
+  'pen', 'pin', 'plus', 'potion', 'prof', 'protection', 'rain', 'scene', 'scroll', 'snow', 'speed', 'storm', 'str', 'sun', 'sword',
   'windy', 'wis', 'xp']);
 const BASE = `${import.meta.env.BASE_URL}art/icons/`;
 

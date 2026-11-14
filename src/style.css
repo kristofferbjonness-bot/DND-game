@@ -704,7 +704,7 @@ body.is-placing .hud-stack { opacity: 0.4; }
    lighter parchment with a thin inked line. All text is real text. No purple; the backdrop
    behind the cards is transparent. See design/hero-sheet/README.md. */
 
-.status, .party, .journal, .bestiary {
+.status, .party, .journal, .bestiary, .scn {
   --pp-ink: #2b2118; --pp-soft: #5c4a36; --pp-line: #cdb38a; --pp-line-dark: #a8865a;
   --pp-box: rgba(255, 250, 235, 0.55); --pp-accent: #8a2e1f; --pp-bronze: #9a6b1f;
   background: transparent; color: var(--pp-ink);
@@ -1461,26 +1461,26 @@ input.is-bad { box-shadow: inset 0 0 0 2px #e2634e; }
 .bestiary__gen { border-top: 1px solid var(--pp-line); padding-top: 12px; }
 /* Titles written on the sheet. */
 :is(.party, .bestiary) .screen-head { padding-bottom: 10px; margin-bottom: 4px; border-bottom: 1.5px solid var(--pp-line); }
-:is(.party, .journal, .bestiary) .screen-title { font: 700 24px/1.2 var(--font-display); letter-spacing: 0.04em; color: var(--pp-ink); text-shadow: none; }
-:is(.party, .journal, .bestiary) .sheet__h { color: var(--pp-ink); }
-:is(.party, .journal, .bestiary) .sheet__h::after { background: linear-gradient(90deg, var(--pp-line), transparent); }
+:is(.party, .journal, .bestiary, .scn) .screen-title { font: 700 24px/1.2 var(--font-display); letter-spacing: 0.04em; color: var(--pp-ink); text-shadow: none; }
+:is(.party, .journal, .bestiary, .scn) .sheet__h { color: var(--pp-ink); }
+:is(.party, .journal, .bestiary, .scn) .sheet__h::after { background: linear-gradient(90deg, var(--pp-line), transparent); }
 
 /* Buttons on parchment: inked boxes; the main action keeps its gold. */
-:is(.party, .journal, .bestiary) .btn:not(.btn--gold) {
+:is(.party, .journal, .bestiary, .scn) .btn:not(.btn--gold) {
   color: var(--pp-ink); background: rgba(255, 250, 235, 0.75); border: 1.5px solid var(--pp-line-dark); box-shadow: none;
 }
-:is(.party, .journal, .bestiary) .btn:not(.btn--gold):hover { background: rgba(255, 252, 240, 0.95); }
-:is(.party, .journal, .bestiary) .btn--gold { border: 1.5px solid #6e4b1c; }
+:is(.party, .journal, .bestiary, .scn) .btn:not(.btn--gold):hover { background: rgba(255, 252, 240, 0.95); }
+:is(.party, .journal, .bestiary, .scn) .btn--gold { border: 1.5px solid #6e4b1c; }
 /* Inputs on parchment. */
-:is(.party, .journal, .bestiary) .field__input, .party__all input {
+:is(.party, .journal, .bestiary, .scn) .field__input, .party__all input {
   color: var(--pp-ink); background-color: rgba(255, 252, 240, 0.85); border: 1.5px solid var(--pp-line-dark); box-shadow: none;
 }
-:is(.party, .journal, .bestiary) .field__input::placeholder, .party__all input::placeholder { color: #9a8466; }
-.journal select.field__input {
+:is(.party, .journal, .bestiary, .scn) .field__input::placeholder, .party__all input::placeholder { color: #9a8466; }
+.journal select.field__input, .scn select.field__input {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%235c4a36' stroke-width='2'/%3E%3C/svg%3E");
 }
-:is(.party, .journal, .bestiary) .field > span { color: var(--pp-soft); }
-:is(.party, .journal, .bestiary) .toggle { color: var(--pp-ink); }
+:is(.party, .journal, .bestiary, .scn) .field > span { color: var(--pp-soft); }
+:is(.party, .journal, .bestiary, .scn) .toggle { color: var(--pp-ink); }
 
 /* Party: the "everyone" line and one row per hero. */
 .party__inner { padding: 6px 10px 4px; }
@@ -2134,4 +2134,119 @@ button.jr-tick { cursor: pointer; }
   .rb { padding: var(--top) 8px calc(var(--nav) + 8px); }
   .rb-book { height: 100%; }
   .rb-page { padding: 12px 16px 26px; }
+}
+
+/* ==========================================================================
+   Scene: a 3D place with the heroes and the people they meet (src/scene/)
+   ========================================================================== */
+.scn { padding: 0; overflow: hidden; }
+.scn__stage { position: absolute; inset: 0; }
+.scn__stage canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+.scene-tags { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.scene-tag {
+  position: absolute; left: 0; top: 0; pointer-events: auto; cursor: pointer; white-space: nowrap;
+  padding: 2px 8px 3px; border-radius: 4px; font: 700 12px var(--font-display); letter-spacing: 0.04em;
+  color: var(--pp-ink); background: #f6ead0; border: 1px solid var(--pp-line-dark); box-shadow: 0 2px 4px rgba(30, 15, 5, 0.3);
+}
+.scene-tag--hero { background: #e9eef3; border-color: #7f90ab; }
+.scene-tag[hidden] { display: none; }
+
+/* The scene's name, written on a note in the top corner. */
+.scn__plate {
+  position: absolute; z-index: 2; top: calc(var(--top) + 6px); left: max(56px, calc(var(--safe-l) + 48px)); max-width: min(440px, calc(100% - 120px));
+  display: flex; flex-direction: column; gap: 1px; padding: 4px 12px 6px; color: var(--pp-ink);
+  border: 12px solid transparent; border-image: url('/art/ui/paper/note-wide.webp') 24 fill / 18px / 0 stretch;
+}
+.scn__plate small { font: 600 11px var(--font-display); letter-spacing: 0.1em; text-transform: uppercase; color: var(--pp-soft); }
+.scn__plate b { font: 700 20px/1.15 var(--font-display); }
+.scn__live { align-self: flex-start; margin-top: 4px; font: 700 11px var(--font-display); letter-spacing: 0.08em; text-transform: uppercase; color: var(--pp-soft); }
+.scn__live.is-on { color: var(--pp-accent); }
+.scn__live.is-on::before { content: '● '; }
+
+.scn__empty {
+  position: absolute; z-index: 2; top: 50%; left: 50%; transform: translate(-50%, -50%); width: min(420px, calc(100% - 40px));
+  padding: 14px 18px; text-align: center; color: var(--pp-ink); font-size: 16px;
+  border: 22px solid transparent; border-image: url('/art/ui/paper/note-tall.webp') 26 fill / 28px / 0 stretch;
+}
+.scn__empty-title { margin: 0 0 6px; font: 700 20px var(--font-display); }
+.scn__empty p:last-child { margin: 0; color: var(--pp-soft); }
+
+/* The DM's scenes, on a ledger sheet at the right. */
+.scn__panel {
+  position: absolute; z-index: 3; top: calc(var(--top) + 6px); bottom: calc(var(--nav) + 6px); right: calc(max(16px, var(--safe-r)) + 40px);
+  width: 340px; overflow-y: auto; overscroll-behavior: contain; padding: 2px 8px 8px; color: var(--pp-ink);
+  border: 22px solid transparent; border-image: url('/art/ui/paper/ledger-sheet.webp') 34 fill / 30px / 0 stretch;
+}
+.scn__panel.is-folded { bottom: auto; overflow: visible; }
+.scn__panel.is-folded .scn__list { display: none; }
+.scn__head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-bottom: 8px; border-bottom: 1.5px solid var(--pp-line); }
+.scn__fold { display: flex; align-items: center; gap: 6px; background: none; border: 0; padding: 0; cursor: pointer; font: 700 19px var(--font-display); color: var(--pp-ink); }
+.scn__fold i { font-style: normal; font-size: 13px; color: var(--pp-soft); }
+.scn__list { list-style: none; margin: 0; padding: 0; }
+.scn__item { display: flex; align-items: center; gap: 6px; border-bottom: 1px solid var(--pp-line); }
+.scn__item.is-open { background: rgba(154, 107, 31, 0.1); }
+.scn__item.is-live { box-shadow: inset 3px 0 0 var(--pp-accent); }
+.scn__pick { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 1px; padding: 9px 4px 9px 8px; background: none; border: 0; cursor: pointer; text-align: left; color: var(--pp-ink); }
+.scn__pick b { font: 700 16px var(--font-body); }
+.scn__pick small { font-size: 13px; color: var(--pp-soft); }
+.scn__pick em { font-style: normal; font-weight: 700; color: var(--pp-accent); }
+.scn__tools { display: flex; gap: 4px; flex-shrink: 0; }
+.scn__tools button {
+  display: grid; place-items: center; min-width: 32px; height: 30px; padding: 0 8px; border-radius: 15px; cursor: pointer;
+  font: 700 12px var(--font-display); color: var(--pp-ink); background: rgba(255, 252, 240, 0.8); border: 1.5px solid var(--pp-line-dark);
+}
+.scn__tools .ic { width: 18px; height: 18px; }
+.scn__go:not(.is-on) { color: #fff8ec; background: var(--pp-accent); border-color: #5e1d14; }
+.scn__none { padding: 14px 6px; color: var(--pp-soft); font-style: italic; }
+
+.scn__form { display: flex; flex-direction: column; gap: 10px; }
+.scn__title { margin: 0; font: 700 20px var(--font-display); }
+.scn__h { display: flex; justify-content: space-between; margin: 6px 0 -2px; font: 700 12px var(--font-display); letter-spacing: 0.1em; text-transform: uppercase; color: var(--pp-soft); }
+.scn__h small { letter-spacing: 0; }
+.scn__heroes { display: flex; flex-wrap: wrap; gap: 6px; }
+.scn__hero { display: flex; align-items: center; gap: 5px; padding: 3px 9px 3px 3px; border-radius: 20px; border: 1.5px solid var(--pp-line-dark); background: rgba(255, 252, 240, 0.6); cursor: pointer; font-size: 14px; }
+.scn__hero input { display: none; }
+.scn__hero:has(input:not(:checked)) { opacity: 0.45; }
+.scn__face { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; background: radial-gradient(circle at 50% 40%, #fbf1d8, #d8c08f); flex-shrink: 0; }
+.scn__whos { list-style: none; margin: 0; padding: 0; }
+.scn__who { display: flex; align-items: center; gap: 8px; padding: 5px 2px; border-bottom: 1px solid rgba(168, 134, 90, 0.35); font-size: 15px; }
+.scn__who > span:nth-of-type(1) { flex: 1; min-width: 0; }
+.scn__who.is-on { font-weight: 700; }
+.scn .stepper b { color: var(--pp-ink); font-size: 16px; }
+.scn .stepper button { width: 28px; height: 28px; color: var(--pp-ink); background: rgba(255, 252, 240, 0.9); border: 1.5px solid var(--pp-line-dark); box-shadow: none; }
+.scn .stepper button:disabled { opacity: 0.3; }
+.scn__actions { display: flex; gap: 8px; align-items: center; padding-top: 6px; }
+.scn__actions span { flex: 1; }
+.scn .btn:not(.btn--gold) { color: var(--pp-ink); background: rgba(255, 250, 235, 0.75); border: 1.5px solid var(--pp-line-dark); box-shadow: none; }
+
+/* Someone tapped: a little note at the bottom. */
+.scn__card {
+  position: absolute; z-index: 3; left: 50%; bottom: calc(var(--nav) + 10px); transform: translateX(-50%);
+  display: flex; align-items: center; gap: 12px; min-width: 240px; max-width: calc(100% - 32px); padding: 4px 34px 4px 6px; color: var(--pp-ink);
+  border: 16px solid transparent; border-image: url('/art/ui/paper/note-wide.webp') 24 fill / 22px / 0 stretch;
+}
+.scn__card[hidden] { display: none; }
+.scn__card > div { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; }
+.scn__card b { font: 700 18px var(--font-display); }
+.scn__card small { font-size: 14px; color: var(--pp-soft); }
+.scn__card-face { width: 56px; height: 56px; border-radius: 50%; object-fit: cover; background: radial-gradient(circle at 50% 40%, #fbf1d8, #d8c08f); box-shadow: 0 0 0 2px var(--pp-line-dark); }
+.scn__card-link { background: none; border: 0; padding: 0; cursor: pointer; font: 600 15px var(--font-body); color: var(--pp-accent); text-decoration: underline; text-underline-offset: 3px; }
+.scn__card-close { position: absolute; top: -4px; right: 0; background: none; border: 0; font-size: 22px; cursor: pointer; color: var(--pp-soft); }
+
+@media (orientation: portrait) and (max-width: 600px) {
+  .scn__plate { top: var(--top); left: 12px; max-width: calc(100% - 24px); }
+  .scn__plate b { font-size: 17px; }
+  .scn__panel { top: auto; bottom: calc(var(--nav) + 6px); left: 8px; right: 8px; width: auto; max-height: 52vh; }
+  .scn__panel.is-folded { max-height: none; }
+  .scn__card { bottom: calc(var(--nav) + 70px); width: calc(100% - 24px); }
+}
+@media (max-height: 500px) and (orientation: landscape) {
+  .scn__panel { width: 300px; }
+  .scn__plate { padding: 0 8px 2px; border-width: 9px; }
+  .scn__plate small { font-size: 9.5px; }
+  .scn__plate b { font-size: 15px; }
+  .scn__card { gap: 8px; padding: 0 30px 0 2px; border-width: 10px; }
+  .scn__card b { font-size: 15px; }
+  .scn__card-face { width: 40px; height: 40px; }
+  .scene-tag { font-size: 10.5px; padding: 1px 6px 2px; }
 }

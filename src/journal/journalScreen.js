@@ -786,5 +786,7 @@ export function createJournalScreen(root, { entries, canEdit, mapPlaces, heroes 
     },
     // Opens a map place's page (from the place card on the map).
     openPlace(id) { query = ''; searchEl.value = ''; show('map', id); },
+    // Opens a person ('npc', entry id) or a creature ('creature', Bestiary id).
+    openEntry(type, id) { query = ''; searchEl.value = ''; show(type, id); },
   };
 }

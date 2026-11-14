@@ -128,6 +128,10 @@ const ART = {
   // A quill.
   pen: S('M41 6c-13 1.4-22.8 11.2-25.6 23.2l3.4 3.4C30.8 29.8 40.4 20 41 6z', 'parch') + LN('M41 6L17.2 31', 1.6)
     + LN('M16.8 31.2L8 40', 6) + LN('M16.8 31.2L8 40', 3, '#5f3818') + HI('M34 11c-4 2.5-8 6.5-10.5 11', 1.6, 0.8),
+  // The Scene tab: a striped tent with a pennant.
+  scene: LN('M24 4v8', 2.4) + S('M24.5 4.5l9 3-9 3z', 'red')
+    + S('M24 11L6 40h36z', 'parch') + S('M24 11L15 40h18z', 'red') + S('M24 11l-3.5 29h7z', 'parch')
+    + F('M24 26l-4.5 14h9z', INK) + LN('M3 41h42', 2.6) + HI('M21 15l-9 18', 1.6, 0.6),
   // A plus.
   plus: LN('M24 9v30M9 24h30', 9) + LN('M24 9v30M9 24h30', 5, '#f4ead8'),
 };

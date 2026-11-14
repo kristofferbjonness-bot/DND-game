@@ -30,6 +30,7 @@ import { createStartScreen } from './start/startScreen.js';
 import { createCreatorScreen } from './creator/creatorScreen.js';
 import { createRulebook } from './rulebook/rulebook.js';
 import { createJournalScreen } from './journal/journalScreen.js';
+import { createSceneScreen } from './scene/sceneScreen.js';
 import { createDiceTray } from './dice/diceTray.js';
 import { createHeroManager } from './status/heroManager.js';
 import { shortRest, longRest, readyToLevel } from './character/progress.js';
@@ -441,6 +442,8 @@ panelReveal.addEventListener('click', async () => {
 let sky = { ...DEFAULT_SKY };
 const razz = views.world.places.find((p) => p.id === 'razz');
 let partyAt = { x: razz.x + 2, z: razz.z + 2, shown: true };
+let liveScene = null; // the id of the scene the players see (Scene tab), shared like the sky
+let sceneSeen = false; // the world row has been read once
 const party3d = createPartyMarker(views.world.scene, { onTap: () => showScreen('party') });
 
 function applyParty() {
@@ -453,7 +456,7 @@ let lastLocalChange = 0, saveTimer = null;
 function saveWorldSoon() {
   lastLocalChange = Date.now();
   clearTimeout(saveTimer);
-  saveTimer = setTimeout(() => saveWorld({ sky, party: partyAt }).catch((err) => toast(explain(err))), 400);
+  saveTimer = setTimeout(() => saveWorld({ sky, party: partyAt, scene: liveScene }).catch((err) => toast(explain(err))), 400);
 }
 
 const skyPanel = createSkyPanel({
@@ -472,12 +475,19 @@ function useWorld(data) {
   if (Date.now() - lastLocalChange < 2500) return;
   if (data.sky) sky = { ...DEFAULT_SKY, ...data.sky };
   if (data.party) partyAt = { ...partyAt, ...data.party };
+  if ('scene' in data && data.scene !== liveScene) {
+    liveScene = data.scene ?? null;
+    // A player is taken to a new scene when the DM puts it live (not for the one already live at login).
+    if (liveScene && sceneSeen && me && !seesAll() && screen !== 'combat' && screen !== 'fight') { toast('📍 A new scene: see where you are'); showScreen('scene'); }
+    sceneScreen?.refresh();
+  }
   applyParty();
   skyPanel.render();
 }
 let watchingWorld = null;
 async function loadWorldState() {
   try { useWorld(await loadWorld()); } catch (err) { console.warn('World state not available yet:', err.message); }
+  sceneSeen = true;
   watchingWorld ??= watchWorld(useWorld);
 }
 
@@ -697,8 +707,10 @@ const screens = {
   combat: document.getElementById('combat'), fight: document.getElementById('fight'),
   bestiary: document.getElementById('bestiary'),
   journal: document.getElementById('journal'),
+  scene: document.getElementById('scene'),
 };
 let bestiaryScreen = null;
+let sceneScreen = null; // made below, once the journal's entries exist
 let combatScreen = null; // the DM's controls
 let combatView = null;   // the players' view of a fight
 
@@ -718,6 +730,7 @@ function showScreen(id) {
   }
   if (id === 'party') drawParty(); // re-rendered each time, so AC and HP follow gear changes
   if (id === 'journal') journalScreen.render();
+  if (id === 'scene') sceneScreen.start(); else sceneScreen?.stop();
   if (id === 'combat') combatScreen.start(); else combatScreen?.stop();
   if (id === 'fight') combatView.start(); else combatView?.stop();
   if (id === 'bestiary') bestiaryScreen.start(); else bestiaryScreen?.stop();
@@ -818,6 +831,7 @@ function heroChanged(id) {
   combatScreen.refresh();
   combatView.refresh();
   if (screen === 'party') drawParty();
+  sceneScreen?.refresh();
 }
 
 const saveHero = (c) => saveCharacter(c).catch((err) => toast(`Could not save: ${explain(err)}`));
@@ -1007,6 +1021,7 @@ function applyView() {
   applyFog();
   journalScreen.refresh();
   if (screen === 'party') drawParty();
+  sceneScreen?.refresh();
 }
 
 function previewAs(heroId) {
@@ -1081,6 +1096,28 @@ const journalScreen = createJournalScreen(screens.journal, {
     select(p);
   },
 });
+sceneScreen = createSceneScreen(screens.scene, {
+  entries: quests,
+  heroes: () => party,
+  monsters: () => MONSTERS,
+  canEdit: () => seesAll(),
+  liveId: () => liveScene,
+  onSave: (row) => saveQuest(row).then((saved) => {
+    const i = quests.findIndex((q) => q.id === saved.id);
+    if (i >= 0) quests[i] = saved; else quests.push(saved);
+    return saved;
+  }).catch((err) => { throw new Error(explain(err)); }),
+  onDelete: (id) => deleteQuest(id).then(() => { const i = quests.findIndex((q) => q.id === id); if (i >= 0) quests.splice(i, 1); }),
+  async onLive(id) {
+    // A scene going live is shown to the players (scenes are journal rows: RLS sends only shown ones).
+    const row = quests.find((q) => q.id === id);
+    if (row && row.data.shown === false) await saveQuest({ id, data: { ...row.data, shown: true } });
+    liveScene = id;
+    saveWorldSoon();
+    toast(id ? 'The scene is live for the players.' : 'The scene has ended.');
+  },
+  onOpenJournal(type, id) { showScreen('journal'); journalScreen.openEntry(type, id); },
+});
 let watchingQuests = null;
 async function loadJournal() {
   try {
@@ -1090,15 +1127,17 @@ async function loadJournal() {
     const i = quests.findIndex((q) => q.id === row.id);
     if (event === 'DELETE') { if (i >= 0) quests.splice(i, 1); } else if (i >= 0) quests[i] = row; else quests.push(row);
     // Something new for a player: added, or revealed by the DM (it was not in their list before).
-    if (event !== 'DELETE' && i < 0 && me && !seesAll() && row.data.shown !== false) {
+    if (event !== 'DELETE' && i < 0 && me && !seesAll() && row.data.shown !== false && row.data.kind !== 'scene') {
       const what = { npc: 'Someone new in your journal', place: 'A new place in your journal', placenote: 'New notes in your journal', item: '📖 You found', creature: 'A new creature in your journal' }[row.data.kind] ?? '📜 New quest';
       const name = row.data.title ?? MONSTERS[row.data.monster]?.name;
       toast(name ? `${what}: ${name}` : what);
     }
     journalScreen.refresh();
+    sceneScreen.refresh();
     applyFog();
   });
   journalScreen.refresh();
+  sceneScreen.refresh();
   applyFog();
 }
 
