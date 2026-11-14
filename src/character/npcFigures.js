@@ -295,20 +295,36 @@ function hostelOwner() {
 
 // --- Ytterhavn and Razz -------------------------------------------------------------------------------
 
-// Olemann, a captain of Ytterhavn: short, blond, handsome and muscular, and proud of it. A navy
-// captain's coat with gold buttons over an open white shirt, a bicorne hat, tall boots, bare forearms.
+// Olemann, a captain of Ytterhavn: short (a head shorter than the heroes), blond, handsome and
+// muscular, and proud of it. A navy captain's coat with gold buttons and epaulettes over an open
+// white shirt, thick bare forearms, tall boots, a bicorne hat.
 function olemann() {
-  const p = { skin: '#e4b48c', hair: '#f0d070', coat: '#2a3a5e', coatDark: '#1e2c4a', gold: '#d9a63a', shirt: '#f2ece0', trousers: '#e8dcc0', boot: '#3a2a20', hat: '#1e2238' };
-  const s = stout(p, { skin: 'skin', torso: 'coat', belly: 'coat', legs: 'trousers', feet: 'boot', sleeve: 'coat' });
-  s.box('body', -2, 9, -1, 2, 15, -1, 'coatDark');
-  s.box('body', 0, 12, 2, 0, 15, 2, 'shirt'); s.box('body', -1, 15, 2, 1, 15, 2, 'shirt'); s.box('body', 0, 15, 2, 0, 15, 2, 'skin'); // open shirt
-  for (const y of [10, 12, 14]) { s.box('body', -1, y, 2, -1, y, 2, 'gold'); s.box('body', 1, y, 2, 1, y, 2, 'gold'); }
-  s.pair('body', 2, 15, -1, 3, 15, 1, 'gold'); // epaulettes
-  s.pair('legs', 1, 1, 0, 1, 5, 0, 'boot');
-  for (const side of [-1, 1]) s.box(s.arm(side), side * 3, 11, 0, side * 3, 12, 0, 'skin'); // sleeves rolled to show the arms
-  s.box('head', -1, 19, -1, 1, 19, 1, 'hair'); s.box('head', -1, 18, -1, 1, 18, -1, 'hair'); s.box('head', 1, 18, 0, 1, 18, 1, 'hair');
-  s.box('head', -3, 20, 0, 3, 20, 0, 'hat'); s.box('head', -2, 21, 0, 2, 21, 0, 'hat'); s.box('head', -1, 22, 0, 1, 22, 0, 'hat'); s.box('head', -3, 20, -1, 3, 20, 1, 'hat');
-  s.box('head', 0, 21, 1, 0, 21, 1, 'gold');
+  const p = { skin: '#e4b48c', skinHi: '#eec4a0', hair: '#f0d070', coat: '#2a3a5e', coatDark: '#1e2c4a', gold: '#d9a63a', shirt: '#f2ece0', trousers: '#e8dcc0', boot: '#3a2a20', hat: '#1e2238' };
+  const s = sculpt(p);
+  s.part('legs', [0, 0, 0]);
+  s.pair('legs', 1, 0, 0, 2, 0, 1, 'boot');
+  s.pair('legs', 1, 1, 0, 2, 3, 0, 'boot');
+  s.pair('legs', 1, 4, 0, 2, 5, 0, 'trousers');
+  s.part('body', [0, 6, 0], 'breathe');
+  s.box('body', -3, 6, -1, 3, 12, 1, 'coat');
+  s.box('body', -3, 6, -1, 3, 12, -1, 'coatDark');
+  s.box('body', -2, 4, -2, 2, 6, -2, 'coatDark'); // coat tails
+  s.box('body', -1, 9, 2, 1, 11, 2, 'shirt'); s.box('body', 0, 10, 2, 0, 12, 2, 'skin'); // open shirt, broad chest
+  for (const y of [7, 9, 11]) s.pair('body', 2, y, 2, 2, y, 2, 'gold');
+  s.box('body', -3, 6, 2, 3, 6, 2, 'gold'); // a gold belt
+  s.pair('body', 3, 12, -1, 4, 12, 1, 'gold'); // epaulettes
+  s.part('head', [0, 13, 0], 'nod');
+  s.box('head', -1, 13, -1, 1, 16, 1, 'skin');
+  s.box('head', -1, 16, -1, 1, 16, 1, 'hair'); s.box('head', -1, 15, -1, 1, 15, -1, 'hair'); s.box('head', 1, 15, 0, 1, 15, 1, 'hair');
+  s.box('head', -3, 17, 0, 3, 17, 0, 'hat'); s.box('head', -3, 17, -1, 3, 17, 1, 'hat'); s.box('head', -2, 18, 0, 2, 18, 0, 'hat'); s.box('head', -1, 19, 0, 1, 19, 0, 'hat');
+  s.box('head', 0, 18, 1, 0, 18, 1, 'gold');
+  for (const side of [-1, 1]) {
+    const a = s.arm(side), x = side * 4;
+    s.part(a, [x, 12, 0], 'swing', side < 0 ? 0 : 1.7);
+    s.box(a, x, 9, -1, x, 12, 1, 'coat'); // a thick sleeve, rolled up
+    s.box(a, x, 6, 0, x, 8, 1, 'skinHi'); // strong forearms
+    s.box(a, x, 5, 0, x, 5, 1, 'skin');
+  }
   return s.done();
 }
 
@@ -372,37 +388,68 @@ function lasse() {
   return s.done();
 }
 
-// The Accordion: the mangled thing in the hills that Sirivik worships. A great folded, pleated body
-// of grey-pink flesh that heaves like bellows, long spindly arms, and a cluster of eyes.
+// The Accordion: the mangled thing in the hills that Sirivik worships. A person crushed as if in a
+// press: the legs stand, then the back breaks flat at a right angle, runs forward, and breaks again
+// to rise upright, the body pleated and folded like bellows. Long arms drag; the head hangs.
 function accordion() {
-  const p = { flesh: '#b89a98', fold: '#8a6a6a', dark: '#4a3438', bone: '#e2d8c8', eye: '#f2e6a0', pupil: '#1a1012', claw: '#2a2024' };
+  const p = { skin: '#c4aaa2', skinDark: '#9a8078', fold: '#7a5e5a', rag: '#4e4240', ragDark: '#3a302e', bone: '#e8dece', eye: '#140c0c' };
   const s = sculpt(p);
   s.part('legs', [0, 0, 0]);
-  for (const [x, z] of [[-4, -2], [4, -2], [-4, 3], [4, 3], [0, -4]]) { s.box('legs', x, 0, z, x, 7, z, 'dark'); s.box('legs', x, 0, z + 1, x, 0, z + 1, 'claw'); }
-  s.part('body', [0, 8, 0], 'breathe');
-  for (let i = 0; i < 9; i++) { const w = 5 - Math.abs(i - 4) * 0.5 | 0; s.box('body', -w, 8 + i * 2, -3, w, 9 + i * 2, 3, i % 2 ? 'fold' : 'flesh'); } // the pleated body
-  s.box('body', -1, 26, -1, 1, 27, 1, 'bone');
-  s.part('head', [0, 26, 2], 'nod');
-  for (const [x, y] of [[-2, 22], [1, 24], [2, 20], [-1, 19], [0, 26], [-3, 25], [3, 23]]) { s.box('head', x, y, 4, x, y, 4, 'eye'); s.box('head', x, y, 5, x, y, 5, 'pupil'); }
+  s.pair('legs', 1, 0, -1, 1, 0, 0, 'skinDark');
+  s.pair('legs', 1, 1, -1, 1, 10, -1, 'rag');
+  s.box('legs', -1, 9, -1, 1, 11, -1, 'ragDark');
+  s.part('body', [0, 12, 2], 'breathe');
+  // Broken flat: the lower back runs forward, creased like a squeezed bellows.
+  for (let z = -1; z <= 8; z++) s.box('body', -2, 11, z, 2, 13, z, z % 2 ? 'fold' : 'skin');
+  s.box('body', 0, 14, 0, 0, 14, 0, 'bone'); s.box('body', 0, 14, 7, 0, 14, 7, 'bone'); // the snapped spine shows at the bends
+  // Broken again: the chest stands upright at the front, pleated.
+  for (let y = 14; y <= 23; y++) s.box('body', -2, y, 7, 2, y, 9, y % 2 ? 'fold' : 'skin');
+  s.box('body', -2, 15, 7, 2, 17, 7, 'rag');
+  s.box('body', -3, 23, 7, 3, 23, 9, 'skinDark'); // hunched shoulders
+  s.part('head', [0, 24, 8], 'sway', 1.3);
+  s.box('head', -1, 23, 9, 1, 25, 11, 'skin'); // the head hangs forward and low
+  s.box('head', -1, 24, 12, -1, 24, 12, 'eye'); s.box('head', 1, 24, 12, 1, 24, 12, 'eye'); s.box('head', 0, 23, 12, 0, 23, 12, 'eye');
+  s.box('head', -1, 26, 9, 1, 26, 10, 'ragDark');
   for (const side of [-1, 1]) {
-    const a = s.arm(side), x = side * 6;
-    s.part(a, [x, 22, 0], 'swing', side < 0 ? 0 : 2.1);
-    s.box(a, x, 14, 0, x, 22, 0, 'flesh'); s.box(a, x + side, 6, 1, x + side, 14, 1, 'fold');
-    for (const dz of [0, 1, 2]) s.box(a, x + side, 4, dz, x + side, 5, dz, 'claw');
+    const a = s.arm(side), x = side * 3;
+    s.part(a, [x, 23, 8], 'swing', side < 0 ? 0 : 2.4);
+    s.box(a, x, 9, 8, x, 22, 8, 'skin');
+    s.box(a, x, 9, 8, x, 12, 8, 'skinDark');
+    s.box(a, x, 6, 9, x, 8, 9, 'skinDark'); // long fingers dragging
   }
   return s.done();
 }
 
-// The God of Beauty: a tall, serene figure in pale gold and white, its face a perfect golden mask,
-// a soft glow and a halo behind its head.
+// The God of Beauty: not of this world. A tall, pale, opal figure with no legs, its robe trailing
+// into light; four long arms, two raised; a smooth golden mask with three glowing slits; a crown of
+// golden rays; a ring of light behind its head and another round its waist; orbs circling it.
 function godOfBeauty() {
-  const p = { robe: '#f4eee2', robeShade: '#e2d8c4', gold: '#e8c25a', mask: '#f2d27a', glow: '#fff4c8', hand: '#f2e6d4' };
-  const s = slim(p, { skin: 'hand', torso: 'robe', legs: 'robe', skirtLow: 'robeShade', feet: 'robeShade', sleeve: 'robe', belt: 'gold' }, { skirt: true });
-  s.box('legs', -3, 1, -2, 3, 2, 3, 'robeShade');
-  s.box('head', -1, 17, -1, 1, 20, 1, 'mask'); s.box('head', -1, 21, -1, 1, 21, 1, 'gold');
-  for (let a = 0; a < 16; a++) s.box('head', Math.round(Math.cos(a / 16 * 6.28) * 4), 19 + Math.round(Math.sin(a / 16 * 6.28) * 4), -3, Math.round(Math.cos(a / 16 * 6.28) * 4), 19 + Math.round(Math.sin(a / 16 * 6.28) * 4), -3, 'glow');
-  s.parts.head.glow.push('glow');
-  s.parts.body.motion = 'hover'; s.parts.legs.motion = 'hover'; s.parts.head.motion = 'hover'; s.parts.armL.motion = 'hover'; s.parts.armR.motion = 'hover';
+  const p = { opal: '#f4eefa', opal2: '#e0d6f4', opal3: '#f8e2ee', gold: '#e8c25a', mask: '#f2d27a', glow: '#fff4c8', light: '#d8f0ff', slit: '#ffffff' };
+  const s = sculpt(p);
+  s.part('body', [0, 10, 0], 'hover');
+  for (let y = 4; y <= 24; y++) { const w = y < 12 ? Math.max(0, Math.floor((y - 4) / 3)) : 2; s.box('body', -w, y, -w, w, y, w, y % 3 === 0 ? 'opal2' : y % 3 === 1 ? 'opal' : 'opal3'); }
+  s.box('body', 0, 2, 0, 0, 3, 0, 'light'); // the robe trails into light
+  for (let a = 0; a < 20; a++) s.box('body', Math.round(Math.cos(a / 20 * 6.28) * 5), 14, Math.round(Math.sin(a / 20 * 6.28) * 5), Math.round(Math.cos(a / 20 * 6.28) * 5), 14, Math.round(Math.sin(a / 20 * 6.28) * 5), 'light');
+  s.parts.body.glow.push('light');
+  s.part('head', [0, 26, 0], 'hover', 0.4);
+  s.box('head', -1, 25, -1, 1, 30, 1, 'mask'); // a long, smooth mask
+  for (const x of [-1, 0, 1]) s.box('head', x, 27 + (x === 0 ? 1 : 0), 2, x, 28 + (x === 0 ? 1 : 0), 2, 'slit');
+  for (let a = 0; a < 7; a++) { const ang = Math.PI * (0.15 + a * 0.7 / 6); s.box('head', Math.round(Math.cos(ang) * 3), 30 + Math.round(Math.sin(ang) * 3), 0, Math.round(Math.cos(ang) * 3), 30 + Math.round(Math.sin(ang) * 3), 0, 'gold'); } // a crown of rays
+  for (let a = 0; a < 24; a++) s.box('head', Math.round(Math.cos(a / 24 * 6.28) * 6), 28 + Math.round(Math.sin(a / 24 * 6.28) * 6), -3, Math.round(Math.cos(a / 24 * 6.28) * 6), 28 + Math.round(Math.sin(a / 24 * 6.28) * 6), -3, 'glow');
+  s.parts.head.glow.push('glow', 'slit');
+  // Four long arms: the upper pair raised, the lower pair open.
+  for (const side of [-1, 1]) {
+    const up = side < 0 ? 'armR' : 'armL', down = side < 0 ? 'armR2' : 'armL2', x = side * 3;
+    s.part(up, [x, 23, 0], 'hover', side < 0 ? 0.8 : 1.6);
+    s.box(up, x, 23, 0, x, 32, 0, 'opal'); s.box(up, x + side, 32, 0, x + side, 34, 0, 'gold');
+    s.part(down, [x, 20, 0], 'hover', side < 0 ? 2.4 : 3.2);
+    for (let i = 0; i <= 8; i++) s.box(down, x + side * Math.round(i / 2), 20 - i, 0, x + side * Math.round(i / 2), 20 - i, 0, 'opal2');
+    s.box(down, x + side * 4, 11, 0, x + side * 5, 11, 0, 'gold');
+  }
+  // Orbs of light circling slowly.
+  s.part('orbs', [0, 18, 0], 'spin');
+  for (let a = 0; a < 5; a++) s.box('orbs', Math.round(Math.cos(a * 1.26) * 8), 18 + (a % 2) * 3, Math.round(Math.sin(a * 1.26) * 8), Math.round(Math.cos(a * 1.26) * 8), 18 + (a % 2) * 3, Math.round(Math.sin(a * 1.26) * 8), 'glow');
+  s.parts.orbs.glow.push('glow');
   return s.done();
 }
 

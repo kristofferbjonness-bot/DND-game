@@ -342,3 +342,68 @@ export function buildDesertCamp(n = 3) {
   for (const [dx, dz] of [[0.35, 0], [-0.35, 0], [0, 0.35], [0, -0.35]]) block(g, [Math.abs(dx) ? 0.5 : 0.12, 0.08, Math.abs(dz) ? 0.5 : 0.12], [-2.0 + dx * 0.6, 0.98, 0.6 + dz * 0.6], leaf);
   return g;
 }
+
+// Things round Sirivik, for the curious (world-map scale; y = 0 at the ground):
+// gibbet cages hanging from posts at the cliff edge with crows on them, standing stones of black
+// obsidian carved with glowing blue runes, a weathered statue with an arm and its face broken off,
+// a little shrine with candles and an empty cradle, and the town's wooden lift down to the water.
+export function buildGibbet() {
+  const g = new THREE.Group();
+  const wood = solid('#4a3a2e'), iron = solid('#3a3a40'), bone = solid('#d8cfbe'), crow = solid('#141216');
+  block(g, [0.1, 1.3, 0.1], [0, 0, 0], wood);
+  block(g, [0.55, 0.08, 0.08], [0.22, 1.25, 0], wood);
+  for (const [x, z] of [[0.35, -0.1], [0.55, -0.1], [0.35, 0.1], [0.55, 0.1]]) block(g, [0.03, 0.42, 0.03], [x, 0.55, z], iron);
+  block(g, [0.26, 0.04, 0.26], [0.45, 0.55, 0], iron); block(g, [0.26, 0.04, 0.26], [0.45, 0.97, 0], iron);
+  block(g, [0.12, 0.2, 0.08], [0.45, 0.62, 0], bone);
+  block(g, [0.08, 0.06, 0.05], [0.45, 1.01, 0.02], crow); block(g, [0.07, 0.05, 0.05], [0.02, 1.31, 0], crow);
+  return g;
+}
+export function buildRuneStone(h = 0.8) {
+  const g = new THREE.Group();
+  block(g, [0.28, h, 0.18], [0, 0, 0], solid('#1e1a24'));
+  const rune = new THREE.MeshBasicMaterial({ color: '#5ac8ff', toneMapped: false });
+  for (let i = 0; i < 3; i++) {
+    const m = new THREE.Mesh(bevelBox(0.12, 0.04, 0.02, 0.005).clone(), rune);
+    m.position.set(0, 0.2 + i * (h - 0.3) / 2, 0.1);
+    m.rotation.z = i % 2 ? 0.6 : -0.6;
+    g.add(m);
+  }
+  return g;
+}
+export function buildBrokenStatue() {
+  const g = new THREE.Group();
+  const stone = solid('#8a857c'), plinth = solid('#6a655e');
+  block(g, [0.42, 0.22, 0.42], [0, 0, 0], plinth);
+  block(g, [0.12, 0.35, 0.12], [-0.06, 0.22, 0], stone); block(g, [0.12, 0.35, 0.12], [0.08, 0.22, 0], stone);
+  block(g, [0.3, 0.38, 0.16], [0, 0.57, 0], stone);
+  block(g, [0.08, 0.32, 0.08], [-0.19, 0.6, 0], stone); // one arm left, the other broken off at the shoulder
+  block(g, [0.16, 0.12, 0.15], [0, 0.95, 0], stone); // the head, its face sheared away
+  block(g, [0.08, 0.08, 0.08], [0.24, 0, 0.14], stone); // the broken arm lies at the foot
+  return g;
+}
+export function buildShrine() {
+  const g = new THREE.Group();
+  const stone = solid('#5a5560'), wood = solid('#6b4a2e'), cloth = solid('#e8e0d0');
+  block(g, [0.6, 0.26, 0.34], [0, 0, 0], stone);
+  block(g, [0.32, 0.1, 0.18], [0, 0.26, 0], wood); // an empty cradle on the altar
+  block(g, [0.04, 0.08, 0.18], [-0.15, 0.32, 0], wood); block(g, [0.04, 0.08, 0.18], [0.15, 0.32, 0], wood);
+  block(g, [0.24, 0.02, 0.12], [0, 0.32, 0], cloth);
+  const flame = new THREE.MeshBasicMaterial({ color: '#ffcf70', toneMapped: false });
+  for (const x of [-0.25, 0.25]) {
+    block(g, [0.04, 0.12, 0.04], [x, 0.26, 0.1], cloth);
+    const f = new THREE.Mesh(bevelBox(0.04, 0.05, 0.04, 0.01).clone(), flame);
+    f.position.set(x, 0.41, 0.1);
+    g.add(f);
+  }
+  return g;
+}
+export function buildLift(drop = 2) {
+  const g = new THREE.Group();
+  const wood = solid('#5a4632'), rope = solid('#b8a07a');
+  for (const [x, z] of [[-0.3, -0.3], [0.3, -0.3], [-0.3, 0.3], [0.3, 0.3]]) block(g, [0.08, 1.2, 0.08], [x, 0, z], wood);
+  block(g, [0.7, 0.08, 0.7], [0, 1.2, 0], wood);
+  block(g, [0.08, 0.08, 0.5], [0, 1.28, 0], wood); // the winch
+  block(g, [0.03, drop + 1.2, 0.03], [0, -drop, 0.42], rope);
+  block(g, [0.6, 0.06, 0.4], [0, -drop + 0.2, 0.55], wood); // the platform down by the water
+  return g;
+}

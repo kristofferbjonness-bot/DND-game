@@ -12,7 +12,7 @@ import { buildPlants, buildClouds } from './world/scatter.js';
 import { buildLandmark, buildTine } from './world/landmarks.js';
 import { buildAnimals } from './world/animals.js';
 import { MINE, BRIDGE, crossings, road } from './world/roads.js';
-import { buildLighthouse, buildShadowMist, buildCabin, buildBridge, buildVolcanoSparks, buildCloudCap, buildMountainMist, buildMine, buildYurtCamp, buildDesertCamp } from './world/features.js';
+import { buildLighthouse, buildShadowMist, buildCabin, buildBridge, buildVolcanoSparks, buildCloudCap, buildMountainMist, buildMine, buildYurtCamp, buildDesertCamp, buildGibbet, buildRuneStone, buildBrokenStatue, buildShrine, buildLift } from './world/features.js';
 import { LOCATIONS } from './world/locations.js';
 import { CITIES } from './city/cities.js';
 import { createTiltShiftPasses } from './fx/tiltShift.js';
@@ -255,6 +255,29 @@ function buildWorldView() {
     if (spots.length) { const mist = buildMountainMist(spots); scene.add(mist); features.push(mist); }
   }
   const sirivik = places.find((p) => p.id === 'sirivik');
+  // Round Sirivik: cages at the cliff edge, rune stones, a broken statue, a shrine, the lift.
+  if (sirivik) {
+    const put = (obj, dx, dz, rot = 0, scale = 1.3) => {
+      const [cx, cz] = nearestLand(sirivik.cx + dx, sirivik.cz + dz, 3);
+      const [x, z] = cellToWorld(cx, cz);
+      obj.position.set(x, surfaceY(cx, cz), z); obj.rotation.y = rot; obj.scale.setScalar(scale);
+      scene.add(obj);
+    };
+    // The cliff edge: the land cells next to the water nearest the town.
+    const edge = [];
+    for (let dz = -4; dz <= 4; dz++) for (let dx = -4; dx <= 4; dx++) {
+      const x = sirivik.cx + dx, z = sirivik.cz + dz, k = z * grid.cols + x;
+      if (!grid.land[k] || grid.river[k]) continue;
+      const wet = [[1, 0], [-1, 0], [0, 1], [0, -1]].find(([ax, az]) => !grid.land[(z + az) * grid.cols + x + ax] || grid.river[(z + az) * grid.cols + x + ax]);
+      if (wet) edge.push([dx, dz, Math.atan2(wet[0], wet[1]), Math.hypot(dx, dz)]);
+    }
+    edge.sort((a, b) => a[3] - b[3]);
+    edge.slice(0, 2).forEach(([dx, dz, rot]) => put(buildGibbet(), dx, dz, rot - Math.PI / 2));
+    if (edge[3]) { const [dx, dz, rot] = edge[3]; put(buildLift(1.6), dx, dz, rot); }
+    put(buildRuneStone(0.9), 2, -2, 0.3); put(buildRuneStone(0.7), 3, -1, -0.4); put(buildRuneStone(0.8), 2, 0, 0.9);
+    put(buildBrokenStatue(), -1, -3, 0.5);
+    put(buildShrine(), 1, 3, -0.3);
+  }
   if (sirivik) { const fog = buildShadowMist(5, { grey: true }); fog.position.set(sirivik.x, sirivik.ground, sirivik.z); scene.add(fog); features.push(fog); }
   {
     const [x, z0] = cellToWorld(BRIDGE.cx, BRIDGE.from), [, z1] = cellToWorld(BRIDGE.cx, BRIDGE.to);

@@ -60,6 +60,8 @@ The original assets (hand-drawn world map, location art, character art, lore doc
   Colours in `peakColor` (terrain.js). Only the densest mountain ranges have drifting haze (`buildMountainMist`).
   Rama's mountains (`onRama`) are bare rock, snowy only round their summit (`RAMA_SUMMIT`). The volcano has no smoke
   column, only haze and faint orange sparks (`buildVolcanoSparks`). The ice mountain's foot is icy (`iceField`).
+- Round Sirivik on the world map (features.js, placed in `buildWorldView`): gibbet cages at the cliff edge, the lift, obsidian
+  rune stones, a broken statue, a shrine with an empty cradle (hints at the lore, no words). The `sirivik` scene area has the same.
 - `src/world/roads.js`: roads found with A* over the land at load (round mountains and the sea; rivers are crossed at
   `BRIDGE` east of Ytterhavn, elsewhere plank bridges at `crossings`): an old patchy dirt road Razz → Ikeheim → Tine with
   forks to Sirivik and Ytterhavn, and a gravel road from the Bartedalen Mine (`MINE`, at ground level in the corner SW of

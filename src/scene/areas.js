@@ -11,11 +11,11 @@ const HERO_SPOTS = [[24, 45], [36, 45], [18, 50], [42, 50], [30, 51], [12, 54], 
 
 // --- Shared bits -------------------------------------------------------------------------------
 
-function slab(v, top, { bottom = -3, height = () => 0, water = null, bed } = {}) {
+function slab(v, top, { bottom = -3, height = () => 0, water = null, bed, side = null } = {}) {
   v.ground({
     heightAt: height,
     top,
-    side: (x, z, y) => (y < -1 ? '#8a6a48' : '#a8875a'),
+    side: side ?? ((x, z, y) => (y < -1 ? '#8a6a48' : '#a8875a')),
     bottom,
     waterLevel: water,
     bed,
@@ -649,6 +649,72 @@ function shop() {
   };
 }
 
+// --- Sirivik -------------------------------------------------------------------------------------
+// The square of Sirivik at the top of its obsidian cliff, always in fog: dark stone houses, the
+// wooden lift down to the ships, gibbet cages hanging over the drop with crows on them, a wall of
+// black obsidian carved with glowing runes, a statue with an arm and its face broken off, and a
+// small shrine with candles and an empty cradle.
+function sirivikSquare() {
+  const v = new Vox(SIZE, { corner: 5 });
+  v.waterColour = '#2a4a5a';
+  v.mistColour = '#b8bcc4';
+  const cliff = (z) => z < 14;
+  slab(v, (x, z, h) => (h < 0 ? '#1e1a24' : hash(x, z, 51) > 0.92 ? '#4e4a58' : (x + z) % 7 === 0 ? '#3a3644' : '#433f4c'),
+    { height: (x, z) => (cliff(z) ? -12 : 0), water: -10, bed: () => '#1a2a30', bottom: -14, side: (x, z, y) => (hash(x, y, z) > 0.85 ? '#3e3a48' : '#24202c') });
+  for (let x = 0; x < SIZE; x++) for (let y = -11; y <= 0; y++) if (v.inside(x, 14)) v.set(x, y, 14, hash(x, y, 52) > 0.85 ? '#3e3a48' : '#24202c'); // the cliff face
+  // Runes etched into the ground near the edge.
+  for (const [x, z] of [[24, 17], [25, 17], [26, 18], [33, 17], [34, 18], [35, 17]]) v.light(x, 0, z, '#3a8ab0');
+  // Houses of dark stone down the left side.
+  for (const [i, z0] of [[0, 18], [1, 32], [2, 46]]) townhouse(v, { x: 0, z: z0, w: 14, d: 10, face: 'east', floors: 2, wall: ['#4a4650', '#3e3a44', '#55505a'][i], roof: '#2a2830', trim: '#6a6670', door: '#2a2024', shutters: '#2a2830' });
+  // The obsidian wall carved with runes down the right side.
+  for (let x = 52; x < SIZE; x++) for (let z = 16; z < 52; z++) for (let y = 1; y <= 14; y++) v.set(x, y, z, hash(x, y, z) > 0.9 ? '#2e2a38' : '#1e1a24');
+  for (let z = 18; z < 50; z += 4) for (let k = 0; k < 4; k++) v.light(52, 4 + ((z + k * 3) % 8), z + k % 3, '#5ac8ff');
+  // The lift: a wooden tower at the edge, a beam over the drop, ropes, the platform far below.
+  const wood = '#4a3a2e', rope = '#a8906a';
+  for (const [x, z] of [[8, 14], [14, 14], [8, 19], [14, 19]]) for (let y = 1; y <= 22; y++) v.set(x, y, z, wood);
+  for (let x = 8; x <= 14; x++) for (const z of [14, 19]) { v.set(x, 22, z, wood); v.set(x, 12, z, wood); }
+  for (let z = 6; z <= 19; z++) v.set(11, 23, z, wood);
+  for (let y = -8; y <= 22; y++) { v.set(10, y, 7, rope); v.set(12, y, 7, rope); }
+  v.box(8, -9, 4, 15, -8, 10, wood);
+  v.box(10, 21, 15, 13, 24, 18, '#5a4632'); // the winch house
+  // Gibbet cages hanging over the drop from posts at the edge, with crows.
+  for (const x of [38, 47]) {
+    for (let y = 1; y <= 20; y++) v.set(x, y, 16, wood);
+    for (let z = 9; z <= 16; z++) v.set(x, 20, z, wood);
+    for (let y = 14; y <= 19; y++) v.set(x, y, 9, '#3a3a40');
+    for (let y = 6; y <= 13; y++) for (const [dx, dz] of [[-2, -2], [2, -2], [-2, 2], [2, 2], [0, -2], [0, 2], [-2, 0], [2, 0]]) v.set(x + dx, y, 9 + dz, '#3a3a40');
+    v.box(x - 2, 6, 7, x + 3, 7, 12, '#3a3a40'); v.box(x - 2, 13, 7, x + 3, 14, 12, '#3a3a40');
+    v.set(x, 7, 9, '#d8cfbe'); v.set(x, 8, 9, '#d8cfbe'); v.set(x - 1, 7, 8, '#d8cfbe');
+    for (const [dx, dz] of [[-1, -2], [1, 2]]) { v.set(x + dx, 15, 9 + dz, '#141216'); v.set(x + dx, 16, 9 + dz, '#141216'); }
+  }
+  for (const [x, z] of [[30, 16], [20, 26]]) { v.set(x, 1, z, '#141216'); v.set(x, 2, z, '#141216'); }
+  // The statue: a figure on a plinth, one arm gone (it lies at the foot), the face sheared off.
+  const stone = '#8a857c';
+  v.box(27, 1, 19, 34, 4, 25, '#5e5a54');
+  v.box(29, 4, 21, 30, 12, 23, stone); v.box(31, 4, 21, 32, 12, 23, stone);
+  v.box(28, 12, 21, 33, 21, 23, stone);
+  for (let y = 13; y <= 20; y++) v.set(27, y, 22, stone);
+  v.box(29, 21, 21, 32, 25, 23, stone);
+  v.box(29, 22, 23, 32, 25, 24, '#6e6a62'); // the broken face
+  v.box(34, 1, 26, 37, 2, 27, stone); v.set(37, 2, 26, stone);
+  v.set(30, 26, 22, '#141216'); v.set(31, 26, 22, '#141216'); // a crow on its head
+  // The shrine: an altar with candles, an empty cradle on it, and odd offerings left at its foot.
+  v.box(17, 1, 15, 25, 5, 18, '#4a4650');
+  v.box(19, 5, 16, 24, 6, 18, '#6b4a2e'); v.set(19, 6, 16, '#6b4a2e'); v.set(23, 6, 16, '#6b4a2e'); v.set(19, 6, 17, '#6b4a2e'); v.set(23, 6, 17, '#6b4a2e');
+  v.box(20, 6, 16, 23, 7, 18, '#e8e0d0');
+  for (const x of [17, 24]) { v.set(x, 5, 18, '#e8e0d0'); v.set(x, 6, 18, '#e8e0d0'); v.light(x, 7, 18, '#ffcf70'); }
+  for (const [x, c] of [[18, '#5a3a22'], [20, '#8a6a4a'], [22, '#5a3a22']]) v.set(x, 1, 19, c); // odd shoes, one each
+  // Dim lamps, barrels, and fog rolling up over the edge and through the square.
+  for (const [x, z] of [[16, 34], [44, 36]]) lamp(v, x, z);
+  barrel(v, 46, 0, 44);
+  for (let x = 4; x < 56; x += 8) v.puff(x, -2 + hash(x, 1, 53) * 6, 6, 7, 5, 6);
+  return {
+    v, heroSpots: HERO_SPOTS,
+    npcSpots: [[30, 31], [22, 28], [38, 29], [18, 23], [42, 22], [25, 37], [35, 37], [16, 30], [44, 30]],
+    mood: { bg: 'linear-gradient(#4a4e5a, #8a8e96)', sky: '#d4d8e0', ground: '#4a4650', hemi: 1.45, sun: '#d8dce8', sunPower: 1.6, sunAt: [-30, 70, 40], exposure: 1.2 },
+  };
+}
+
 // `town`: where the place belongs, for grouping in the lists (TOWNS gives the order).
 export const AREAS = {
   camp: { town: 'Razz of Mataz', name: 'The camp of the Man Who Makes Himself Known', short: 'The camp', build: camp },
@@ -661,6 +727,7 @@ export const AREAS = {
   ytterport: { town: 'Ytterhavn', name: 'The port of Ytterhavn', short: 'Ytterhavn port', build: ytterPort },
   tavern: { town: 'Ytterhavn', name: 'A sailors’ bar in Ytterhavn', short: 'The bar', build: tavern },
   shop: { town: 'Ytterhavn', name: 'A street shop in Ytterhavn', short: 'The shop', build: shop },
+  sirivik: { town: 'Sirivik', name: 'The square of Sirivik', short: 'Sirivik', build: sirivikSquare },
   ship: { town: 'At sea', name: 'Aboard a small ship', short: 'The ship', build: ship },
 };
 export const TOWNS = [...new Set(Object.values(AREAS).map((a) => a.town))];
