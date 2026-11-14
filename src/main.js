@@ -712,6 +712,17 @@ homeButton.addEventListener('click', () => {
 attachTouchGestures(labelRenderer.domElement, () => view, () => { flight = null; spin = null; });
 
 // The compass needle points north; tapping it turns the map back to north-up.
+// The place-names button hides or shows every name label on the maps (remembered on this device).
+const labelsToggle = document.getElementById('labels-toggle');
+function setLabelsHidden(hidden) {
+  document.body.classList.toggle('no-labels', hidden);
+  labelsToggle.setAttribute('aria-pressed', String(hidden));
+  labelsToggle.title = labelsToggle.ariaLabel = hidden ? 'Show place names' : 'Hide place names';
+  try { localStorage.setItem('dnd.noLabels', hidden ? '1' : ''); } catch { /* private mode */ }
+}
+labelsToggle.addEventListener('click', () => setLabelsHidden(!document.body.classList.contains('no-labels')));
+try { setLabelsHidden(localStorage.getItem('dnd.noLabels') === '1'); } catch { /* private mode */ }
+
 const compass = document.getElementById('compass');
 const compassNeedle = compass.querySelector('.compass__needle');
 const azimuth = () => Math.atan2(view.camera.position.x - view.controls.target.x, view.camera.position.z - view.controls.target.z);

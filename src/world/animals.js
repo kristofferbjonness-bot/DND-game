@@ -66,13 +66,13 @@ const MODELS = {
 
 // Where each kind lives, how many herds and how big, and their colours.
 const KINDS = {
-  horse: { herds: 9, size: [2, 4], coats: ['#8a5a34', '#5e3d27', '#d9cbb4', '#3a3330'], dark: '#2a2420', where: (k, b) => b === BIOME.PLAINS || b === BIOME.MEADOW },
-  sheep: { herds: 7, size: [3, 5], coats: ['#f2ede2', '#e8e1d2'], dark: '#3a3330', where: (k, b) => b === BIOME.MEADOW },
-  camel: { herds: 7, size: [2, 3], coats: ['#c9a26a', '#b88e58'], dark: '#7a5a3a', where: (k, b) => b === BIOME.DESERT },
-  goat: { herds: 10, size: [2, 3], coats: ['#e8e2d8', '#8a7a6a', '#5e5048'], dark: '#3a3330', mountain: true },
-  deer: { herds: 7, size: [2, 3], coats: ['#9a6a42', '#8a5a36'], dark: '#d9c8a8', light: '#f4efe6', where: (k, b) => b === BIOME.JUNGLE || b === BIOME.MEADOW },
-  seal: { herds: 4, size: [2, 4], coats: ['#7a7c80', '#5e6064'], dark: '#4a4c50', shore: true },
-  whale: { herds: 6, size: [1, 2], coats: ['#2c3c4c', '#34465a'], light: '#c9d4dc', sea: true },
+  horse: { herds: 5, size: [2, 4], coats: ['#8a5a34', '#5e3d27', '#d9cbb4', '#3a3330'], dark: '#2a2420', where: (k, b) => b === BIOME.PLAINS || b === BIOME.MEADOW },
+  sheep: { herds: 4, size: [3, 5], coats: ['#f2ede2', '#e8e1d2'], dark: '#3a3330', where: (k, b) => b === BIOME.MEADOW },
+  camel: { herds: 4, size: [2, 3], coats: ['#c9a26a', '#b88e58'], dark: '#7a5a3a', where: (k, b) => b === BIOME.DESERT },
+  goat: { herds: 5, size: [2, 3], coats: ['#e8e2d8', '#8a7a6a', '#5e5048'], dark: '#3a3330', mountain: true },
+  deer: { herds: 4, size: [2, 3], coats: ['#9a6a42', '#8a5a36'], dark: '#d9c8a8', light: '#f4efe6', where: (k, b) => b === BIOME.JUNGLE || b === BIOME.MEADOW },
+  seal: { herds: 2, size: [2, 4], coats: ['#7a7c80', '#5e6064'], dark: '#4a4c50', shore: true },
+  whale: { herds: 3, size: [1, 2], coats: ['#2c3c4c', '#34465a'], light: '#c9d4dc', sea: true },
 };
 
 // Distance (cells) from land, for whales in the open sea.

@@ -28,11 +28,19 @@ function lantern(v, x, y, z, { post = 5, wood = '#4a3426' } = {}) {
   v.light(x, y + post + 1, z, '#ffcf70');
   v.set(x, y + post + 2, z, '#3a2a1e');
 }
+// Props are sized to the figures (about 12 voxels tall): a barrel is waist high, a crate knee high.
 function barrel(v, x, y, z) {
-  for (let i = 1; i <= 3; i++) for (const [dx, dz] of [[0, 0], [1, 0], [0, 1], [1, 1]]) v.set(x + dx, y + i, z + dz, i === 2 ? '#5a3a22' : '#8a5a34');
+  for (let i = 1; i <= 5; i++) for (let dx = 0; dx < 3; dx++) for (let dz = 0; dz < 3; dz++) {
+    if ((dx === 0 || dx === 2) && (dz === 0 || dz === 2)) continue; // round it off
+    v.set(x + dx, y + i, z + dz, i === 2 || i === 4 ? '#4a3a2a' : '#8a5a34');
+  }
 }
 function crate(v, x, y, z, s = 2, c = '#a87a48') {
-  v.box(x, y + 1, z, x + s, y + 1 + s, z + s, (cx, cy, cz) => ((cx + cy + cz) % 2 ? c : shade(c, 0.85)));
+  const n = s * 2;
+  v.box(x, y + 1, z, x + n, y + 1 + n, z + n, (cx, cy, cz) => {
+    const edge = [cx - x, cy - y - 1, cz - z].filter((q) => q === 0 || q === n - 1).length >= 2;
+    return edge ? shade(c, 0.7) : c;
+  });
 }
 // A rug laid on the ground (recolours the top layer).
 function rug(v, x0, z0, x1, z1, { field = '#9b2f2a', border = '#d8a845', motif = '#2f4f7a' } = {}) {
@@ -226,7 +234,7 @@ function alley() {
   // Lanterns on brackets.
   for (const [x, z] of [[14, 20], [45, 34], [14, 44], [45, 10]]) { v.set(x, 11, z, '#3a2a1e'); v.light(x + (x < 30 ? 1 : -1), 10, z, '#ffb347'); }
   // Broken crates, planks and rubbish.
-  crate(v, 18, 0, 8, 3, '#7a5a38'); crate(v, 39, 0, 22); crate(v, 40, 0, 25, 2, '#6a4a2e');
+  crate(v, 18, 0, 8, 3, '#7a5a38'); crate(v, 41, 0, 25);
   for (const [x, z, l] of [[20, 34, 5], [36, 42, 4], [24, 50, 6]]) for (let i = 0; i < l; i++) v.set(x + i, 1, z + Math.floor(i / 3), '#6a4a2e');
   barrel(v, 17, 0, 52);
   return {
@@ -274,107 +282,106 @@ function gate() {
 }
 
 // --- Ytterhavn ------------------------------------------------------------------------------------
-// A rich seafaring city: tall, colourful merchant houses with stepped gables (Copenhagen), pale
-// stone and blue-and-white tiles with terracotta roofs (Lisbon), wave-patterned paving.
+// A rich seafaring city: tall merchant houses with stepped gables (Copenhagen), pale stone and
+// terracotta roofs (Lisbon). Everything is sized to the figures (about 12 voxels tall): doors are
+// 13 high, a ground floor 16, an upper floor 13. Detail comes from the architecture: plinths,
+// quoins, string courses, framed doors and windows with sills and lintels, shutters, a cornice.
 
 // A town house. `face` is the side its front looks to: 'south' (+z, towards the camera), 'east'
-// (+x) or 'west' (−x). w is the width along the front, d the depth, h the wall height.
-function townhouse(v, { x, z, w, d, h, face = 'south', wall, roof = '#5a4a48', trim = '#f2ece0', tiles = false, door = '#4a3020' }) {
+// (+x) or 'west' (−x). w is the width along the front, d the depth.
+function townhouse(v, { x, z, w, d, floors = 2, face = 'south', wall, roof = '#5a4a48', trim = '#f2ece0', door = '#4a3020', shutters = null }) {
   const P = (u, y, t, c) => {
     if (face === 'south') v.set(x + u, y, z + d - 1 - t, c);
     else if (face === 'east') v.set(x + d - 1 - t, y, z + u, c);
     else v.set(x + t, y, z + u, c);
   };
-  const mid = Math.floor(w / 2);
-  for (let u = 0; u < w; u++) for (let t = 0; t < d; t++) for (let y = 1; y <= h; y++) {
-    let c = wall;
-    if (t === 0) {
-      if (u === 0 || u === w - 1) c = trim;
-      else if ((u === mid || u === mid - 1) && y <= 3) c = door;
-      else if (tiles && y <= 3) c = (u + y) % 2 ? '#3f6fa8' : '#e8eef4';
-      else if (u % 3 === 1 && y >= 5 && y < h - 1 && (y - 5) % 4 < 2) c = '#34404e';
-      else if (u % 3 === 1 && y >= 5 && y < h - 1 && (y - 5) % 4 === 2) c = trim;
-      else if (y === 4) c = trim; // a band above the ground floor
+  const G = 16, F = 13, top = G + F * (floors - 1) + 1; // the cornice row
+  const base = shade(wall, 0.78), glass = '#2e3a48';
+  for (let u = 0; u < w; u++) for (let t = 0; t < d; t++) for (let y = 1; y < top; y++) P(u, y, t, y <= 2 ? base : wall);
+  // Corner quoins, string courses between the floors, the cornice.
+  for (let y = 3; y < top; y++) if (Math.floor(y / 2) % 2) { P(0, y, 0, trim); P(w - 1, y, 0, trim); }
+  for (let k = 0; k < floors - 1; k++) for (let u = 0; u < w; u++) { P(u, G + F * k, 0, trim); P(u, G + F * k, -1, trim); }
+  for (let u = -1; u <= w; u++) { P(u, top, 0, trim); P(u, top, -1, trim); }
+  // Bays of windows; the middle bay of the ground floor is the door.
+  const n = Math.max(2, Math.floor((w - 2) / 5)), bay = (i) => Math.round(1 + (i + 0.5) * (w - 2) / n);
+  const win = (cu, y0, h) => {
+    for (let u = cu - 1; u <= cu + 1; u++) {
+      for (let y = y0; y < y0 + h; y++) P(u, y, 0, y === y0 + Math.floor(h / 2) || u === cu ? shade(trim, 0.92) : glass);
+      P(u, y0 - 1, -1, trim); P(u, y0 + h, 0, trim); // the sill and the lintel
     }
-    P(u, y, t, c);
+    if (shutters) for (let y = y0; y < y0 + h; y++) { P(cu - 2, y, 0, shutters); P(cu + 2, y, 0, shutters); }
+  };
+  for (let i = 0; i < n; i++) {
+    const cu = bay(i);
+    if (i === Math.floor(n / 2)) {
+      for (let u = cu - 2; u <= cu + 2; u++) for (let y = 1; y <= 13; y++) P(u, y, 0, u === cu - 2 || u === cu + 2 || y === 13 ? trim : y === 12 ? glass : door);
+      for (let u = cu - 1; u <= cu + 1; u++) P(u, 1, -1, shade(trim, 0.85)); // the step
+    } else win(cu, 5, 8);
+    for (let k = 1; k < floors; k++) win(cu, G + F * (k - 1) + 3, 8);
   }
-  // Flower boxes under some windows, sticking out from the front.
-  for (let u = 1; u < w - 1; u += 3) for (let y = 7; y < h - 1; y += 4) {
-    if (hash(x + u, y, z + 61) < 0.5) continue;
-    P(u, y - 1, -1, '#6b4528');
-    P(u, y, -1, ['#d9503f', '#e86aa0', '#f2e04a', '#e8e8e8'][Math.floor(hash(u, y, x + 62) * 4)]);
-  }
-  // A stepped gable facing the street; the roof runs back from it.
+  // A stepped gable facing the street (steps of 2), with a little round window; the roof runs back.
   for (let i = 0; ; i++) {
-    const lo = i, hi = w - 1 - i;
+    const lo = 2 * Math.floor(i / 2), hi = w - 1 - lo;
     if (lo > hi) break;
-    for (let u = lo; u <= hi; u++) for (let t = 0; t < d; t++) P(u, h + 1 + i, t, t === 0 ? (u === lo || u === hi ? trim : wall) : roof);
+    for (let u = lo; u <= hi; u++) for (let t = 0; t < d; t++) P(u, top + 1 + i, t, t === 0 ? (u === lo || u === hi ? trim : wall) : (i % 2 ? roof : shade(roof, 0.88)));
   }
-  P(w - 2, h + 2, Math.floor(d / 2), '#6a5a52'); P(w - 2, h + 3, Math.floor(d / 2), '#6a5a52'); // chimney
+  const mid = Math.floor(w / 2);
+  P(mid, top + 4, 0, glass); P(mid - 1, top + 4, 0, glass);
+  for (let y = top + 1; y <= top + 7; y++) P(w - 3, y, Math.floor(d / 2), '#6a5a52');
 }
 const PALETTE_TOWN = ['#e8b84a', '#c94a3a', '#3f6fa8', '#e89a5a', '#7aa86a', '#f2ece0', '#d9a6b0', '#e6d7a0'];
 const ROOFS_TOWN = ['#c4623a', '#5a4a48', '#b8552f', '#4a4a52'];
+// A row of houses along x or z from `from` to `to`.
 function row(v, along, from, to, opts) {
   let u = from, i = 0;
+  const seed = opts.seed ?? 3;
   while (u < to) {
-    const w = Math.min(to - u, 6 + Math.floor(hash(u, i, opts.seed ?? 3) * 4));
-    const k = Math.floor(hash(i, u, (opts.seed ?? 3) + 1) * PALETTE_TOWN.length);
-    const h = opts.h[0] + Math.floor(hash(u, i, (opts.seed ?? 3) + 2) * (opts.h[1] - opts.h[0]));
-    townhouse(v, { ...opts, [along]: u, w, h, wall: PALETTE_TOWN[k], roof: ROOFS_TOWN[(i + k) % ROOFS_TOWN.length], tiles: hash(i, u, 9) > 0.65 });
+    let w = 12 + Math.floor(hash(u, i, seed) * 5);
+    if (to - u - w < 10) w = to - u;
+    const k = Math.floor(hash(i, u, seed + 1) * PALETTE_TOWN.length);
+    const floors = opts.floors[0] + Math.floor(hash(u, i, seed + 2) * (opts.floors[1] - opts.floors[0] + 1));
+    townhouse(v, { ...opts, [along]: u, w, floors, wall: PALETTE_TOWN[k], roof: ROOFS_TOWN[(i + k) % ROOFS_TOWN.length], shutters: hash(i, u, 9) > 0.55 ? shade(PALETTE_TOWN[(k + 3) % PALETTE_TOWN.length], 0.6) : null });
     u += w; i++;
   }
 }
-function lamp(v, x, z, h = 6) {
+// A street lamp, a little taller than a person.
+function lamp(v, x, z, h = 15) {
   for (let y = 1; y <= h; y++) v.set(x, y, z, '#2e2a2e');
-  v.light(x, h + 1, z, '#ffd27a');
-  v.set(x, h + 2, z, '#2e2a2e');
+  v.set(x, 1, z, '#3a3640'); v.set(x + 1, 1, z, '#3a3640');
+  v.light(x, h + 1, z, '#ffd27a'); v.light(x, h + 2, z, '#ffd27a');
+  v.set(x, h + 3, z, '#2e2a2e');
 }
 
-// The road between Razz of Mataz and Ytterhavn: a proper road of packed earth with cart ruts and
-// a stone kerb, running through land that turns from Razz's desert (left) into Ytterhavn's
-// grassland (right): dunes, palms and cacti on one side, meadow, trees and flowers on the other.
+// The road between Razz of Mataz and Ytterhavn: a road of packed earth with cart ruts and a stone
+// kerb, through land that turns from Razz's desert (left) into Ytterhavn's grassland (right).
 function plainRoad() {
   const v = new Vox(SIZE, { corner: 8 });
   const mid = (z) => 30 + Math.sin(z / 11) * 3;
   const onRoad = (x, z) => Math.abs(x - mid(z)) <= 4;
-  // 0 = desert, 1 = grass; the border wanders with noise.
   const green = (x, z) => Math.max(0, Math.min(1, (x - 24 + (noise(x, z, 7, 31) - 0.5) * 16 + (z - 30) * 0.15) / 10));
   const sand = ['#e8cf96', '#dfc489', '#ecd7a2'], grass = ['#8cc35c', '#7fb553', '#98cb66', '#86bd58'];
-  slab(v, (x, z, h) => {
+  slab(v, (x, z) => {
     if (onRoad(x, z)) {
       const d = Math.abs(x - mid(z));
-      if (d > 3.5) return '#9a948a'; // the kerb stones
-      if (Math.abs(d - 2) < 0.6) return '#8a7050'; // cart ruts
+      if (d > 3.5) return '#9a948a';
+      if (Math.abs(d - 2) < 0.6) return '#8a7050';
       return hash(x, z, 5) > 0.85 ? '#a08060' : '#b09470';
     }
     const t = green(x, z);
     if (t <= 0.15) return pick(x, z, 21, sand);
     if (t >= 0.85) return pick(x, z, 22, grass);
-    return hash(x, z, 26) < t ? '#b8c47a' : '#d8c890'; // dry, patchy grass between
+    return hash(x, z, 26) < t ? '#b8c47a' : '#d8c890';
   }, { height: (x, z) => {
     if (z >= 12 || onRoad(x, z)) return 0;
-    return green(x, z) > 0.5 ? Math.round(Math.max(0, noise(x, z, 9, 6) * 9 - z * 0.4)) : Math.round(Math.max(0, noise(x, z, 6, 8) * 5 - z * 0.25)); // hills or dunes behind
+    return green(x, z) > 0.5 ? Math.round(Math.max(0, noise(x, z, 9, 6) * 9 - z * 0.4)) : Math.round(Math.max(0, noise(x, z, 6, 8) * 5 - z * 0.25));
   } });
-  for (let x = 0; x < SIZE; x++) for (let z = 12; z < SIZE; z++) {
-    if (!v.inside(x, z, 9) || onRoad(x, z)) continue;
-    const t = green(x, z), r = hash(x, z, 23);
-    if (t > 0.85 && r > 0.94) v.set(x, 1, z, ['#e8d24a', '#f2f2f2', '#d9503f', '#b98cd9'][Math.floor(hash(z, x, 24) * 4)]);
-    else if (t > 0.15 && t < 0.85 && r > 0.9) v.set(x, 1, z, '#9aa85a'); // dry tufts
-    else if (t <= 0.15 && r > 0.97) v.set(x, 1, z, '#c4a878'); // pebbles in the sand
-  }
-  // Milestones and a signpost by the road, a fence on the grass side.
-  for (const z of [16, 40]) { const x = Math.round(mid(z) + 6); v.set(x, 1, z, '#cfc6b6'); v.set(x, 2, z, '#cfc6b6'); v.set(x, 3, z, '#b8b0a2'); }
-  { const x = Math.round(mid(28) - 6); for (let y = 1; y <= 7; y++) v.set(x, y, 28, '#6b4a2e'); for (let i = 1; i <= 4; i++) v.set(x - i, 7, 28, '#a8784a'); for (let i = 1; i <= 4; i++) v.set(x + i, 6, 28, '#a8784a'); }
-  for (let z = 14; z < 50; z++) if (hash(z, 1, 25) > 0.3) { const x = Math.round(mid(z) + 9); if (green(x, z) > 0.7) { v.set(x, 2, z, '#8a6440'); if (z % 3 === 0) v.set(x, 1, z, '#6b4a2e'); } }
-  // The desert side: palms and cacti; the grass side: trees and hay.
-  for (const [x, z] of [[6, 18], [12, 34], [4, 44]]) if (green(x, z) < 0.3) palm(v, x, 0, z, { lean: 1 });
-  for (const [x, z] of [[14, 22], [8, 28], [16, 46]]) if (green(x, z) < 0.3) { for (let y = 1; y <= 4; y++) v.set(x, y, z, '#6aa257'); v.set(x - 1, 3, z, '#6aa257'); v.set(x - 1, 4, z, '#6aa257'); v.set(x + 1, 2, z, '#6aa257'); v.set(x + 1, 3, z, '#6aa257'); }
-  for (const [x, z, sz] of [[50, 20, 2], [54, 34, 1], [46, 44, 1], [52, 50, 2]]) if (green(x, z) > 0.6) tree(v, x, 0, z, { size: sz });
-  for (const [x, z] of [[46, 26], [50, 40]]) if (green(x, z) > 0.6) { v.box(x, 1, z, x + 3, 3, z + 2, '#e3c46a'); v.box(x, 3, z, x + 3, 4, z + 2, '#d4b45a'); }
-  // A cart left by the roadside.
-  v.box(40, 2, 32, 44, 4, 36, '#8a5a34'); v.box(40, 4, 32, 44, 5, 33, '#7a4e2c');
-  for (const [x, z] of [[40, 31], [43, 31], [40, 36], [43, 36]]) { v.set(x, 1, z, '#4a3426'); v.set(x, 2, z, '#4a3426'); }
-  crate(v, 41, 4, 34);
+  // A milestone and a signpost by the road, a cart left on the verge.
+  { const x = Math.round(mid(18) + 7); v.box(x, 1, 18, x + 2, 7, 20, '#cfc6b6'); v.box(x, 7, 18, x + 2, 8, 20, '#b8b0a2'); }
+  { const x = Math.round(mid(30) - 7); for (let y = 1; y <= 17; y++) v.set(x, y, 30, '#6b4a2e'); for (let i = 1; i <= 6; i++) { v.set(x - i, 16, 30, '#a8784a'); v.set(x - i, 15, 30, '#a8784a'); } for (let i = 1; i <= 6; i++) { v.set(x + i, 13, 30, '#a8784a'); v.set(x + i, 12, 30, '#a8784a'); } }
+  v.box(42, 4, 34, 50, 7, 42, '#8a5a34');
+  for (const z of [34, 41]) for (let x = 42; x < 50; x++) v.set(x, 8, z, '#7a4e2c');
+  for (const [x, z] of [[41, 35], [41, 40], [50, 35], [50, 40]]) for (let y = 1; y <= 5; y++) for (const dz of [-1, 0, 1]) if (y === 1 || y === 5 || dz === 0) v.set(x, y, z + dz, '#4a3426');
+  for (let x = 44; x <= 47; x++) v.set(x, 4, 44, '#6b4528'); for (let z = 42; z <= 46; z++) { v.set(44, 4, z, '#6b4528'); v.set(47, 4, z, '#6b4528'); }
   return {
     v, heroSpots: HERO_SPOTS,
     npcSpots: [[30, 24], [25, 20], [35, 20], [23, 28], [36, 28], [30, 16], [26, 33], [33, 34], [20, 22]],
@@ -382,103 +389,108 @@ function plainRoad() {
   };
 }
 
-// Ytterhavn's city centre: a wave-paved square with a fountain, rows of tall merchant houses, a
-// domed exchange with a copper-green roof, and a canal with boats down one side.
+// Ytterhavn's city centre: a wave-paved square with a fountain and statue, rows of tall merchant
+// houses, a domed exchange with a portico and a copper-green dome, and a canal along one side.
 function ytterCentre() {
   const v = new Vox(SIZE, { corner: 5 });
   v.waterColour = '#3f8fb0';
-  const canal = (x) => x < 8;
   slab(v, (x, z, h) => (h < 0 ? '#9a948a' : x === 8 ? '#b8b0a2' : Math.sin(x * 0.55 + Math.sin(z * 0.3) * 2.2) > 0.8 ? '#8a8478' : '#e8e2d6'),
-    { height: (x) => (canal(x) ? -2 : 0), water: 0, bed: () => '#5a6a72' });
-  boat(v, 2, 0, 20, { length: 9, hull: '#9a3a2a', axis: 'z' }); boat(v, 3, 0, 36, { length: 7, hull: '#3f6fa8', axis: 'z', mast: false });
-  // The back row and the right side.
-  row(v, 'x', 9, 21, { z: 0, d: 10, h: [14, 20], seed: 3 });
-  row(v, 'x', 39, 60, { z: 0, d: 10, h: [14, 20], seed: 7 });
-  row(v, 'z', 12, 50, { x: 50, d: 10, face: 'west', h: [12, 18], seed: 11 });
-  // The exchange: pale stone, columns, and a copper-green dome with a lantern on top.
-  townhouse(v, { x: 21, z: 0, w: 18, d: 11, h: 15, wall: '#f2ece0', roof: '#c4623a', trim: '#e0d6c4' });
-  for (let x = 22; x <= 37; x += 3) for (let y = 1; y <= 12; y++) v.set(x, y, 11, '#f7f2e8');
-  for (let x = 21; x <= 38; x++) v.set(x, 13, 11, '#e0d6c4');
-  for (let y = 0; y < 8; y++) {
-    const r = Math.round(Math.sqrt(Math.max(0, 36 - (y * 0.85) ** 2)));
-    for (let x = -r; x <= r; x++) for (let z = -r; z <= r; z++) if (x * x + z * z <= r * r) v.set(30 + x, 22 + y, 5 + z, y === 0 ? '#e0d6c4' : '#5f9a86');
+    { height: (x) => (x < 8 ? -2 : 0), water: 0, bed: () => '#5a6a72' });
+  boat(v, 2, 0, 20, { length: 9, hull: '#9a3a2a', axis: 'z' });
+  row(v, 'x', 9, 21, { z: 0, d: 10, floors: [2, 2], seed: 3 });
+  row(v, 'x', 41, 60, { z: 0, d: 10, floors: [2, 2], seed: 7 });
+  row(v, 'z', 12, 50, { x: 50, d: 10, face: 'west', floors: [2, 2], seed: 11 });
+  // The exchange: pale stone, a portico of columns with a pediment, and a dome with a lantern.
+  townhouse(v, { x: 21, z: 0, w: 20, d: 10, floors: 2, wall: '#f2ece0', roof: '#c4623a', trim: '#e0d6c4' });
+  for (let x = 22; x <= 38; x += 4) for (let y = 1; y <= 25; y++) for (const [dx, dz] of [[0, 0], [1, 0], [0, 1], [1, 1]]) v.set(x + dx, y, 11 + dz, y <= 1 || y >= 24 ? '#e0d6c4' : '#f7f2e8');
+  v.box(21, 26, 10, 41, 28, 14, '#e0d6c4');
+  for (let i = 0; i < 6; i++) v.box(21 + i * 2, 28 + i, 13, 41 - i * 2, 29 + i, 14, '#efe8da');
+  for (let y = 0; y < 9; y++) {
+    const r = Math.round(Math.sqrt(Math.max(0, 49 - (y * 0.85) ** 2)));
+    for (let x = -r; x <= r; x++) for (let z = -r; z <= r; z++) if (x * x + z * z <= r * r) v.set(30 + x, 31 + y, 5 + z, y === 0 ? '#e0d6c4' : y % 3 === 0 ? '#4f8a76' : '#5f9a86');
   }
-  for (let y = 30; y <= 32; y++) v.set(30, y, 5, '#e0d6c4'); v.light(30, 33, 5, '#ffd27a');
-  // The fountain.
-  for (let x = -4; x <= 4; x++) for (let z = -4; z <= 4; z++) {
+  for (let y = 40; y <= 43; y++) v.set(30, y, 5, '#e0d6c4'); v.light(30, 44, 5, '#ffd27a');
+  // The fountain: a stone basin, a column and a bronze statue of a sailor.
+  for (let x = -5; x <= 5; x++) for (let z = -5; z <= 5; z++) {
     const d = Math.hypot(x, z);
-    if (d > 4.4) continue;
-    if (d > 3.4) { v.set(30 + x, 1, 21 + z, '#cfc6b6'); v.set(30 + x, 2, 21 + z, '#e0d6c4'); } else v.water.set(v.key(30 + x, 1, 21 + z), 1);
+    if (d > 5.4) continue;
+    if (d > 4.4) for (let y = 1; y <= 3; y++) v.set(30 + x, y, 21 + z, y === 3 ? '#e0d6c4' : '#cfc6b6');
+    else { v.water.set(v.key(30 + x, 1, 21 + z), 1); v.water.set(v.key(30 + x, 2, 21 + z), 1); }
   }
-  for (let y = 1; y <= 5; y++) v.set(30, y, 21, '#cfc6b6');
-  v.set(30, 6, 21, '#8a7a4a'); v.set(30, 7, 21, '#8a7a4a'); v.set(31, 7, 21, '#8a7a4a'); v.set(30, 8, 21, '#9a8a5a');
-  for (const [x, z] of [[14, 16], [46, 16], [14, 40], [46, 42]]) lamp(v, x, z);
-  for (const [x, z] of [[18, 12], [42, 12]]) { v.box(x - 1, 1, z - 1, x + 2, 2, z + 2, '#9a948a'); tree(v, x, 1, z, { size: 1 }); }
-  // Market stalls with striped awnings and goods.
-  for (const [x0, cl] of [[10, '#3f6fa8'], [43, '#c94a3a']]) {
-    v.box(x0, 1, 13, x0 + 6, 3, 15, '#8a5a34');
-    for (let x = x0; x < x0 + 6; x++) { v.set(x, 3, 13, ['#e8b84a', '#c9302a', '#7aa84a', '#e89a5a'][x % 4]); v.set(x, 3, 14, ['#7aa84a', '#e8b84a', '#c9302a'][x % 3]); }
-    for (const x of [x0, x0 + 5]) for (let y = 3; y <= 6; y++) v.set(x, y, 15, '#5b4a3a');
-    for (let x = x0 - 1; x <= x0 + 6; x++) for (let z = 12; z <= 16; z++) v.set(x, 7, z, Math.floor(x / 2) % 2 ? cl : '#f2ece0');
+  for (let y = 1; y <= 7; y++) for (const [dx, dz] of [[0, 0], [1, 0], [0, 1], [1, 1]]) v.set(30 + dx, y, 21 + dz, '#cfc6b6');
+  const bronze = '#7a6a4a';
+  for (let y = 8; y <= 16; y++) for (const [dx, dz] of [[0, 0], [1, 0], [0, 1], [1, 1]]) v.set(30 + dx, y, 21 + dz, bronze);
+  v.box(30, 17, 21, 32, 19, 23, '#8a7a5a');
+  for (let y = 13; y <= 18; y++) v.set(32, y, 21, bronze); // a raised arm
+  // Two market stalls with striped awnings and baskets of produce.
+  for (const [x0, cl] of [[10, '#3f6fa8'], [42, '#c94a3a']]) {
+    v.box(x0, 1, 13, x0 + 8, 6, 16, '#8a5a34');
+    v.box(x0, 6, 13, x0 + 8, 7, 16, '#6b4528');
+    [['#c9302a', 1], ['#e89a3a', 4], ['#7aa84a', 7]].forEach(([c, dx]) => { v.box(x0 + dx - 1, 7, 13, x0 + dx + 1, 8, 15, '#7a5a38'); v.set(x0 + dx - 1, 8, 13, c); v.set(x0 + dx, 8, 13, c); v.set(x0 + dx - 1, 8, 14, c); v.set(x0 + dx, 8, 14, c); });
+    for (const x of [x0, x0 + 7]) for (const z of [13, 16]) for (let y = 1; y <= 15; y++) v.set(x, y, z, '#5b4a3a');
+    for (let x = x0 - 1; x <= x0 + 8; x++) for (let z = 12; z <= 18; z++) v.set(x, z > 16 ? 15 : 16, z, Math.floor(x / 2) % 2 ? cl : '#f2ece0');
   }
-  // Bunting strung across the square.
-  for (let x = 9; x <= 49; x++) { const y = 13 - Math.round(Math.sin((x - 9) / 40 * Math.PI) * 3); if (x % 2 === 0) v.set(x, y, 12, ['#c94a3a', '#e8b84a', '#3f6fa8', '#f2ece0'][(x / 2) % 4]); }
-  // Bollards along the canal, a little arched bridge across it, benches, a well-dressed flower bed.
-  for (let z = 12; z < 58; z += 4) { v.set(8, 1, z, '#4a4a50'); v.set(8, 2, z, '#4a4a50'); }
-  for (let x = 0; x <= 8; x++) { const y = 1 + (x > 1 && x < 7 ? 1 : 0); for (let z = 46; z <= 48; z++) v.set(x, y, z, '#cfc6b6'); v.set(x, y + 1, 46, '#b8b0a2'); v.set(x, y + 1, 48, '#b8b0a2'); }
-  for (const [x, z] of [[22, 16], [37, 16]]) { v.box(x, 1, z, x + 3, 2, z + 1, '#6b4528'); v.box(x, 2, z - 1, x + 3, 3, z, '#6b4528'); }
-  for (let a = 0; a < 20; a++) { const x = 30 + Math.round(Math.cos(a / 20 * 6.28) * 6), z = 21 + Math.round(Math.sin(a / 20 * 6.28) * 6); v.set(x, 1, z, a % 2 ? '#d9503f' : '#e86aa0'); }
-  // Pigeons on the square.
-  for (const [x, z] of [[26, 27], [27, 28], [35, 26], [33, 29], [24, 15]]) v.set(x, 1, z, '#8a8a92');
+  for (const [x, z] of [[12, 24], [47, 24], [12, 42], [47, 42]]) lamp(v, x, z);
+  // Bollards along the canal, a little arched bridge over it, two benches.
+  for (let z = 12; z < 58; z += 4) { v.set(8, 1, z, '#4a4a50'); v.set(8, 2, z, '#4a4a50'); v.set(8, 3, z, '#4a4a50'); }
+  for (let x = 0; x <= 8; x++) { const y = 1 + (x > 1 && x < 7 ? 1 : 0); for (let z = 46; z <= 50; z++) v.set(x, y, z, '#cfc6b6'); for (const z of [46, 50]) for (let k = 1; k <= 3; k++) v.set(x, y + k, z, '#b8b0a2'); }
+  for (const [x, z] of [[20, 14], [35, 14]]) { v.box(x, 1, z, x + 6, 3, z + 2, '#6b4528'); v.box(x, 3, z, x + 6, 7, z + 1, '#6b4528'); v.set(x, 1, z, '#2e2a2e'); v.set(x + 5, 1, z, '#2e2a2e'); }
   return {
     v, heroSpots: HERO_SPOTS,
-    npcSpots: [[30, 30], [22, 28], [38, 28], [19, 22], [41, 22], [24, 35], [36, 35], [14, 32], [45, 34]],
+    npcSpots: [[30, 31], [21, 29], [39, 29], [18, 21], [42, 21], [24, 36], [36, 36], [16, 33], [44, 34]],
     mood: { bg: 'linear-gradient(#7fbce8, #f4e6c8)', sky: '#fff4e2', ground: '#b8b0a0', hemi: 1.5, sun: '#ffe6c0', sunPower: 2.5, sunAt: [-45, 65, 45], exposure: 1.05 },
   };
 }
 
-// A three-masted merchant ship for the harbour, along x. y is the waterline.
-function galleon(v, x0, y, z0, len = 30) {
+// A three-masted merchant ship for the harbour, along x, to the figures' scale. y is the waterline.
+function galleon(v, x0, y, z0, len = 40) {
   for (let i = 0; i < len; i++) {
-    const end = Math.min(i, len - 1 - i), hw = Math.min(3, 1 + end / 2);
-    for (let k = -Math.floor(hw); k <= Math.floor(hw); k++) {
-      for (let j = -2; j <= 2; j++) v.set(x0 + i, y + j, z0 + k, j === 0 ? '#c9a44a' : j === 2 && Math.abs(k) < hw - 1 ? '#a8784a' : '#5a3a22');
+    const end = Math.min(i, len - 1 - i), hw = Math.min(5, 1 + end / 2.5);
+    for (let k = -Math.floor(hw); k <= Math.floor(hw); k++) for (let j = -2; j <= 6; j++) {
+      const side = Math.abs(k) >= Math.floor(hw) - 0;
+      if (j === 6 && !side) { v.set(x0 + i, y + j, z0 + k, i % 2 ? '#a8784a' : '#9a6c40'); continue; }
+      if (!side && j < 6) continue;
+      v.set(x0 + i, y + j, z0 + k, j === 2 ? '#c9a44a' : j <= -1 ? '#7a3a2a' : j === 4 && i % 5 === 2 ? '#1e140c' : '#5a3a22');
+    }
+    if (Math.floor(hw) >= 2) { v.set(x0 + i, y + 7, z0 - Math.floor(hw), '#4a3020'); v.set(x0 + i, y + 7, z0 + Math.floor(hw), '#4a3020'); }
+  }
+  v.box(x0 + len - 8, y + 7, z0 - 3, x0 + len - 1, y + 11, z0 + 4, '#6b4528'); // the stern castle
+  for (let k = -2; k <= 2; k += 2) v.light(x0 + len - 1, y + 9, z0 + k, '#ffcf70');
+  for (const [i, h] of [[8, 30], [19, 36], [30, 26]]) {
+    for (let j = 7; j <= h; j++) v.set(x0 + i, y + j, z0, '#4a3020');
+    for (const [a, b, w] of [[12, h - 10, 7], [h - 9, h - 2, 5]]) {
+      for (let k = -w - 1; k <= w + 1; k++) v.set(x0 + i, y + b + 1, z0 + k, '#4a3020');
+      for (let j = a; j <= b; j++) for (let k = -w; k <= w; k++) v.set(x0 + i + 1, y + j, z0 + k, (j - a) % 4 === 3 ? '#e4dccb' : '#f4ecdc');
     }
   }
-  v.box(x0 + len - 6, y + 3, z0 - 2, x0 + len - 1, y + 5, z0 + 3, '#6b4528'); // the stern castle
-  for (const [i, h] of [[6, 18], [14, 22], [22, 16]]) {
-    for (let j = 3; j <= h; j++) v.set(x0 + i, y + j, z0, '#4a3020');
-    for (const [a, b] of [[7, h - 6], [h - 5, h - 1]]) for (let j = a; j <= b; j++) for (let k = -4; k <= 4; k++) if (!(j === b && Math.abs(k) === 4)) v.set(x0 + i + 1, y + j, z0 + k, '#f4ecdc');
-  }
-  for (let i = -5; i < 0; i++) v.set(x0 + i, y + 2 - i * 0.3 | 0, z0, '#4a3020'); // the bowsprit
-  for (let k = 1; k <= 3; k++) for (let j = 0; j < 2; j++) v.set(x0 + 14 + k, y + 22 - j, z0, '#3f6fa8');
+  for (let i = -7; i < 0; i++) v.set(x0 + i, y + 6 - Math.round(i * 0.35), z0, '#4a3020');
+  for (let k = 1; k <= 4; k++) for (let j = 0; j < 2; j++) v.set(x0 + 19 + k, y + 36 - j, z0, '#3f6fa8');
 }
 
-// The port of Ytterhavn: a grey stone quay, a big merchant ship and smaller boats, a crane,
-// warehouses, crates, barrels and nets.
+// The port of Ytterhavn: a stone quay, a big merchant ship and a smaller boat, a crane, warehouses,
+// crates and barrels.
 function ytterPort() {
   const v = new Vox(SIZE, { corner: 6 });
   v.waterColour = '#3a8fb4';
   slab(v, (x, z, h) => (h < 0 ? '#9a948a' : z === 22 || z === 23 ? '#8a847c' : (x + z) % 5 === 0 ? '#a8a296' : '#bab4a8'),
     { height: (x, z) => (z < 22 ? -3 : 0), water: 0, bed: () => '#6a7a80' });
-  galleon(v, 14, 0, 9, 32);
-  boat(v, 4, 0, 17, { length: 7, hull: '#9a3a2a' }); boat(v, 50, 0, 16, { length: 7, hull: '#3f6fa8', mast: false });
-  for (let x = 4; x < SIZE - 4; x += 8) { v.set(x, 1, 22, '#4a4a50'); v.set(x, 2, 22, '#4a4a50'); }
+  galleon(v, 10, 0, 11, 40);
+  boat(v, 50, 0, 18, { length: 7, hull: '#3f6fa8', mast: false });
+  for (let x = 4; x < SIZE - 4; x += 8) for (let y = 1; y <= 3; y++) { v.set(x, y, 22, '#4a4a50'); v.set(x + 1, y, 22, '#4a4a50'); }
   // A wooden crane swinging a load over the quay.
-  for (let y = 1; y <= 14; y++) v.set(10, y, 26, '#6b4528');
-  for (let z = 18; z <= 27; z++) v.set(10, 14, z, '#6b4528');
-  for (let y = 9; y <= 13; y++) v.set(10, y, 19, '#3a3a3a');
-  v.box(9, 6, 18, 12, 9, 21, '#a87a48');
+  for (let y = 1; y <= 26; y++) for (const [dx, dz] of [[0, 0], [1, 0]]) v.set(12 + dx, y, 27 + dz, '#6b4528');
+  for (let z = 16; z <= 28; z++) v.set(12, 26, z, '#6b4528');
+  for (let y = 16; y <= 25; y++) v.set(12, y, 17, '#3a3a3a');
+  crate(v, 10, 11, 16, 2, '#a87a48');
   // Warehouses on both sides.
-  row(v, 'z', 26, 58, { x: 0, d: 8, face: 'east', h: [10, 14], seed: 13 });
-  row(v, 'z', 26, 58, { x: 52, d: 8, face: 'west', h: [10, 14], seed: 17 });
-  for (const [x, z] of [[16, 26], [18, 28], [16, 28], [44, 25], [46, 27]]) crate(v, x, 0, z, 2, hash(x, z) > 0.5 ? '#a87a48' : '#8a5a34');
-  for (const [x, z] of [[40, 30], [42, 32], [22, 34]]) barrel(v, x, 0, z);
-  for (let x = 26; x <= 34; x++) for (let z = 40; z <= 42; z++) if ((x + z) % 2) v.set(x, 1, z, '#8a7a5a');
-  for (const [x, z] of [[14, 40], [46, 40]]) lamp(v, x, z, 5);
+  row(v, 'z', 26, 60, { x: 0, d: 8, face: 'east', floors: [2, 2], seed: 13 });
+  row(v, 'z', 26, 60, { x: 52, d: 8, face: 'west', floors: [2, 2], seed: 17 });
+  crate(v, 16, 0, 26); crate(v, 16, 4, 26, 2, '#8a5a34'); crate(v, 20, 0, 27, 2, '#8a5a34');
+  crate(v, 42, 0, 26); barrel(v, 46, 0, 27); barrel(v, 38, 0, 40); barrel(v, 41, 0, 41);
+  for (const [x, z] of [[16, 42], [44, 46]]) lamp(v, x, z);
   return {
     v, heroSpots: HERO_SPOTS,
-    npcSpots: [[30, 28], [24, 30], [36, 30], [20, 34], [40, 36], [27, 35], [33, 36], [15, 36], [45, 34]],
+    npcSpots: [[30, 29], [24, 31], [36, 31], [21, 35], [36, 36], [27, 36], [32, 38], [18, 34], [44, 34]],
     mood: { bg: 'linear-gradient(#7ab4dc, #f2dcb4)', sky: '#fff1dc', ground: '#9a948a', hemi: 1.45, sun: '#ffd8a8', sunPower: 2.4, sunAt: [-50, 55, 40], exposure: 1.05 },
   };
 }
@@ -595,51 +607,44 @@ function tavern() {
   };
 }
 
-// A simple street shop: a shopfront with a striped awning and a counter, shelves of goods,
-// potions, a rack of blades, barrels of apples outside, houses on both sides.
+// A simple street shop, to the figures' scale: a two-storey house with an open shopfront under a
+// striped awning, a counter, shelves of wares and a hanging sign; houses on both sides.
 function shop() {
   const v = new Vox(SIZE, { corner: 5 });
   slab(v, (x, z) => ((x + Math.floor(z / 2)) % 3 === 0 ? '#c4b8a4' : '#d8ccb8'));
-  // The shop: back and side walls, a roof over the back, open at the front.
-  v.box(14, 1, 0, 47, 15, 2, '#e3d4b4');
-  for (const x0 of [14, 45]) v.box(x0, 1, 2, x0 + 2, 15, 13, '#d8c8a4');
-  for (let i = 0; i <= 4; i++) v.box(13 + i, 15 + i, 0, 48 - i, 16 + i, 7, '#b8552f');
-  v.box(16, 9, 12, 45, 15, 13, '#e3d4b4'); // the wall above the shopfront
-  // The striped awning and the sign.
-  for (let x = 15; x <= 46; x++) for (let z = 13; z <= 17; z++) v.set(x, 9 - (z - 13 > 2 ? 1 : 0), z, Math.floor(x / 2) % 2 ? '#c94a3a' : '#f2ece0');
-  for (let x = 25; x <= 35; x++) for (let y = 11; y <= 13; y++) v.set(x, y, 13, x === 25 || x === 35 || y === 11 || y === 13 ? '#c9a44a' : '#4a3020');
-  v.set(29, 12, 14, '#e8e2d6'); v.set(30, 12, 14, '#c94a3a'); v.set(31, 12, 14, '#3f8a5a');
-  // Shelves of goods, the counter with potions, a rack of blades.
-  for (let x = 17; x <= 44; x++) for (const y of [4, 8, 12]) { v.set(x, y, 2, '#6b4528'); if (hash(x, y, 41) > 0.45) v.set(x, y + 1, 2, ['#a87a48', '#e8e2d6', '#8a3a2a', '#5a7aa8', '#c9a44a'][Math.floor(hash(y, x, 42) * 5)]); }
-  v.box(18, 1, 9, 43, 3, 11, '#7a4e2c');
-  v.box(18, 3, 9, 43, 4, 11, '#9a6c40');
-  for (const [x, c] of [[21, '#d9503f'], [23, '#5aa8d9'], [25, '#8fd36a'], [27, '#b98cd9']]) v.light(x, 4, 10, c);
-  for (let i = 0; i < 4; i++) { v.set(36 + i * 2, 4, 10, '#e8dcc0'); v.set(36 + i * 2, 5, 10, '#e8dcc0'); }
-  for (let y = 1; y <= 7; y++) v.set(16, y, 6, '#6b4528');
-  for (let i = 0; i < 3; i++) for (let y = 3; y <= 8; y++) v.set(17, y, 4 + i * 2, y === 3 ? '#4a3020' : '#dfe6ee');
-  // Outside: barrels of apples, crates, a bench, lanterns, houses on both sides.
-  for (const [x, z] of [[11, 18], [48, 19]]) { barrel(v, x, 0, z); v.set(x, 4, z, '#c9302a'); v.set(x + 1, 4, z + 1, '#d9503f'); v.set(x + 1, 4, z, '#7aa84a'); }
-  crate(v, 8, 0, 22); crate(v, 50, 0, 23, 2, '#8a5a34');
-  // Pots, rope and herbs hanging from the awning; flower pots by the door; a sandwich board.
-  for (const [x, c] of [[17, '#a8784a'], [20, '#5aa86a'], [41, '#c4a878'], [44, '#5aa86a']]) { v.set(x, 7, 17, '#4a3020'); v.set(x, 6, 17, c); }
-  for (const x of [15, 46]) { v.set(x, 1, 14, '#b8552f'); v.set(x, 2, 14, '#d9503f'); }
-  v.box(23, 1, 21, 26, 4, 22, '#4a3020'); for (let x = 23; x < 26; x++) { v.set(x, 3, 22, '#e8e2d6'); v.set(x, 2, 22, '#e8e2d6'); }
-  // Bolts of cloth and a barrel of fish, a hand cart, a sleeping cat on the apple barrel.
-  for (let i = 0; i < 3; i++) for (let x = 6; x <= 9; x++) v.set(x, 3 + 0, 26 + i, ['#3f6fa8', '#c94a3a', '#e8b84a'][i]);
-  v.box(6, 1, 26, 10, 3, 29, '#8a5a34');
-  barrel(v, 52, 0, 28); for (const [dx, dz] of [[0, 0], [1, 0], [0, 1]]) v.set(52 + dx, 4, 28 + dz, '#b8c4c8');
-  v.box(45, 2, 34, 50, 4, 38, '#9a6c40'); for (const [x, z] of [[45, 34], [49, 34]]) { v.set(x, 1, z + 4, '#4a3426'); v.set(x, 1, z, '#4a3426'); }
-  for (let z = 38; z <= 41; z++) v.set(47, 3, z, '#6b4528');
-  v.set(11, 4, 19, '#2a2a2e'); v.set(12, 4, 19, '#2a2a2e'); v.set(12, 5, 19, '#2a2a2e');
-  // A lantern hung inside, and window boxes on the shop wall.
-  v.light(30, 14, 8, '#ffd27a');
-  for (let x = 17; x <= 44; x += 3) v.set(x, 9, 14, hash(x, 9, 63) > 0.5 ? '#d9503f' : '#e86aa0');
-  for (const [x, z] of [[14, 20], [46, 20]]) lamp(v, x, z, 5);
-  row(v, 'z', 0, 16, { x: 0, d: 13, face: 'east', h: [13, 17], seed: 19 });
-  row(v, 'z', 0, 16, { x: 47, d: 13, face: 'west', h: [13, 17], seed: 23 });
+  const wall = '#e3d4b4', trim = '#f2ece0', wood = '#6b4528';
+  // The shop: back wall, side walls, the upper floor over the front, a roof over the back half.
+  v.box(14, 1, 0, 47, 31, 2, wall);
+  for (const x0 of [14, 45]) v.box(x0, 1, 2, x0 + 2, 31, 13, wall);
+  v.box(14, 18, 12, 47, 31, 14, wall);
+  for (let x = 14; x < 47; x++) { v.set(x, 18, 14, trim); v.set(x, 31, 14, trim); v.set(x, 31, 13, trim); }
+  for (const cx of [20, 30, 40]) { for (let x = cx - 1; x <= cx + 1; x++) { for (let y = 21; y <= 28; y++) v.set(x, y, 14, x === cx || y === 25 ? '#e4dccb' : '#2e3a48'); v.set(x, 20, 15, trim); v.set(x, 29, 14, trim); } }
+  for (let i = 0; i <= 6; i++) v.box(13 + i, 32 + i, 0, 48 - i, 33 + i, 8, i % 2 ? '#b8552f' : '#a84a28');
+  for (const x of [16, 44]) for (let y = 1; y <= 17; y++) v.set(x, y, 13, '#5a4a3a'); // the shopfront posts
+  // The striped awning and the hanging sign.
+  for (let x = 15; x <= 46; x++) for (let z = 14; z <= 19; z++) v.set(x, 17 - Math.floor((z - 14) / 2), z, Math.floor(x / 3) % 2 ? '#c94a3a' : '#f2ece0');
+  for (let y = 18; y <= 19; y++) v.set(48, y, 15, '#2e2a2e'); for (let z = 15; z <= 18; z++) v.set(48, 19, z, '#2e2a2e');
+  v.box(48, 12, 16, 49, 18, 20, '#4a3020'); v.box(48, 13, 17, 49, 17, 19, '#c9a44a');
+  // Inside: shelves of wares (jars, rolls of cloth, books), a counter, a rack of blades, a lantern.
+  for (const y of [5, 10, 15]) for (let x = 17; x <= 43; x++) v.set(x, y, 2, wood);
+  for (let x = 18; x <= 42; x += 2) { v.set(x, 6, 2, '#a87a48'); v.set(x, 7, 2, '#a87a48'); }
+  for (let x = 18; x <= 42; x += 3) { v.set(x, 11, 2, '#3f6fa8'); v.set(x + 1, 11, 2, '#7a3a44'); v.set(x, 12, 2, '#3f6fa8'); v.set(x + 1, 12, 2, '#7a3a44'); }
+  for (let x = 18; x <= 42; x++) { v.set(x, 16, 2, x % 2 ? '#6a3a2a' : '#4a3a5a'); v.set(x, 17, 2, x % 2 ? '#6a3a2a' : '#4a3a5a'); }
+  v.box(18, 1, 9, 43, 6, 12, '#7a4e2c');
+  v.box(17, 6, 9, 44, 7, 12, '#9a6c40');
+  for (const [x, c] of [[21, '#d9503f'], [24, '#5aa8d9'], [27, '#8fd36a']]) { v.light(x, 7, 10, c); v.light(x, 8, 10, c); v.set(x, 9, 10, '#8a6440'); }
+  for (let i = 0; i < 3; i++) for (let y = 4; y <= 12; y++) v.set(18, y, 4 + i * 2, y === 4 ? '#4a3020' : '#dfe6ee');
+  for (let y = 1; y <= 13; y++) v.set(18, y, 3, wood);
+  v.light(30, 16, 7, '#ffd27a');
+  // Outside: barrels of apples, a crate, a lamp, houses on both sides.
+  for (const [x, z] of [[9, 18], [49, 22]]) { barrel(v, x, 0, z); for (const [dx, dz] of [[1, 0], [0, 1], [1, 1], [2, 1], [1, 2]]) v.set(x + dx, 6, z + dz, '#c9302a'); }
+  crate(v, 8, 0, 24);
+  lamp(v, 12, 30); lamp(v, 48, 31);
+  row(v, 'z', 0, 16, { x: 0, d: 13, face: 'east', floors: [2, 2], seed: 19 });
+  row(v, 'z', 0, 16, { x: 47, d: 13, face: 'west', floors: [2, 2], seed: 23 });
   return {
     v, heroSpots: HERO_SPOTS,
-    npcSpots: [[30, 6], [22, 18], [38, 18], [26, 24], [34, 24], [18, 28], [42, 28], [30, 30], [14, 25]],
+    npcSpots: [[30, 6], [23, 19], [37, 19], [27, 25], [34, 25], [20, 28], [41, 28], [30, 31], [16, 24]],
     mood: { bg: 'linear-gradient(#8cc6e8, #f4e6c8)', sky: '#fff4e2', ground: '#b8b0a0', hemi: 1.5, sun: '#ffe6c0', sunPower: 2.4, sunAt: [-45, 65, 45], exposure: 1.05 },
   };
 }

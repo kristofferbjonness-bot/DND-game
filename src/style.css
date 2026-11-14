@@ -2300,3 +2300,7 @@ body[data-screen="combat"] #scene .scene-tags { opacity: 0.5; }
 .scene-tag { font-size: 10.5px; padding: 1px 6px 2px; }
 
 .scn__town { padding: 10px 6px 3px; font: 700 11px var(--font-display); letter-spacing: 0.12em; text-transform: uppercase; color: var(--pp-accent); border-bottom: 1px solid var(--pp-line); }
+
+/* The place-names button: hides the map labels (the party's tag stays). */
+body.no-labels .label { visibility: hidden; }
+#labels-toggle[aria-pressed="true"] { color: var(--paper-red, #9c2f22); }
