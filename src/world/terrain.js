@@ -4,7 +4,7 @@
 import * as THREE from 'three';
 import { bevelBox } from '../fx/bevelBox.js';
 import {
-  grid, LAYER, WATER_LEVEL, BIOME, idx, heightAt, cellToWorld, distToSea, hash, darkForest, peakAt,
+  grid, LAYER, WATER_LEVEL, BIOME, idx, heightAt, cellToWorld, distToSea, hash, darkForest, peakAt, onRama,
 } from './grid.js';
 
 const C = (hex) => new THREE.Color(hex);
@@ -22,7 +22,7 @@ const RIVERBED = C('#6f9fae');
 const ROCK = C('#a59c90');
 const RED_ROCK = C('#bf8f66');
 const SNOWCAP = C('#f7f9fb');
-const LAVA = C('#ff6a2a'), LAVA_HOT = C('#ffb347'), BASALT = C('#3f3a38'), BASALT_SIDE = C('#2f2b2a'), ASH = C('#6a625c');
+const CRATER = C('#4a4440'), EMBER = C('#a8502a'), BASALT = C('#6e665e'), BASALT_SIDE = C('#5e5750'), ASH = C('#8a837b');
 const ICE = C('#8fcbea'), ICE_PALE = C('#bfe5f6'), ICE_DEEP = C('#6aa8cc'), ICE_SUMMIT = C('#eef8fc');
 const DARK_FLOOR = C('#43473f'), DARK_MOSS = C('#4c5244'), DARK_SOIL = C('#4d463d'); // dark forests: grey
 const SEA = [C('#8fd8d6'), C('#5cbcc9'), C('#3c9bbd'), C('#2d7fa8')];
@@ -42,18 +42,19 @@ function twin(mesh, geometry) {
 }
 const SNOWCAP_FROM = 14;
 
-// The volcano: dark basalt and ash, a lava-filled crater, lava streaks down its sides.
+// The volcano: the same rock as the mountains around it, a little darker and ashier towards the top,
+// a dark crater with only a faint glow (the smoke shows it is alive).
 // The ice mountain: blue ice, paler towards the top, white at the summit.
 function peakColor(pk, x, z, layer, top, out) {
   const isTop = layer === top;
   if (pk.kind === 'volcano') {
-    if (pk.crater && isTop) return out.copy(hash(x, z, 83) > 0.5 ? LAVA : LAVA_HOT);
-    const streak = Math.abs(Math.sin(Math.atan2(z - 65, x - 88) * 3.5)) < 0.12 && pk.t > 0.25;
-    if (isTop) return out.copy(streak ? LAVA : hash(x, z, 84) > 0.75 ? ASH : BASALT);
-    return out.copy(streak && layer > top - 2 ? LAVA : BASALT_SIDE).multiplyScalar(0.9 + hash(x, z, layer) * 0.12);
+    if (pk.crater && isTop) return out.copy(hash(x, z, 83) > 0.8 ? EMBER : CRATER);
+    const ash = Math.min(1, pk.t * 1.4);
+    if (isTop) return out.copy(ROCK).lerp(hash(x, z, 84) > 0.7 ? ASH : BASALT, ash);
+    return out.copy(ROCK).lerp(BASALT_SIDE, ash).multiplyScalar(0.84 + hash(x, z, layer) * 0.12);
   }
-  if (isTop) return out.copy(top > 48 ? ICE_SUMMIT : hash(x, z, 85) > 0.6 ? ICE_PALE : ICE);
-  return out.copy(layer > 38 ? ICE_PALE : ICE_DEEP).multiplyScalar(0.9 + hash(x, z, layer) * 0.12);
+  if (isTop) return out.copy(top > 70 ? ICE_SUMMIT : hash(x, z, 85) > 0.6 ? ICE_PALE : ICE);
+  return out.copy(layer > 55 ? ICE_PALE : ICE_DEEP).multiplyScalar(0.9 + hash(x, z, layer) * 0.12);
 }
 
 function cubeColor(k, x, z, layer, top, out) {
@@ -65,7 +66,8 @@ function cubeColor(k, x, z, layer, top, out) {
 
   if (grid.river[k]) out.copy(RIVERBED);
   else if (isTop) {
-    if (top >= SNOWCAP_FROM || (b === BIOME.SNOW && top >= MOUNTAIN_FROM)) out.copy(SNOWCAP);
+    // Rama's mountains are mostly bare rock: snow only on the very highest tops.
+    if (onRama[k] ? top >= 18 && hash(x, z, 86) > 0.55 : top >= SNOWCAP_FROM || (b === BIOME.SNOW && top >= MOUNTAIN_FROM)) out.copy(SNOWCAP);
     else if (top >= MOUNTAIN_FROM) out.copy(b === BIOME.DESERT ? RED_ROCK : ROCK);
     else if (distToSea[k] <= 1 && top <= 2 && b !== BIOME.SNOW) out.copy(SAND);
     else out.copy(pal.top).lerp(hash(x, z, 78) > 0.7 ? DARK_MOSS : DARK_FLOOR, darkForest(x, z));

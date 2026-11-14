@@ -28,8 +28,8 @@ const { cols, rows } = grid;
 //   Fjellene av Ferran's volcano, with a crater of lava, and the blue ice mountain on the snowy island
 //   north of Bartedalen: the tallest point in the world.
 export const PEAKS = [
-  { id: 'ferran', kind: 'volcano', cx: 88, cz: 65, r: 10, top: 40, crater: 2.4 },
-  { id: 'ice', kind: 'ice', cx: 188, cz: 40, r: 15, top: 58 },
+  { id: 'ferran', kind: 'volcano', cx: 76, cz: 59, r: 9, top: 38, crater: 2.2 },
+  { id: 'ice', kind: 'ice', cx: 190, cz: 14, r: 8, top: 92 },
 ];
 for (const p of PEAKS) {
   const rim = Math.round(p.top * (1 - (p.crater ?? 0) / p.r) ** 1.3);
@@ -39,12 +39,29 @@ for (const p of PEAKS) {
     if (t <= 0) continue;
     let h;
     if (p.kind === 'volcano') h = d < p.crater ? rim - 4 : p.top * t ** 1.3 + (hash(x, z, 81) - 0.5) * 1.5;
-    else h = p.top * t ** 1.7 + (hash(x, z, 82) - 0.3) * 4 * t + Math.max(0, Math.sin(Math.atan2(z - p.cz, x - p.cx) * 5)) * 4 * t;
+    else h = p.top * t ** 1.15 + (hash(x, z, 82) - 0.5) * 6 * t + Math.max(0, Math.sin(Math.atan2(z - p.cz, x - p.cx) * 4)) * 6 * t; // a sharp, thin spire
     const k = z * cols + x;
     grid.heights[k] = Math.max(grid.heights[k], Math.min(120, Math.round(h)));
     grid.river[k] = 0;
   }
 }
+// The cells of Rama (the eastern continent), found from its label: its mountains carry far less snow.
+export const onRama = (() => {
+  const out = new Uint8Array(cols * rows);
+  const q = [Math.floor(493 / grid.cell) * cols + Math.floor(870 / grid.cell)];
+  while (q.length) {
+    const k = q.pop();
+    if (out[k] || !grid.land[k]) continue;
+    out[k] = 1;
+    const x = k % cols;
+    if (x > 0) q.push(k - 1);
+    if (x < cols - 1) q.push(k + 1);
+    if (k >= cols) q.push(k - cols);
+    if (k < cols * (rows - 1)) q.push(k + cols);
+  }
+  return out;
+})();
+
 // Which great peak (if any) a cell belongs to: { kind, d (distance from the middle), t (0 edge – 1 middle) }.
 export function peakAt(x, z) {
   for (const p of PEAKS) {

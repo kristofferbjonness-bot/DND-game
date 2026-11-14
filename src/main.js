@@ -6,11 +6,11 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 
-import { grid, WATER_LEVEL, pixelToCell, nearestLand, cellToWorld, PEAKS } from './world/grid.js';
+import { grid, WATER_LEVEL, pixelToCell, nearestLand, cellToWorld, PEAKS, hash as cellHash } from './world/grid.js';
 import { buildTerrain, surfaceY } from './world/terrain.js';
 import { buildPlants, buildClouds } from './world/scatter.js';
 import { buildLandmark } from './world/landmarks.js';
-import { buildLighthouse, buildShadowMist, buildCabin, buildBridge, buildVolcanoSmoke, buildCloudCap } from './world/features.js';
+import { buildLighthouse, buildShadowMist, buildCabin, buildBridge, buildVolcanoSmoke, buildCloudCap, buildMountainMist } from './world/features.js';
 import { LOCATIONS } from './world/locations.js';
 import { CITIES } from './city/cities.js';
 import { createTiltShiftPasses } from './fx/tiltShift.js';
@@ -182,11 +182,27 @@ function buildWorldView() {
       const smoke = buildVolcanoSmoke({ height: 22, crater: p.crater * 0.8 });
       smoke.position.set(x, surfaceY(p.cx, p.cz), z);
       scene.add(smoke); features.push(smoke);
+      const haze = buildCloudCap(5, 4, { opacity: 0.55 }); // smoke and haze hanging round the top
+      haze.position.set(x, surfaceY(p.cx, p.cz) + 1, z);
+      haze.children.forEach((c) => c.material.color.set('#b8b2ac'));
+      scene.add(haze); features.push(haze);
     } else {
       const cap = buildCloudCap(8, 8);
       cap.position.set(x, surfaceY(p.cx, p.cz) - 3, z);
       scene.add(cap); features.push(cap);
     }
+  }
+  // Haze on every high mountain: a puff over the tops, about one per 5×5 cells.
+  {
+    const spots = [];
+    for (let cz = 2; cz < grid.rows; cz += 5) for (let cx = 2; cx < grid.cols; cx += 5) {
+      const jx = cx + Math.floor(cellHash(cx, cz, 64) * 4) - 2, jz = cz + Math.floor(cellHash(cx, cz, 65) * 4) - 2;
+      const k = jz * grid.cols + jx;
+      if (jx < 0 || jz < 0 || jx >= grid.cols || jz >= grid.rows || !grid.land[k] || grid.heights[k] < 11) continue;
+      const [x, z] = cellToWorld(jx, jz);
+      spots.push([x, surfaceY(jx, jz) + 0.8 + cellHash(cx, cz, 66) * 1.5, z]);
+    }
+    if (spots.length) { const mist = buildMountainMist(spots); scene.add(mist); features.push(mist); }
   }
   const sirivik = places.find((p) => p.id === 'sirivik');
   if (sirivik) { const fog = buildShadowMist(5, { grey: true }); fog.position.set(sirivik.x, sirivik.ground, sirivik.z); scene.add(fog); features.push(fog); }

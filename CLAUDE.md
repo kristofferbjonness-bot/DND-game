@@ -53,10 +53,12 @@ The original assets (hand-drawn world map, location art, character art, lore doc
   a dark forest (`DARK_FORESTS` / `darkForest(x, z)` 0–1 in grid.js, fading over `fade` cells: grey ground in terrain.js,
   grey pines and many dead trees in scatter.js), with an old cabin in the middle; a pale grey fog lies over Sirivik;
   a little bridge crosses the river east of Ytterhavn (`BRIDGE` cells in buildWorldView). Trees keep clear of both.
-- Great peaks (`PEAKS` in grid.js, raised over the baked heights at load): Fjellene av Ferran's volcano (basalt,
-  lava crater and streaks; `buildVolcanoSmoke` adds the lava glow and rising smoke) and the blue ice mountain on
-  the snowy island north of Bartedalen, the tallest point (58 layers; `buildCloudCap` hides its summit). Colours
-  in `peakColor` (terrain.js).
+- Great peaks (`PEAKS` in grid.js, raised over the baked heights at load): Fjellene av Ferran's volcano at the
+  north-centre of the western range (mountain rock turning ashier near the top, a dark crater with a faint glow;
+  `buildVolcanoSmoke` adds smoke, a hazy `buildCloudCap` hangs round it) and a thin, sharp blue ice spire on the
+  north tip of the snowy island north of Bartedalen, the tallest point (92 layers; a cloud cap hides its summit).
+  Colours in `peakColor` (terrain.js). Every high mountain (≥ 11 layers) has drifting haze (`buildMountainMist`).
+  Rama's mountains (`onRama`) are bare rock with only patchy snow on the highest tops.
 - Hand edits to the land: `SEA_CUTS` in `tools/bake-map.mjs` cuts sea channels where painted coasts nearly touch
   (the snowy island north of Bartedalen and the green peninsula east of it are separate islands; the south end of the
   Strait of Skinder is opened into Siri's Gap so it and its river reach the sea). Re-run `npm run bake`.
