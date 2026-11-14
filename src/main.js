@@ -25,7 +25,6 @@ import { createStatusScreen } from './status/statusScreen.js';
 import { renderParty } from './status/partyScreen.js';
 import { createCombatScreen } from './combat/combatScreen.js';
 import { createCombatView } from './combat/combatView.js';
-import { createBestiaryScreen } from './bestiary/bestiaryScreen.js';
 import { MONSTERS, addMonster, removeMonster } from './data/monsters.js';
 import { registerRecipe } from './character/model.js';
 import { CHARACTERS as STARTING_HEROES } from './data/characters.js';
@@ -34,6 +33,7 @@ import { createCreatorScreen } from './creator/creatorScreen.js';
 import { createRulebook } from './rulebook/rulebook.js';
 import { createJournalScreen } from './journal/journalScreen.js';
 import { createSceneScreen } from './scene/sceneScreen.js';
+import { registerArea, unregisterArea } from './scene/areas.js';
 import { createDiceTray } from './dice/diceTray.js';
 import { createHeroManager } from './status/heroManager.js';
 import { shortRest, longRest, readyToLevel } from './character/progress.js';
@@ -876,11 +876,9 @@ const owners = new Map(); // character id -> profile id of the player
 const screens = {
   status: document.getElementById('status'), party: document.getElementById('party'),
   combat: document.getElementById('combat'), fight: document.getElementById('fight'),
-  bestiary: document.getElementById('bestiary'),
   journal: document.getElementById('journal'),
   scene: document.getElementById('scene'),
 };
-let bestiaryScreen = null;
 let sceneScreen = null; // made below, once the journal's entries exist
 let combatScreen = null; // the DM's controls
 let combatView = null;   // the players' view of a fight
@@ -915,7 +913,6 @@ function showScreen(id) {
   showSceneBehind();
   if (id === 'combat') combatScreen.start(); else combatScreen?.stop();
   if (id === 'fight') combatView.start(); else combatView?.stop();
-  if (id === 'bestiary') bestiaryScreen.start(); else bestiaryScreen?.stop();
   if (id === 'map') clock.getDelta(); // no time jump after being away
 }
 for (const b of document.querySelectorAll('.topnav__tab')) b.insertAdjacentHTML('afterbegin', icon(b.dataset.icon));
@@ -1065,7 +1062,6 @@ combatScreen = createCombatScreen(screens.combat, {
   onLeave: () => showScreen('scene'),
   onStep: () => showSceneBehind(),
   // The party has now met these creatures: they go into everyone's journal.
-  onBegin: (types) => journalScreen.meetCreatures(types).catch((err) => console.warn('Could not note the creatures:', err.message)),
 });
 
 // The running fight is saved online (DM only, supabase/session.sql), so a reload
@@ -1088,7 +1084,6 @@ async function restoreFight() {
   } catch (err) { console.warn('No saved fight:', err.message); }
 }
 combatView = createCombatView(screens.fight, { party });
-bestiaryScreen = createBestiaryScreen(screens.bestiary, { onChanged: () => combatScreen.refresh() });
 
 // Generated monsters live in the database; everyone loads them so fights can show them.
 function useMonster(row) {
@@ -1105,11 +1100,11 @@ async function loadBestiary() {
   }
   watchingMonsters ??= watchMonsters((event, row) => {
     if (event === 'DELETE') removeMonster(row.id); else useMonster(row);
-    bestiaryScreen.refresh();
+    combatScreen?.refresh(); sceneScreen?.refresh();
     combatScreen.refresh();
     journalScreen.refresh();
   });
-  bestiaryScreen.refresh();
+  combatScreen?.refresh(); sceneScreen?.refresh();
   combatScreen.refresh();
 }
 
@@ -1304,8 +1299,7 @@ const journalScreen = createJournalScreen(screens.journal, {
   // The world-map places this viewer may read about (the DM sees all, hidden ones marked).
   heroes: () => party.map((c) => ({ id: c.id, name: c.name })),
   monsters: () => Object.entries(MONSTERS).map(([id, m]) => ({ id, name: m.name, kind: m.kind, note: m.note, model: m.model, generated: m.generated })),
-  onOpenBestiary(id) { showScreen('bestiary'); bestiaryScreen.show(id); },
-  onMonstersChanged() { bestiaryScreen?.refresh(); sceneScreen?.refresh(); },
+  onMonstersChanged() { sceneScreen?.refresh(); },
   mapPlaces: () => views.world.places
     .filter((p) => p.tier !== 'unnamed' && knows(p))
     .map((p) => ({ id: p.id, name: p.name, subtitle: p.subtitle, text: p.text, tier: p.tier, secret: seesAll() && isSecretable(p) && !revealed.has(p.id) })),
@@ -1348,12 +1342,14 @@ let watchingQuests = null;
 async function loadJournal() {
   try {
     quests.splice(0, quests.length, ...(await loadQuests()));
+    for (const q of quests) if (q.data.kind === 'area') registerArea(q.id, q.data); // places Claude made
   } catch (err) { console.warn('Journal not available yet:', err.message); return; }
   watchingQuests ??= watchQuests((event, row) => {
     const i = quests.findIndex((q) => q.id === row.id);
-    if (event === 'DELETE') { if (i >= 0) quests.splice(i, 1); } else if (i >= 0) quests[i] = row; else quests.push(row);
+    if (event === 'DELETE') { if (i >= 0) quests.splice(i, 1); unregisterArea(row.id); } else if (i >= 0) quests[i] = row; else quests.push(row);
+    if (event !== 'DELETE' && row.data?.kind === 'area') registerArea(row.id, row.data);
     // Something new for a player: added, or revealed by the DM (it was not in their list before).
-    if (event !== 'DELETE' && i < 0 && me && !seesAll() && row.data.shown !== false && row.data.kind !== 'scene') {
+    if (event !== 'DELETE' && i < 0 && me && !seesAll() && row.data.shown !== false && row.data.kind !== 'scene' && row.data.kind !== 'area') {
       const what = { npc: 'Someone new in your journal', place: 'A new place in your journal', placenote: 'New notes in your journal', item: '📖 You found', creature: 'A new creature in your journal' }[row.data.kind] ?? '📜 New quest';
       const name = row.data.title ?? MONSTERS[row.data.monster]?.name;
       toast(name ? `${what}: ${name}` : what);

@@ -20,7 +20,7 @@ import { monsterPortrait, fullPortrait, portraitImg } from '../ui/portraits.js';
 import { NPC_FIGURES, npcFigureId, npcModel } from '../character/npcFigures.js';
 import { registerRecipe } from '../character/model.js';
 import { MONSTERS, addMonster } from '../data/monsters.js';
-import { cleanMonster } from '../bestiary/bestiaryScreen.js';
+import { cleanMonster } from '../data/cleanMonster.js';
 import { generateMonster, saveMonster, explain } from '../net/backend.js';
 
 // On the dev server only: the owner's lore, ready for a one-time import (src/data/lore-import.local.js,
@@ -39,7 +39,6 @@ const SECTIONS = [
   { id: 'people', label: 'People', icon: 'hero', kind: 'npc', newLabel: 'New person' },
   { id: 'places', label: 'Places', icon: 'pin', kind: 'place', newLabel: 'New place' },
   { id: 'items', label: 'Items', icon: 'journal', kind: 'item', newLabel: 'New item' },
-  { id: 'creatures', label: 'Creatures', icon: 'bestiary', kind: 'creature', newLabel: '' },
 ];
 const ITEM_TYPE = {
   book: { label: 'Book', icon: 'journal' }, note: { label: 'Note', icon: 'scroll' }, letter: { label: 'Letter', icon: 'scroll' },

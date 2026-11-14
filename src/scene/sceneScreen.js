@@ -8,7 +8,8 @@
 // where `fig` is 'npc:<NPC figure id>' or 'monster:<Bestiary id>'. Which scene is live is
 // shared through the world row (`scene` in main.js), so players switch with the DM.
 import { createSceneView } from './sceneView.js';
-import { AREAS, areaOptions } from './areas.js';
+import { AREAS, areaOptions, towns, sanitizePlace, registerArea } from './areas.js';
+import { generatePlace, explain } from '../net/backend.js';
 import { NPC_FIGURES, npcFigureId } from '../character/npcFigures.js';
 import { monsterPortrait, heroPortrait, portraitImg } from '../ui/portraits.js';
 import { icon } from '../ui/icons.js';
@@ -128,6 +129,18 @@ export function createSceneScreen(root, { entries, heroes, monsters, canEdit, li
       </header>
       <form class="scn__form">
         <label class="field"><span>Where</span><select class="field__input" name="area">${areaOptions(d.area, esc)}</select></label>
+        ${maker ? `
+        <div class="scn__maker">
+          <p class="scn__h">A new place, made by Claude</p>
+          <label class="field"><span>In</span><select class="field__input" name="maketown">${towns().map((t) => `<option${t === maker.town ? ' selected' : ''}>${esc(t)}</option>`).join('')}<option value="+"${maker.town === '+' ? ' selected' : ''}>A new town or area…</option></select></label>
+          ${maker.town === '+' ? `<input class="field__input" name="makenewtown" maxlength="40" placeholder="Name of the town or area" value="${esc(maker.newTown ?? '')}" />` : ''}
+          <textarea class="field__input" name="makeprompt" rows="3" maxlength="800" placeholder="Describe it, e.g. a cramped smugglers' cellar under the harbour, crates of stolen spice, a lantern swinging from a beam">${esc(maker.prompt ?? '')}</textarea>
+          <div class="scn__maker-row">
+            <button type="button" class="btn" data-do="makecancel"${maker.busy ? ' disabled' : ''}>Cancel</button>
+            <button type="button" class="btn btn--gold" data-do="make"${maker.busy ? ' disabled' : ''}>${icon('magic')}${maker.busy ? 'Claude is building…' : 'Create with Claude'}</button>
+          </div>
+          ${maker.error ? `<p class="scn__maker-error">${esc(maker.error)}</p>` : ''}
+        </div>` : `<button type="button" class="scn__newplace" data-do="maker">${icon('magic', 'inline')} A new place with Claude…</button>`}
         <p class="scn__h">Heroes here</p>
         <div class="scn__heroes">${heroes().map((c) => `
           <label class="scn__hero"><input type="checkbox" name="hero" value="${esc(c.id)}"${!d.heroes || d.heroes.includes(c.id) ? ' checked' : ''} />${portraitImg(heroPortrait(c), { name: c.name, colour: c.colour, cls: 'scn__face' })}<span>${esc(c.name.split(' ')[0])}</span></label>`).join('')}
@@ -140,6 +153,7 @@ export function createSceneScreen(root, { entries, heroes, monsters, canEdit, li
     const list = panel.querySelector('.scn__whos'); if (list) list.scrollTop = scroll;
   }
   let whoQuery = '';
+  let maker = null; // the new-place form: { town, newTown, prompt, busy, error }
 
   // A change by the DM: shown at once, saved (and made live) a moment later.
   function changed(data) {
@@ -187,12 +201,33 @@ export function createSceneScreen(root, { entries, heroes, monsters, canEdit, li
     const [kind, id] = fig.split(':');
     const figId = kind === 'npc' ? id : id === 'hooknose' ? 'hooknose' : null;
     const person = entries.find((e) => e.data.kind === 'npc' && (dm() || e.data.shown !== false) && (figId ? npcFigureId(e.data) === figId : e.data.figure === fig));
-    if (person) return { type: 'npc', id: person.id };
-    if (kind === 'monster') {
-      const c = entries.find((e) => e.data.kind === 'creature' && e.data.monster === id && (dm() || e.data.shown));
-      if (c || dm()) return { type: 'creature', id };
+    return person ? { type: 'npc', id: person.id } : null;
+  }
+
+  function readMaker(f) {
+    if (!maker || !f) return;
+    maker.town = f.maketown?.value ?? maker.town;
+    maker.newTown = f.makenewtown?.value ?? maker.newTown;
+    maker.prompt = f.makeprompt?.value ?? maker.prompt;
+  }
+  // Claude builds a new place; it is saved (so it stays for everyone) and the scene moves there.
+  async function makePlace() {
+    readMaker(panel.querySelector('.scn__form'));
+    const town = (maker.town === '+' ? maker.newTown : maker.town)?.trim();
+    if (!maker.prompt?.trim()) { panel.querySelector('[name=makeprompt]')?.focus(); return; }
+    if (!town) { panel.querySelector('[name=makenewtown]')?.focus(); return; }
+    maker.busy = true; maker.error = '';
+    drawPanel();
+    try {
+      const recipe = sanitizePlace(await generatePlace(town, maker.prompt.trim(), () => {}), town);
+      const row = await onSave({ data: { kind: 'area', ...recipe, prompt: maker.prompt.trim(), shown: true } });
+      registerArea(row.id, recipe);
+      maker = null;
+      changed({ area: row.id });
+    } catch (err) {
+      maker.busy = false; maker.error = explain(err);
+      drawPanel();
     }
-    return null;
   }
 
   // Which Bestiary creature someone in the scene fights as (Bestiary creatures, and people who are
@@ -225,6 +260,9 @@ export function createSceneScreen(root, { entries, heroes, monsters, canEdit, li
     if (b.classList.contains('scn__fold')) { folded = !folded; drawPanel(); return; }
     if (b.classList.contains('scn__fight')) { fight(); return; }
     if (b.dataset.do === 'clear') { changed({ people: [] }); return; }
+    if (b.dataset.do === 'maker') { maker = { town: (AREAS[current().data.area] ?? AREAS.port).town }; drawPanel(); return; }
+    if (b.dataset.do === 'makecancel') { maker = null; drawPanel(); return; }
+    if (b.dataset.do === 'make') { makePlace(); return; }
     if (b.dataset.fig) {
       const people = (current().data.people ?? []).map((p) => ({ ...p }));
       const p = people.find((x) => x.fig === b.dataset.fig);
@@ -234,7 +272,8 @@ export function createSceneScreen(root, { entries, heroes, monsters, canEdit, li
   });
   panel.addEventListener('change', (e) => {
     const f = e.target.form;
-    if (!f || e.target.name === 'whosearch') return;
+    if (e.target.name === 'maketown') { readMaker(f); drawPanel(); return; }
+    if (!f || ['whosearch', 'makeprompt', 'makenewtown'].includes(e.target.name)) return;
     const all = heroes().map((c) => c.id);
     const on = [...f.querySelectorAll('input[name=hero]:checked')].map((i) => i.value);
     changed({ area: f.area.value, heroes: on.length === all.length ? undefined : on });

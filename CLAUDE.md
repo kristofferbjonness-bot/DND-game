@@ -151,6 +151,13 @@ The original assets (hand-drawn world map, location art, character art, lore doc
     - Held weapons appear in the hand (bows in the left hand).
     - Swords not in hand hang at the left hip, with an empty scabbard when drawn.
     - Axes hang at the right hip, and bows go on the back next to the quiver.
+- **Places made by Claude**: the Scene panel's "A new place with Claude…" (town + description) calls POST
+  `/api/generate-place` (generate.js, `PLACE_SYSTEM`: a 60×60 voxel diorama as palette + boxes + floor + glow + fog + mood).
+  `sanitizePlace` (areas.js) checks it; it is saved as a journal row (`quests`, `data.kind: 'area'`, shown) and registered with
+  `registerArea` on every device (main.js, on load and live); the scene moves there. People stand at the usual spots moved to
+  open floor. Places are grouped by `town` (`towns()`).
+- **No Bestiary tab and no Creatures section any more** (by request: everything is a person). `MONSTERS` (data/monsters.js) still
+  holds every fighter's stats and generated people are still saved to the `monsters` table; `cleanMonster` is in data/cleanMonster.js.
 - **Fights happen in the Scene tab** (there is no Fight tab any more, by request). The DM presses "Fight!" in the scene
   panel's header; with heroes and
   enemies picked it goes straight to initiative, with the scene still showing behind (`showSceneBehind`): `combatScreen.prepare()` opens the setup with the scene's heroes and fighters picked

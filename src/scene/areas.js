@@ -1106,10 +1106,79 @@ export const AREAS = {
   lighthouse: { town: 'At sea', name: 'The lighthouse in Siri’s Gap', short: 'The lighthouse', build: lighthouseArea },
   ship: { town: 'At sea', name: 'Aboard a small ship', short: 'The ship', build: ship },
 };
-export const TOWNS = [...new Set(Object.values(AREAS).map((a) => a.town))];
+// The towns places belong to, in order (places Claude made can add new ones).
+export const towns = () => [...new Set(Object.values(AREAS).map((a) => a.town))];
 // <option>s for a place picker, grouped by town.
-export const areaOptions = (selected, esc) => TOWNS.map((t) => `<optgroup label="${esc(t)}">${Object.entries(AREAS).filter(([, a]) => a.town === t)
+export const areaOptions = (selected, esc) => towns().map((t) => `<optgroup label="${esc(t)}">${Object.entries(AREAS).filter(([, a]) => a.town === t)
   .map(([k, a]) => `<option value="${k}"${k === selected ? ' selected' : ''}>${esc(a.name)}</option>`).join('')}</optgroup>`).join('');
+
+// --- Places Claude made --------------------------------------------------------------------------
+// A recipe: { name, town, palette: { key: '#hex' }, floor: [keys], boxes: [[x0,y0,z0,x1,y1,z1,key]],
+// glow: [keys], fog, mood: { bg, light, brightness } }. It comes from Claude, so it is checked first.
+const HEX6 = /^#[0-9a-f]{6}$/i;
+const clampI = (v, lo, hi) => Math.min(hi, Math.max(lo, Math.round(Number(v) || 0)));
+export function sanitizePlace(raw, town) {
+  const palette = {};
+  for (const [k, v] of Object.entries(raw?.palette ?? {})) if (HEX6.test(String(v)) && Object.keys(palette).length < 24) palette[String(k).slice(0, 12)] = String(v);
+  if (!Object.keys(palette).length) throw new Error('Claude did not build the place. Try again.');
+  const boxes = [];
+  let cells = 0;
+  for (const b of Array.isArray(raw?.boxes) ? raw.boxes : []) {
+    if (!Array.isArray(b) || b.length < 7 || !palette[String(b[6])] || boxes.length >= 700) continue;
+    const box = [clampI(b[0], 0, SIZE - 1), clampI(b[1], 0, 44), clampI(b[2], 0, SIZE - 1), clampI(b[3], 0, SIZE - 1), clampI(b[4], 0, 44), clampI(b[5], 0, SIZE - 1), String(b[6])];
+    const vol = (Math.abs(box[3] - box[0]) + 1) * (Math.abs(box[4] - box[1]) + 1) * (Math.abs(box[5] - box[2]) + 1);
+    if (cells + vol > 70000) continue;
+    cells += vol;
+    boxes.push(box);
+  }
+  if (!boxes.length) throw new Error('Claude did not build the place. Try again.');
+  const keys = (list) => (Array.isArray(list) ? list.map(String).filter((k) => palette[k]) : []);
+  const m = raw?.mood ?? {};
+  const bg = typeof m.bg === 'string' && /^(linear|radial)-gradient\([#a-z0-9 ,.%()-]{3,200}\)$/i.test(m.bg) ? m.bg : 'linear-gradient(#8cc6e8, #f2e8d0)';
+  return {
+    name: String(raw?.name ?? 'A new place').slice(0, 50), town: String(town || raw?.town || 'Elsewhere').slice(0, 40),
+    palette, boxes, floor: keys(raw?.floor).length ? keys(raw.floor).slice(0, 3) : [Object.keys(palette)[0]], glow: keys(raw?.glow),
+    fog: Boolean(raw?.fog),
+    mood: { bg, light: HEX6.test(String(m.light)) ? m.light : '#fff0d4', brightness: Math.min(1.4, Math.max(0.5, Number(m.brightness) || 1)) },
+  };
+}
+
+// Builds a place from a recipe. Where people stand: the usual spots, moved to the nearest open floor.
+function buildPlace(r) {
+  return () => {
+    const v = new Vox(SIZE, { corner: 4 });
+    if (r.fog) v.mistColour = '#c4c8d0';
+    slab(v, (x, z) => r.palette[r.floor[Math.floor(hash(x, z, 91) * r.floor.length) % r.floor.length]]);
+    const glow = new Set(r.glow);
+    for (const [x0, y0, z0, x1, y1, z1, k] of r.boxes) {
+      for (let x = Math.min(x0, x1); x <= Math.max(x0, x1); x++) for (let y = Math.min(y0, y1); y <= Math.max(y0, y1); y++) for (let z = Math.min(z0, z1); z <= Math.max(z0, z1); z++) {
+        if (glow.has(k)) v.light(x, y, z, r.palette[k]); else v.set(x, y, z, r.palette[k]);
+      }
+    }
+    if (r.fog) for (let x = 6; x < SIZE; x += 12) v.puff(x, 4, 10 + hash(x, 2, 3) * 30, 5, 2, 4);
+    const free = ([x, z], taken) => {
+      for (let ring = 0; ring < 12; ring++) for (let dx = -ring; dx <= ring; dx++) for (let dz = -ring; dz <= ring; dz++) {
+        if (Math.max(Math.abs(dx), Math.abs(dz)) !== ring) continue;
+        const cx = x + dx, cz = z + dz;
+        if (!v.inside(cx, cz, 6) || taken.some(([tx, tz]) => Math.hypot(tx - cx, tz - cz) < 5)) continue;
+        let ok = true;
+        for (let ax = -1; ax <= 1 && ok; ax++) for (let az = -1; az <= 1 && ok; az++) for (let y = 1; y <= 10; y++) if (v.has(cx + ax, y, cz + az)) { ok = false; break; }
+        if (ok) { taken.push([cx, cz]); return [cx, cz]; }
+      }
+      return [x, z];
+    };
+    const taken = [];
+    const heroSpots = HERO_SPOTS.map((p) => free(p, taken));
+    const npcSpots = [[30, 26], [22, 24], [38, 24], [18, 30], [42, 30], [26, 32], [34, 32], [14, 26], [46, 26]].map((p) => free(p, taken));
+    const L = r.mood.light, b = r.mood.brightness;
+    return { v, heroSpots, npcSpots, mood: { bg: r.mood.bg, sky: L, ground: shade(L, 0.4), hemi: 1.1 + 0.4 * b, sun: L, sunPower: 1.2 + 1.2 * b, sunAt: [-35, 70, 45], exposure: 0.95 + 0.2 * b } };
+  };
+}
+// Adds (or updates) a place Claude made, under its own id.
+export function registerArea(id, r) {
+  AREAS[id] = { town: r.town, name: r.name, short: r.name, build: buildPlace(r), generated: true };
+}
+export function unregisterArea(id) { if (AREAS[id]?.generated) delete AREAS[id]; }
 
 // World position → slab voxel, and back.
 export const toVox = ([x, z]) => [Math.round(x / SCALE + SIZE / 2 - 0.5), Math.round(z / SCALE + SIZE / 2 - 0.5)];

@@ -2435,3 +2435,8 @@ body[data-screen="combat"]:not(:has(#combat.is-battle)) .tags-toggle { display: 
 @keyframes scn-drop { from { transform: translate(-50%, -110%); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
 @media (orientation: portrait) and (max-width: 600px) { .scn__plate { top: calc(var(--safe-t, 0px) + 6px); left: 50%; max-width: calc(100% - 24px); } }
 @media (max-height: 500px) and (orientation: landscape) { .scn__plate { top: calc(var(--top) - 10px); left: 50%; max-width: 46%; } }
+
+.scn__newplace { justify-self: start; background: none; border: 0; padding: 0; cursor: pointer; font: 600 13px var(--font-body); color: var(--pp-accent); text-decoration: underline; text-underline-offset: 3px; }
+.scn__maker { display: grid; gap: 6px; padding: 8px 10px; border-radius: 8px; border: 1.5px dashed var(--pp-bronze); background: rgba(154, 107, 31, 0.08); }
+.scn__maker-row { display: flex; justify-content: flex-end; gap: 6px; }
+.scn__maker-error { margin: 0; font-size: 13px; color: var(--pp-accent); }

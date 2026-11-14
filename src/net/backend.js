@@ -287,6 +287,7 @@ export function watchMonsters(onChange) {
 // monster or a hero's look. Claude's answer streams in; `onProgress(characters)`
 // is called as it grows. Resolves with the parsed JSON.
 export const generateMonster = (prompt, onProgress) => generate('/api/generate-monster', { prompt }, onProgress);
+export const generatePlace = (town, prompt, onProgress) => generate('/api/generate-place', { town, prompt }, onProgress);
 export const generateHero = (request, onProgress) => generate('/api/generate-hero', request, onProgress);
 
 async function generate(path, request, onProgress) {

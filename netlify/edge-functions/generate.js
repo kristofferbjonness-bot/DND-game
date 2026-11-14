@@ -7,6 +7,9 @@
 //     The look of a new hero from the character creator (the stats are worked
 //     out in the app). The Dungeon Master, or a player who has no hero yet.
 //
+//   POST /api/generate-place  { town, prompt }
+//     A place for the Scene tab (a room, a street, a clearing): a voxel diorama. Dungeon Master only.
+//
 // The Claude API key lives only here, in the Netlify environment variable
 // ANTHROPIC_API_KEY, never in the app. Every request must carry the caller's
 // Supabase login token.
@@ -90,11 +93,38 @@ The figure (units are voxels; every box is an inclusive range [x0,y0,z0, x1,y1,z
 - 4–9 palette colours: soft, slightly desaturated, pleasing together, with one or two accents. Magic, runes or embers may glow: list those palette keys in the part's "glow".
 - Build from solid boxes, 25–150 boxes in all. No floating pieces. Keep it simple and clean like Erosion: big shapes, not many tiny details.`;
 
+const PLACE_SYSTEM = `You build places (rooms, streets, clearings, caves, ships…) for a Dungeons & Dragons companion app. A place is a small voxel diorama, shown in 3D from the front and a little above, with the party's figures standing in it. Style: soft, colourful, low-detail toy voxels like the game "Erosion" or the Link's Awakening remake; chunky readable shapes, few colours, no tiny noise.
+
+Answer with ONE JSON object and nothing else (no prose, no code fences), in exactly this shape:
+
+{
+  "name": "Short name of the place",
+  "palette": { "f1": "#rrggbb", "f2": "#rrggbb", "w": "#rrggbb", "l": "#ffcf70" },
+  "floor": ["f1", "f2"],                     // 1–3 palette keys mixed for the ground (y = 0)
+  "boxes": [[x0, y0, z0, x1, y1, z1, "w"]],
+  "glow": ["l"],                             // palette keys that glow (lamps, fire, candles, magic, windows lit from inside)
+  "fog": false,                              // true for misty, smoky or foggy places
+  "mood": { "bg": "a CSS background behind the diorama, e.g. linear-gradient(#8cc6e8, #f2e8d0)", "light": "#rrggbb", "brightness": 1.0 }
+}
+
+The grid: x from 0 to 59 (left to right), z from 0 to 59 (back to front; the camera looks from the front, high z), y from 1 upwards (y = 0 is the floor, drawn from "floor"; build on top of it). Every box is an inclusive range [x0, y0, z0, x1, y1, z1, key]: [10,1,5, 12,3,5, "w"] fills 3×3×1 voxels.
+
+Scale (important): a person is 12 voxels tall and 3 wide. Doors are about 13 high and 4 wide; a table top is at y 7; a chair seat at y 4; a bed is about 10×4×18; a ground floor is about 16 high; a tree is 15–25 tall; a barrel 5 tall and 3 wide.
+
+Layout rules:
+- Keep the front half (z from 30 to 59) mostly open floor: that is where the heroes and other people stand. Put furniture and features at the back and the sides, and a few small things in front.
+- For a room: a back wall along z 0–2 (up to about 22 high) and side walls along x 0–2 and x 57–59 that are at most 14 high, so the camera can see in. No front wall and no ceiling.
+- For outdoor places: hills, trees, buildings or cliffs at the back (z < 15) may be taller (up to 40); keep the sides lower.
+- Use 6–12 palette colours that fit the place and its town (see the request); soft and slightly desaturated with a few accents.
+- 80–400 boxes. Prefer a few big boxes over many single voxels, but give it character: windows with frames, beams, shelves with things on them, rugs, plants, signs, lamps.
+- "mood.brightness" between 0.6 (dark cellar, night) and 1.3 (bright noon); "mood.light" is the colour of the light (warm for candles and fire, cool for fog or moonlight).`;
+
 const json = (status, body) => new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
 
 export default async (req) => {
   if (req.method !== 'POST') return json(405, { error: 'Use POST.' });
   const hero = new URL(req.url).pathname.endsWith('/generate-hero');
+  const place = new URL(req.url).pathname.endsWith('/generate-place');
 
   const apiKey = Netlify.env.get('ANTHROPIC_API_KEY');
   if (!apiKey) return json(500, { error: 'The Claude API key is not set up on Netlify yet (ANTHROPIC_API_KEY).' });
@@ -111,7 +141,7 @@ export default async (req) => {
   const profileRes = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${uid}&select=role`, { headers });
   const [profile] = profileRes.ok ? await profileRes.json() : [];
   const dm = profile?.role === 'dm';
-  if (!hero && !dm) return json(403, { error: 'Only the Dungeon Master can generate monsters.' });
+  if (!hero && !dm) return json(403, { error: 'Only the Dungeon Master can do this.' });
   if (hero && !dm) {
     const mineRes = await fetch(`${SUPABASE_URL}/rest/v1/characters?owner=eq.${uid}&select=id`, { headers });
     const mine = mineRes.ok ? await mineRes.json() : [];
@@ -134,6 +164,12 @@ export default async (req) => {
       `Design notes from the player: ${design || '(none, go by the backstory)'}`,
       `Backstory: ${backstory || '(none)'}`,
     ].join('\n');
+  } else if (place) {
+    const prompt = String(body.prompt ?? '').trim(), town = String(body.town ?? '').trim().slice(0, 60);
+    if (!prompt) return json(400, { error: 'Describe the place first.' });
+    if (prompt.length > MAX_PROMPT) return json(400, { error: `Keep the description under ${MAX_PROMPT} characters.` });
+    system = PLACE_SYSTEM;
+    message = `Build this place${town ? ` in ${town}` : ''}: ${prompt}`;
   } else {
     const prompt = String(body.prompt ?? '').trim();
     if (!prompt) return json(400, { error: 'Describe the monster first.' });
@@ -165,4 +201,4 @@ export default async (req) => {
   });
 };
 
-export const config = { path: ['/api/generate-monster', '/api/generate-hero'] };
+export const config = { path: ['/api/generate-monster', '/api/generate-hero', '/api/generate-place'] };
