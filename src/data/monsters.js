@@ -75,6 +75,11 @@ export const MONSTERS = {
     attacks: [{ name: 'Swordfish dagger', toHit: 3, dice: '1d4', bonus: 1, type: 'piercing' }],
     note: 'Bobby’s cheerful younger brother, who sells fish of every kind.', model: 'npc-bob',
   },
+  'ytter-guard': {
+    name: 'Ytterhavn guard', short: 'Guard', kind: 'Humanoid · town guard', ac: 15, hp: 26, initiative: 1, speed: 30,
+    attacks: [{ name: 'Cutlass', toHit: 5, dice: '1d6', bonus: 3, type: 'slashing' }, { name: 'Boarding hook', toHit: 5, dice: '1d8', bonus: 3, type: 'piercing' }],
+    note: 'Sailors who keep the peace in Ytterhavn. Make trouble in the town and they come running, several at a time.', model: 'npc-ytter-guard',
+  },
   // Sirivik.
   'per-hul-oye': {
     name: 'Per Hul Øye', short: 'Per', kind: 'Humanoid · bar owner', ac: 11, hp: 14, initiative: 0, speed: 30,

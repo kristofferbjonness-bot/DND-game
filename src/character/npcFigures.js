@@ -373,6 +373,31 @@ function sandNug() {
   return s.done();
 }
 
+// An Ytterhavn guard: a burly sailor-soldier keeping the peace in the harbour town. A blue-and-white
+// striped shirt under a navy coat with brass buttons and a red sash, white trousers, tall boots, a
+// tarred black hat with a brass badge, a cutlass in hand and a boarding hook on his back.
+function ytterGuard() {
+  const p = { skin: '#d9a07a', beard: '#6a4a2e', stripe: '#2f4f8a', white: '#f2ece0', coat: '#22304e', coatDark: '#18233a', brass: '#d9a63a', sash: '#a8342a', trousers: '#e8e2d6', boot: '#2a2420', hat: '#1a1a20', steel: '#d4dadf', grip: '#5a3a22', hook: '#4a4a50' };
+  const s = slim(p, { skin: 'skin', torso: 'coat', legs: 'trousers', feet: 'boot', sleeve: 'coat', belt: 'sash' });
+  // Broader: shoulders and chest one voxel wider.
+  s.pair('body', 2, 13, -1, 2, 16, 1, 'coat');
+  s.box('body', -1, 11, -1, 1, 16, -1, 'coatDark');
+  s.box('body', 0, 12, 1, 0, 16, 1, 'white'); for (const y of [12, 14, 16]) s.box('body', 0, y, 1, 0, y, 1, 'stripe'); // striped shirt at the open coat
+  for (const y of [12, 14]) s.pair('body', 1, y, 2, 1, y, 2, 'brass');
+  s.box('body', -2, 11, 1, 2, 11, 1, 'sash'); s.box('body', 2, 9, 1, 2, 10, 1, 'sash');
+  s.pair('legs', 1, 1, 0, 1, 4, 0, 'boot');
+  for (const side of [-1, 1]) { const a = s.arm(side); for (const b of s.parts[a].boxes) { b[0] += side; b[3] += side; } s.parts[a].pivot[0] += side; }
+  // Beard and the tarred hat with its badge.
+  s.box('head', -1, 17, 2, 1, 18, 2, 'beard'); s.pair('head', 1, 17, 1, 1, 18, 1, 'beard');
+  s.box('head', -2, 21, -2, 2, 21, 2, 'hat'); s.box('head', -1, 22, -1, 1, 22, 1, 'hat'); s.box('head', 0, 21, 3, 0, 21, 3, 'hat');
+  s.box('head', 0, 22, 2, 0, 22, 2, 'brass');
+  // A cutlass in the right hand, a boarding hook across the back.
+  s.box('armR', -3, 10, 1, -3, 10, 1, 'brass'); s.box('armR', -3, 10, 2, -3, 10, 6, 'steel'); s.box('armR', -3, 11, 6, -3, 11, 6, 'steel');
+  for (let i = 0; i <= 8; i++) s.box('body', -2 + Math.floor(i / 2), 10 + i, -2, -2 + Math.floor(i / 2), 10 + i, -2, 'grip');
+  s.box('body', 2, 18, -2, 3, 18, -2, 'hook'); s.box('body', 3, 17, -2, 3, 17, -2, 'hook');
+  return s.done();
+}
+
 // --- Sirivik ----------------------------------------------------------------------------------------
 
 // Lasse, the drunk at Per Hul Øye's bar: a nervous, hunched wreck in a stained shirt, clutching his mug.
@@ -468,6 +493,7 @@ export const NPC_FIGURES = {
   bobby: { name: 'Bobby (barman)', match: /^bobby$/i, build: bobby },
   bob: { name: 'Bob (fish shop)', match: /^bob$/i, build: bob },
   'sand-nug': { name: 'The Sand Nug', match: /sand nug/i, build: sandNug },
+  'ytter-guard': { name: 'An Ytterhavn guard', match: /ytterhavn guard|harbour guard/i, build: ytterGuard },
   lasse: { name: 'Lasse (bar drunk)', match: /^lasse$/i, build: lasse },
   accordion: { name: 'The Accordion', match: /accordion/i, build: accordion },
   'god-of-beauty': { name: 'The God of Beauty', match: /god of beauty/i, build: godOfBeauty },
