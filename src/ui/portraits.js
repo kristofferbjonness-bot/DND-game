@@ -99,7 +99,7 @@ export function areaPicture(areaId) {
       const built = area.build();
       const g = new THREE.Group();
       built.v.render(g);
-      url = snapshot(g, { half: 31, center: new THREE.Vector3(0, 9, 2), dir: [0.32, 0.5, 0.8], size: 560 });
+      url = snapshot(g, { half: 40, center: new THREE.Vector3(0, 6, 4), dir: [0.32, 0.5, 0.8], size: 560 });
       disposeTree(g);
     } catch (err) { console.warn('Could not draw the place:', err.message); }
     cache.set(key, url);

@@ -341,11 +341,11 @@ export function createJournalScreen(root, { entries, canEdit, mapPlaces, heroes 
   function placePage(p) {
     const d = p.data;
     return `
-      ${d.area && areaPicture(d.area) ? `<figure class="jr-scene"><img src="${areaPicture(d.area)}" alt="" draggable="false" /></figure>` : ''}
       <p class="jr-kicker">Place${d.shown === false ? ' · 🔒 hidden from players' : ''}</p>
       <h3 class="jr-name">${esc(d.title)}</h3>
       ${d.place ? `<p class="jr-meta">${placeLink(d.place, 'In ')}</p>` : ''}
       ${d.body ? `<p class="jr-text">${lines(d.body)}</p>` : '<p class="jr-text is-empty">Nothing written about it yet.</p>'}
+      ${d.area && areaPicture(d.area) ? `<figure class="jr-scene"><img src="${areaPicture(d.area)}" alt="" draggable="false" /></figure>` : ''}
       ${secretBox(p.id)}
       ${hereLists(p.id)}
       ${tools(p)}`;
