@@ -29,7 +29,8 @@ The original assets (hand-drawn world map, location art, character art, lore doc
 - `npm run bake`: regenerates `src/data/world-grid.json` from the map PNG. This is only needed
   if the source map changes.
 - `npm run postcards`: re-renders the location pictures in `public/art/places/` (needs the dev
-  server running).
+  server running); then `node tools/places-to-webp.mjs` and delete the .jpg files (the app uses .webp).
+- `Play/` (the build) is not in git: Netlify builds it on every push.
 
 ## Structure
 

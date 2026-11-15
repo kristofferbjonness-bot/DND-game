@@ -1,4 +1,4 @@
-// Saves every location postcard to public/art/places/<id>.jpg.
+// Saves every location postcard to public/art/places/<id>.jpg (then: node tools/places-to-webp.mjs, and delete the .jpg).
 // Needs the dev server running (npm run dev) and Google Chrome installed.
 // Run: node tools/postcards/capture.mjs [id ...]   (no ids = all)
 import { execFileSync } from 'node:child_process';

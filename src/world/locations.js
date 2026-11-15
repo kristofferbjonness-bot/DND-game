@@ -21,7 +21,7 @@ export const LOCATIONS = [
     px: [436, 420],
     subtitle: 'The western continent',
     text: 'One half of the sundered world. When the Twin-Born struck their final blow, the land split and the sea poured into the wound between Lama and Rama.',
-    image: 'art/places/lama.jpg',
+    image: 'art/places/lama.webp',
   },
   {
     id: 'rama',
@@ -30,7 +30,7 @@ export const LOCATIONS = [
     px: [870, 493],
     subtitle: 'The eastern continent',
     text: 'A vast land of cold northern peaks, temperate midlands, a great desert and tropical southern coasts.',
-    image: 'art/places/rama.jpg',
+    image: 'art/places/rama.webp',
   },
   {
     id: 'razz',
@@ -41,7 +41,7 @@ export const LOCATIONS = [
     px: [497, 582],
     subtitle: 'Rama · southern coast',
     text: 'A hot maze-city of bowed stone. The streets are tight and every road somehow leads back to the central plaza. Only the local guides can lead you out, for a fee. The underground answers to the Man Who Makes Himself Known.',
-    image: 'art/places/razz.jpg',
+    image: 'art/places/razz.webp',
   },
   {
     id: 'tine',
@@ -51,7 +51,7 @@ export const LOCATIONS = [
     px: [562, 368],
     subtitle: 'Rama · north of the Strait',
     text: 'A grand medieval monarchy ruled by Torgrim the Glaced, the young lord Flame Slinger once saved. Rumours speak of civil war and usurpation.',
-    image: 'art/places/tine.jpg',
+    image: 'art/places/tine.webp',
   },
   {
     id: 'bartedalen',
@@ -61,7 +61,7 @@ export const LOCATIONS = [
     px: [834, 401],
     subtitle: 'Rama · northern mountains',
     text: 'A windswept seafaring democracy. You earn the vote by growing your first proper mustache, and the bigger the mustache, the higher your standing. They export salt, metal and wind-dried fish, and worship the Great Tusked One. An election is approaching.',
-    image: 'art/places/bartedalen.jpg',
+    image: 'art/places/bartedalen.webp',
   },
   {
     id: 'kolaveri',
@@ -71,7 +71,7 @@ export const LOCATIONS = [
     px: [693, 665],
     subtitle: 'Rama · southern coast',
     text: '',
-    image: 'art/places/kolaveri.jpg',
+    image: 'art/places/kolaveri.webp',
   },
   {
     id: 'hrimnir',
@@ -81,7 +81,7 @@ export const LOCATIONS = [
     px: [985, 727],
     subtitle: 'Rama · south-east',
     text: 'Where Rikart Hagenstorm trained under his master Levi Itadori, before Sukuna Matamoto and the Grey Hand killed him.',
-    image: 'art/places/hrimnir.jpg',
+    image: 'art/places/hrimnir.webp',
   },
   {
     id: 'ferran',
@@ -90,7 +90,7 @@ export const LOCATIONS = [
     px: [411, 318],
     subtitle: 'Lama · mountains',
     text: 'Home of Edbart Frostvarg, who rescued the wolf Varg from poachers. Together they now hunt those poachers down.',
-    image: 'art/places/ferran.jpg',
+    image: 'art/places/ferran.webp',
   },
   {
     id: 'ytterhavn',
@@ -100,7 +100,7 @@ export const LOCATIONS = [
     px: [481, 548],
     subtitle: 'Rama · north of Razz',
     text: 'A bustling shipping town grown rich on trade, with great ports.',
-    image: 'art/places/ytterhavn.jpg',
+    image: 'art/places/ytterhavn.webp',
   },
   {
     id: 'fiskesund',
@@ -119,7 +119,7 @@ export const LOCATIONS = [
     px: [488, 496],
     subtitle: 'Rama · cliffs above Siri’s Gap',
     text: 'A gloomy, fog-bound town on smooth black obsidian cliffs high above the water. Lifts lower ships down to the sea. Thieves hang from the cliff walls for the crows, and every inhabitant is missing a body part.',
-    image: 'art/places/sirivik.jpg',
+    image: 'art/places/sirivik.webp',
   },
   {
     id: 'ikeheim',
@@ -129,7 +129,7 @@ export const LOCATIONS = [
     px: [539, 430],
     subtitle: 'Rama · on the road to Tine',
     text: '',
-    image: 'art/places/ikeheim.jpg',
+    image: 'art/places/ikeheim.webp',
   },
   {
     id: 'sortland',
@@ -138,7 +138,7 @@ export const LOCATIONS = [
     px: [595, 492],
     subtitle: 'Rama · dark mountains',
     text: 'Dark mountains along the Sortland river. The higher up the river you go, the darker the water becomes.',
-    image: 'art/places/sortland.jpg',
+    image: 'art/places/sortland.webp',
   },
   {
     id: 'skinder',
@@ -147,7 +147,7 @@ export const LOCATIONS = [
     px: [512, 452],
     subtitle: 'Between Lama and Rama',
     text: 'An important trade route with a high toll to enter. Spice from the south passes through on its way to the Empire. Its shores are 100-metre cliffs of obsidian.',
-    image: 'art/places/skinder.jpg',
+    image: 'art/places/skinder.webp',
   },
   {
     id: 'siris-gap',
@@ -156,7 +156,7 @@ export const LOCATIONS = [
     px: [478, 527],
     subtitle: 'Below Sirivik',
     text: '',
-    image: 'art/places/siris-gap.jpg',
+    image: 'art/places/siris-gap.webp',
   },
   { id: 'unnamed-1', name: '?', tier: 'unnamed', style: 'village', px: [242, 508] },
   { id: 'unnamed-2', name: '?', tier: 'unnamed', style: 'village', px: [233, 590] },

@@ -1306,7 +1306,6 @@ const journalScreen = createJournalScreen(screens.journal, {
   canEdit: () => seesAll(),
   // The world-map places this viewer may read about (the DM sees all, hidden ones marked).
   heroes: () => party.map((c) => ({ id: c.id, name: c.name })),
-  monsters: () => Object.entries(MONSTERS).map(([id, m]) => ({ id, name: m.name, kind: m.kind, note: m.note, model: m.model, generated: m.generated })),
   onMonstersChanged() { sceneScreen?.refresh(); },
   mapPlaces: () => views.world.places
     .filter((p) => p.tier !== 'unnamed' && knows(p))

@@ -10,7 +10,6 @@
 //   placenote  { place (a map place id), body, shown }                           notes on a map place
 //   item       { title, type, holder (hero id, or '' for the party), place (where found), body (its text), shown }
 //              lore books, notes, letters, maps and objects; shown = the party has been given it
-//   creature   { monster (a Bestiary id), body (what the party learned), shown }   creatures the party met;
 //              fighting one adds it (shown). The name, picture and description come from the Bestiary.
 //   secret     { about (an entry id, or 'map:<place id>'), body, shown: false }   DM-only notes
 // Players see entries marked shown (RLS) and only map places they have discovered. Secrets are
@@ -52,8 +51,8 @@ const TIER_NAME = { continent: 'Continent', city: 'Town', local: 'Place', region
 // heroes(): the party [{ id, name }] for who holds an item.
 // monsters(): the Bestiary [{ id, name, kind, note, model, generated }].
 // onSave(entry) → saved row; onDelete(id); onShowPlace(mapPlaceId).
-// `onMonstersChanged()`: a creature was added to the Bestiary from here (a person made with Claude).
-export function createJournalScreen(root, { entries, canEdit, mapPlaces, heroes = () => [], monsters = () => [], onSave, onDelete, onShowPlace, onOpenBestiary, onMonstersChanged }) {
+// `onMonstersChanged()`: a person made with Claude was added to the fighters (MONSTERS).
+export function createJournalScreen(root, { entries, canEdit, mapPlaces, heroes = () => [], monsters = () => [], onSave, onDelete, onShowPlace, onMonstersChanged }) {
   // A person being made with Claude: their figure and fighting stats, saved to the Bestiary with them.
   let genDraft = null, genBusy = false, genError = '';
   root.innerHTML = `
@@ -225,27 +224,9 @@ export function createJournalScreen(root, { entries, canEdit, mapPlaces, heroes 
     ].join('');
   }
 
-  // Creatures: a journal entry per Bestiary creature the party knows about.
-  const creatureEntry = (monsterId) => entries.find((e) => kindOf(e) === 'creature' && e.data.monster === monsterId);
-  const known = (m) => creatureEntry(m.id)?.data.shown === true;
-  const face = (m, cls = '') => portraitImg(monsterPortrait(m.model ?? m.id, m.generated ? m.id : ''), { name: m.name, colour: '#5c4a36', cls });
-  function creatureItems() {
-    const ms = monsters()
-      .filter((m) => canEdit() || known(m))
-      .filter((m) => matches(m.name, m.kind, m.note, creatureEntry(m.id)?.data.body))
-      .sort((a, b) => a.name.localeCompare(b.name));
-    const one = (m) => item('creature', m.id, { title: m.name, sub: esc(m.kind), mark: `<span class="jr-beast">${face(m)}</span>`, cls: known(m) ? '' : ' is-hidden' });
-    const met = ms.filter(known), not = ms.filter((m) => !known(m));
-    return [
-      met.length ? `<p class="jr-group">${canEdit() ? 'The party knows' : 'Creatures we have met'}</p><ul>${met.map(one).join('')}</ul>` : '',
-      not.length ? `<p class="jr-group">Not met yet</p><ul>${not.map(one).join('')}</ul>` : '',
-    ].join('');
-  }
-
-  const ITEMS = { quests: questItems, people: peopleItems, places: placeItems, items: itemItems, creatures: creatureItems };
+  const ITEMS = { quests: questItems, people: peopleItems, places: placeItems, items: itemItems };
   const EMPTY = {
     items: 'No books, notes or special things yet.',
-    creatures: 'No creatures met yet. Every creature the party fights is written down here.',
     quests: 'No quests yet.',
     people: 'Nobody written down yet. People the party meets will appear here.',
     places: 'No places yet.',
@@ -257,7 +238,6 @@ export function createJournalScreen(root, { entries, canEdit, mapPlaces, heroes 
       people: all('npc').length,
       places: mapPlaces().length + all('place').length,
       items: all('item').length,
-      creatures: canEdit() ? monsters().length : monsters().filter(known).length,
     };
     tabsEl.innerHTML = SECTIONS.map((s) => `
       <button type="button" role="tab" class="jr-tab${s.id === section && !query ? ' is-on' : ''}" data-section="${s.id}">
@@ -358,28 +338,6 @@ export function createJournalScreen(root, { entries, canEdit, mapPlaces, heroes 
       ${tools(x)}`;
   }
 
-  // A creature: its picture and description from the Bestiary, and what the party learned.
-  function creaturePage(m) {
-    const e = creatureEntry(m.id), edit = canEdit();
-    return `
-      <div class="jr-creature">
-        <span class="jr-creature__face">${face(m)}</span>
-        <div>
-          <p class="jr-kicker">${esc(m.kind)}${edit && !known(m) ? ' · 🔒 not met yet' : ''}</p>
-          <h3 class="jr-name">${esc(m.name)}</h3>
-        </div>
-      </div>
-      ${m.note ? `<p class="jr-text">${esc(m.note)}</p>` : ''}
-      ${e?.data.body ? `<h4 class="jr-h">What we learned</h4><p class="jr-text">${lines(e.data.body)}</p>` : ''}
-      ${e ? secretBox(e.id) : ''}
-      ${edit ? `
-        <div class="jr-tools">
-          <button type="button" data-do="creatureshown">${icon(known(m) ? 'lock' : 'wis')}${known(m) ? 'Hide from players' : 'Show to players'}</button>
-          <button type="button" data-do="creaturenote">${icon('pen')}${e?.data.body ? 'Edit notes' : 'Write notes'}</button>
-          <button type="button" data-do="bestiary">${icon('bestiary')}Open in the Bestiary</button>
-        </div>` : ''}`;
-  }
-
   function placePage(p) {
     const d = p.data;
     return `
@@ -478,12 +436,6 @@ export function createJournalScreen(root, { entries, canEdit, mapPlaces, heroes 
         <label class="field"><span>What the party knows about it</span><textarea class="field__input" name="body" rows="5" maxlength="2000">${esc(d.body)}</textarea></label>
         ${secretField(editing.id)}${shownBox(d)}${formEnd}
       </form>`;
-    if (kind === 'creature') return `
-      <form class="jr-form" data-kind="creature">
-        <h3 class="jr-name">Notes on ${esc(monsters().find((m) => m.id === d.monster)?.name ?? 'this creature')}</h3>
-        <label class="field"><span>What the party learned about it</span><textarea class="field__input" name="body" rows="7" maxlength="3000" placeholder="e.g. Hates fire. Fled when its leader fell.">${esc(d.body)}</textarea></label>
-        ${secretField(editing.id)}${shownBox(d)}${formEnd}
-      </form>`;
     if (kind === 'item') return `
       <form class="jr-form" data-kind="item">
         <h3 class="jr-name">${isNew ? 'New item' : 'Edit item'}</h3>
@@ -510,10 +462,7 @@ export function createJournalScreen(root, { entries, canEdit, mapPlaces, heroes 
     sheet.classList.toggle('is-reading', Boolean(open || editing));
     if (editing) { pageEl.innerHTML = back + editorPage(); pageEl.querySelector('input:not([type=checkbox]), textarea')?.focus(); return; }
     let html = '';
-    if (open?.type === 'map') { const m = mapPlace(open.id); if (m) html = mapPage(m); } else if (open?.type === 'creature') {
-      const m = monsters().find((x) => x.id === open.id);
-      if (m && (canEdit() || known(m))) html = creaturePage(m);
-    } else if (open) {
+    if (open?.type === 'map') { const m = mapPlace(open.id); if (m) html = mapPage(m); } else if (open) {
       const e = byId(open.id);
       if (e && visible(e)) html = { quest: questPage, npc: npcPage, place: placePage, item: itemPage }[kindOf(e)]?.(e) ?? '';
     }
@@ -535,7 +484,7 @@ export function createJournalScreen(root, { entries, canEdit, mapPlaces, heroes 
   function show(type, id) {
     open = { type, id };
     editing = null;
-    if (!query) section = { quest: 'quests', npc: 'people', item: 'items', creature: 'creatures' }[type] ?? 'places';
+    if (!query) section = { quest: 'quests', npc: 'people', item: 'items' }[type] ?? 'places';
     render();
   }
 
@@ -561,7 +510,6 @@ export function createJournalScreen(root, { entries, canEdit, mapPlaces, heroes 
       editing = null;
       const kind = kindOf(row);
       if (kind === 'placenote') open = { type: 'map', id: row.data.place };
-      else if (kind === 'creature') open = { type: 'creature', id: row.data.monster };
       else open = { type: kind, id: row.id };
       render();
     } catch (err) {
@@ -722,15 +670,6 @@ export function createJournalScreen(root, { entries, canEdit, mapPlaces, heroes 
     if (!b || !pageEl.contains(b)) return;
     if (b.dataset.do === 'back') { if (editing) editing = null; else open = null; render(); return; }
     if (b.dataset.do === 'cancel') { editing = null; genDraft = null; renderPage(); return; }
-    if (b.dataset.do === 'creatureshown' || b.dataset.do === 'creaturenote') {
-      const m = open.id, e = creatureEntry(m);
-      if (b.dataset.do === 'creaturenote') {
-        editing = e ? { id: e.id, data: structuredClone(e.data) } : { data: { kind: 'creature', monster: m, body: '', shown: true } };
-        renderPage();
-      } else save({ id: e?.id, data: { kind: 'creature', monster: m, body: e?.data.body ?? '', shown: !known({ id: m }) } });
-      return;
-    }
-    if (b.dataset.do === 'bestiary') { onOpenBestiary?.(open.id); return; }
     if (b.dataset.do === 'noteshown') {
       const note = entries.find((x) => kindOf(x) === 'placenote' && x.data.place === open.id);
       if (note) save({ id: note.id, data: { ...note.data, shown: note.data.shown === false } });
@@ -782,8 +721,6 @@ export function createJournalScreen(root, { entries, canEdit, mapPlaces, heroes 
       if (genDraft) { saveWithFigure(data, f.secret ? f.secret.value.trim() : undefined); return; }
     } else if (kind === 'place') {
       data = { kind, title: f.title.value.trim() || 'A place', place: f.place.value, body: f.body.value.trim(), shown };
-    } else if (kind === 'creature') {
-      data = { kind, monster: d.monster, body: f.body.value.trim(), shown };
     } else if (kind === 'item') {
       data = { kind, title: f.title.value.trim() || 'Something', type: f.type.value, holder: f.holder.value, place: f.place.value, body: f.body.value, shown };
     } else {
@@ -835,18 +772,9 @@ export function createJournalScreen(root, { entries, canEdit, mapPlaces, heroes 
     render,
     // Someone changed the journal elsewhere: redraw (a page being written stays as it is).
     refresh() { renderList(); if (!editing) renderPage(); },
-    // The party fought these Bestiary creatures: write them down (shown to the players).
-    async meetCreatures(ids) {
-      for (const m of new Set(ids)) {
-        const e = creatureEntry(m);
-        if (e?.data.shown) continue;
-        await put({ id: e?.id, data: { kind: 'creature', monster: m, body: e?.data.body ?? '', shown: true } });
-      }
-      renderList();
-    },
     // Opens a map place's page (from the place card on the map).
     openPlace(id) { query = ''; searchEl.value = ''; show('map', id); },
-    // Opens a person ('npc', entry id) or a creature ('creature', Bestiary id).
+    // Opens a person ('npc', entry id).
     openEntry(type, id) { query = ''; searchEl.value = ''; show(type, id); },
   };
 }

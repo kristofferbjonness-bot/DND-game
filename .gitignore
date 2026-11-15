@@ -7,3 +7,6 @@ tools/*.tmp.mjs
 hero-sheet-design-pack/
 DND Lore/
 *.local.js
+
+# The built game: Netlify builds its own copy on every push (netlify.toml), so it is not kept in git.
+Play/

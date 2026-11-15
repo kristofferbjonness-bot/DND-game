@@ -703,7 +703,7 @@ body.is-placing .hud-stack { opacity: 0.4; }
    lighter parchment with a thin inked line. All text is real text. No purple; the backdrop
    behind the cards is transparent. See design/hero-sheet/README.md. */
 
-.status, .party, .journal, .bestiary, .scn {
+.status, .party, .journal, .scn {
   --pp-ink: #2b2118; --pp-soft: #5c4a36; --pp-line: #cdb38a; --pp-line-dark: #a8865a;
   --pp-box: rgba(255, 250, 235, 0.55); --pp-accent: #8a2e1f; --pp-bronze: #9a6b1f;
   background: transparent; color: var(--pp-ink);
@@ -898,8 +898,6 @@ body.is-placing .hud-stack { opacity: 0.4; }
 .party__manage .ic { width: 22px; height: 22px; margin: 0; }
 
 /* ---------- Bestiary (Dungeon Master) ---------- */
-
-.bestiary { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; }
 .bestiary__window {
   min-height: 0; display: flex; flex-direction: column; padding: 14px;
   background: var(--corners), var(--panel); border-radius: 4px; box-shadow: var(--frame);
@@ -922,13 +920,6 @@ body.is-placing .hud-stack { opacity: 0.4; }
 }
 .bestiary__list { flex: 1; list-style: none; margin: 0; padding: 4px 2px 8px; display: flex; justify-content: safe center; gap: 8px; overflow-x: auto; scrollbar-width: none; }
 .bestiary__list::-webkit-scrollbar { display: none; }
-.beast {
-  width: 46px; height: 46px; flex-shrink: 0; padding: 0; border: 0; cursor: pointer; overflow: hidden; border-radius: 6px; opacity: 0.65;
-  background: radial-gradient(circle at 50% 40%, #8a8098, #3a3346 75%);
-  box-shadow: 0 0 0 1px #0c090e, 0 0 0 3px #4a3d52;
-}
-.beast:hover { opacity: 0.9; }
-.beast.is-on { opacity: 1; box-shadow: 0 0 0 1px #0c090e, 0 0 0 3px var(--gold), 0 0 0 4px #0c090e; }
 .beast__tag { font: 700 10px var(--font-display); letter-spacing: 0.08em; text-transform: uppercase; color: #cdb8f5; background: rgba(155, 127, 209, 0.2); border: 1px solid rgba(155, 127, 209, 0.5); border-radius: 20px; padding: 3px 9px; white-space: nowrap; }
 
 .bestiary__side { min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 2px 4px 20px; }
@@ -1453,33 +1444,33 @@ input.is-bad { box-shadow: inset 0 0 0 2px #e2634e; }
 
 /* Party and the Bestiary are each one sheet of ledger paper, like the Journal: rows and columns
    inside are split by thin inked lines, not boxes. */
-.party__inner, .bst {
+.party__inner {
   border: 22px solid transparent; border-image: url('/art/ui/paper/ledger-sheet.webp') 34 fill / 30px / 0 stretch;
   filter: drop-shadow(0 6px 10px rgba(20, 10, 0, 0.35)); color: var(--pp-ink);
 }
 .bestiary__gen { border-top: 1px solid var(--pp-line); padding-top: 12px; }
 /* Titles written on the sheet. */
-:is(.party, .bestiary) .screen-head { padding-bottom: 10px; margin-bottom: 4px; border-bottom: 1.5px solid var(--pp-line); }
-:is(.party, .journal, .bestiary, .scn) .screen-title { font: 700 24px/1.2 var(--font-display); letter-spacing: 0.04em; color: var(--pp-ink); text-shadow: none; }
-:is(.party, .journal, .bestiary, .scn) .sheet__h { color: var(--pp-ink); }
-:is(.party, .journal, .bestiary, .scn) .sheet__h::after { background: linear-gradient(90deg, var(--pp-line), transparent); }
+:is(.party) .screen-head { padding-bottom: 10px; margin-bottom: 4px; border-bottom: 1.5px solid var(--pp-line); }
+:is(.party, .journal, .scn) .screen-title { font: 700 24px/1.2 var(--font-display); letter-spacing: 0.04em; color: var(--pp-ink); text-shadow: none; }
+:is(.party, .journal, .scn) .sheet__h { color: var(--pp-ink); }
+:is(.party, .journal, .scn) .sheet__h::after { background: linear-gradient(90deg, var(--pp-line), transparent); }
 
 /* Buttons on parchment: inked boxes; the main action keeps its gold. */
-:is(.party, .journal, .bestiary, .scn) .btn:not(.btn--gold) {
+:is(.party, .journal, .scn) .btn:not(.btn--gold) {
   color: var(--pp-ink); background: rgba(255, 250, 235, 0.75); border: 1.5px solid var(--pp-line-dark); box-shadow: none;
 }
-:is(.party, .journal, .bestiary, .scn) .btn:not(.btn--gold):hover { background: rgba(255, 252, 240, 0.95); }
-:is(.party, .journal, .bestiary, .scn) .btn--gold { border: 1.5px solid #6e4b1c; }
+:is(.party, .journal, .scn) .btn:not(.btn--gold):hover { background: rgba(255, 252, 240, 0.95); }
+:is(.party, .journal, .scn) .btn--gold { border: 1.5px solid #6e4b1c; }
 /* Inputs on parchment. */
-:is(.party, .journal, .bestiary, .scn) .field__input, .party__all input {
+:is(.party, .journal, .scn) .field__input, .party__all input {
   color: var(--pp-ink); background-color: rgba(255, 252, 240, 0.85); border: 1.5px solid var(--pp-line-dark); box-shadow: none;
 }
-:is(.party, .journal, .bestiary, .scn) .field__input::placeholder, .party__all input::placeholder { color: #9a8466; }
+:is(.party, .journal, .scn) .field__input::placeholder, .party__all input::placeholder { color: #9a8466; }
 .journal select.field__input, .scn select.field__input {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%235c4a36' stroke-width='2'/%3E%3C/svg%3E");
 }
-:is(.party, .journal, .bestiary, .scn) .field > span { color: var(--pp-soft); }
-:is(.party, .journal, .bestiary, .scn) .toggle { color: var(--pp-ink); }
+:is(.party, .journal, .scn) .field > span { color: var(--pp-soft); }
+:is(.party, .journal, .scn) .toggle { color: var(--pp-ink); }
 
 /* Party: the "everyone" line and one row per hero. */
 .party__inner { padding: 6px 10px 4px; }
@@ -1643,8 +1634,6 @@ button.jr-tick { cursor: pointer; }
 
 /* Bestiary: the creature window on parchment with an inked forest behind it. */
 /* Bestiary: one sheet, the creature on the left and its stats on the right. */
-.bestiary { display: flex; justify-content: center; }
-.bst { width: min(1240px, 100%); height: 100%; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); padding: 6px 4px 4px; }
 .bestiary__window { padding: 0 18px 0 0; border-right: 1.5px solid var(--pp-line); background: none; box-shadow: none; }
 .bestiary__side { padding: 0 2px 10px 18px; }
 .bestiary__stage {
@@ -1655,8 +1644,6 @@ button.jr-tick { cursor: pointer; }
 }
 .bestiary__name { font: 700 22px var(--font-display); color: var(--pp-ink); }
 .beast-strip__arrow { color: var(--pp-ink); }
-.beast { opacity: 0.75; border-radius: 6px; background: radial-gradient(circle at 50% 40%, #fbf1d8, #d8c08f); box-shadow: 0 0 0 1px var(--pp-line-dark); }
-.beast.is-on { opacity: 1; box-shadow: 0 0 0 2px var(--pp-accent); }
 .bestiary__side .screen-head { margin-bottom: 14px; }
 .bestiary__gen { padding: 12px 0 4px; }
 .bestiary__progress small { color: var(--pp-soft); }
@@ -1665,19 +1652,11 @@ button.jr-tick { cursor: pointer; }
 .statblock__head h3 { font: 700 24px/1.2 var(--font-display); color: var(--pp-ink); }
 .statblock__head p { color: var(--pp-accent); }
 .beast__tag { color: #4a3580; background: rgba(155, 127, 209, 0.15); border-color: rgba(91, 69, 144, 0.5); }
-.bestiary .tile, .bestiary .atk, .statblock__note {
+.statblock__note {
   background: rgba(255, 250, 235, 0.55); color: var(--pp-ink);
   border: 1.5px solid var(--pp-line-dark); border-radius: 4px 6px 5px 4px; box-shadow: inset 0 0 0 1px rgba(255, 252, 240, 0.4);
 }
-.bestiary .tile b { font: 700 24px/1 var(--font-body); color: var(--pp-ink); }
-.bestiary .tile b small { color: var(--pp-ink); }
-.bestiary .tile span { color: var(--pp-soft); }
-.bestiary .atk__main b { color: var(--pp-ink); font-size: 17px; }
-.bestiary .atk__num small { color: var(--pp-soft); }
-.bestiary .atk__num b { font: 700 22px var(--font-body); color: var(--pp-accent); }
-.bestiary .atk__num--dmg b { color: var(--pp-ink); }
 .statblock__note { font-style: italic; }
-.bestiary .sheet__delete { color: var(--pp-accent); border-color: rgba(138, 46, 31, 0.5); }
 
 /* ---------- Fight: the same painted paper ---------- */
 
@@ -1766,15 +1745,11 @@ button.jr-tick { cursor: pointer; }
 }
 
 /* Journal: creatures, with their portrait from the Bestiary. */
-.jr-beast { flex-shrink: 0; width: 34px; height: 34px; border-radius: 6px; overflow: hidden; background: radial-gradient(circle at 50% 40%, #fbf1d8, #d8c08f); box-shadow: 0 0 0 1.5px var(--pp-line-dark); }
-.jr-creature { display: flex; align-items: center; gap: 16px; margin-bottom: 10px; }
 .jr-creature__face { flex-shrink: 0; width: 96px; height: 96px; border-radius: 10px; overflow: hidden; background: radial-gradient(circle at 50% 40%, #fbf1d8, #d8c08f); box-shadow: 0 0 0 2px var(--pp-line-dark), 0 0 0 5px #efe0bd, 0 0 0 6.5px var(--pp-line-dark); }
-.jr-creature .jr-name { margin-bottom: 0; }
 
 /* Phones and tablets: no soft shadow (CSS filter) on big paper sheets. iPhone Safari redraws
    filtered areas slowly and leaves them blank while scrolling. */
-.is-touch .status__paper, .is-touch .party__inner, .is-touch .bst, .is-touch .jr,
-.is-touch .combat__setup, .is-touch .combat__init, .is-touch .combat .attack__card { filter: none; }
+.is-touch .status__paper, .is-touch .party__inner, .is-touch .jr, .is-touch .combat__setup, .is-touch .combat__init, .is-touch .combat .attack__card { filter: none; }
 
 /* ==========================================================================
    Smaller screens
@@ -1832,10 +1807,8 @@ button.jr-tick { cursor: pointer; }
   .abil__mod { font-size: 26px; }
   .party__card { padding: 8px 14px 8px 8px; gap: 12px; }
   .party__face { width: 48px; height: 48px; }
-  .bestiary { gap: 10px; }
   .bestiary__window { padding: 8px; }
   .bestiary__name { font-size: 18px; margin-top: 6px; }
-  .beast { width: 38px; height: 38px; }
   .start__half { padding: 20px 28px; }
   .start__inner { gap: 2px; }
   .start__half--dm { padding-left: max(28px, var(--safe-l)); }
@@ -1902,8 +1875,7 @@ button.jr-tick { cursor: pointer; }
   .picker { grid-area: picker; align-self: end; justify-content: flex-start; }
   .status__sheet { overflow: visible; padding: 10px 2px 10px; }
   .status .tile span { font-size: 9.5px; letter-spacing: 0.04em; }
-  .bestiary .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .bestiary .screen-head, .jr__head { flex-wrap: wrap; gap: 8px; }
+  .jr__head { flex-wrap: wrap; gap: 8px; }
   .jr__search { order: 3; flex-basis: 100%; max-width: none; }
   .jr-tab { padding: 6px 6px 8px; font-size: 12px; letter-spacing: 0.04em; gap: 4px; }
   .jr-tab .ic, .jr-tab small { display: none; }
@@ -2062,8 +2034,6 @@ button.jr-tick { cursor: pointer; }
   .jr-name { font-size: 22px; }
 
   /* Bestiary: the window on top, the stats below; the page scrolls. */
-  .bestiary { display: block; overflow-y: auto; overscroll-behavior: contain; }
-  .bst { display: block; height: auto; border-width: 14px; border-image-width: 22px; }
   .bestiary__window { padding: 0 0 12px; border-right: 0; border-bottom: 1.5px solid var(--pp-line); }
   .bestiary__side { padding: 12px 0 4px; }
   .party__inner { border-width: 14px; border-image-width: 22px; padding: 4px 2px; }
