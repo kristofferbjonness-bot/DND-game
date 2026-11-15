@@ -2483,3 +2483,7 @@ body[data-screen="combat"]:not(:has(#combat.is-battle)) .tags-toggle { display: 
 }
 .jr-gen__error { color: var(--pp-accent); font-style: normal; }
 .scn__delplace { justify-self: start; background: none; border: 0; padding: 0; cursor: pointer; font: 600 12px var(--font-body); color: var(--pp-accent); }
+
+/* A place's page: a picture of its scene at the top. */
+.jr-scene { margin: 0 0 12px; border-radius: 8px; overflow: hidden; background: #e8dcc0; box-shadow: 0 0 0 2px var(--pp-line-dark), 0 0 0 5px #efe0bd, 0 0 0 6.5px var(--pp-line-dark); }
+.jr-scene img { display: block; width: 100%; aspect-ratio: 16 / 10; object-fit: cover; }

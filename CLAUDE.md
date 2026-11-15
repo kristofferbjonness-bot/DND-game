@@ -158,7 +158,7 @@ The original assets (hand-drawn world map, location art, character art, lore doc
   `registerArea` on every device (main.js, on load and live); the scene moves there. People stand at the usual spots moved to
   open floor. Places are grouped by `town` (`towns()`).
 - **Visited places in the Journal**: every scene the DM sets (sceneScreen `push` → `onVisit` in main.js) adds a journal `place`
-  row `{ title, place: town map id, area }` once, or links an existing place with the same title (e.g. Kvini, Habibi Hands from
+  row `{ title, place: town map id, area }` once (its page shows a picture of the scene: `areaPicture` in portraits.js), or links an existing place with the same title (e.g. Kvini, Habibi Hands from
   the lore). Kvini and Habibi Hands are scene areas too.
 - **Items made by Claude**: Manage → Give an item → "Create with Claude…" calls POST `/api/generate-item` (`ITEM_SYSTEM`);
   `sanitizeItem` (items.js) checks it; saved as a journal row `{ kind: 'catalog', item }` (not listed in the Journal) and added to

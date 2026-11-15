@@ -4,6 +4,7 @@
 import * as THREE from 'three';
 import { buildFigure, buildMonsterFigure } from '../character/model.js';
 import { disposeTree } from '../fx/dispose.js';
+import { AREAS } from '../scene/areas.js';
 
 const SIZE = 128;
 let renderer = null, scene = null, camera = null, failed = false;
@@ -83,6 +84,26 @@ export function monsterPortrait(model, version = '') {
 export function fullPortrait(model) {
   const key = `f|${model}`;
   if (!cache.has(key)) cache.set(key, draw(buildMonsterFigure(model), 1.06, 256));
+  return cache.get(key);
+}
+
+// A picture of a scene place (areas.js), seen from the front like in the Scene tab, for its Journal
+// page. Made once per place and kept.
+export function areaPicture(areaId) {
+  const area = AREAS[areaId];
+  if (!area) return '';
+  const key = `a|${areaId}`;
+  if (!cache.has(key)) {
+    let url = '';
+    try {
+      const built = area.build();
+      const g = new THREE.Group();
+      built.v.render(g);
+      url = snapshot(g, { half: 31, center: new THREE.Vector3(0, 9, 2), dir: [0.32, 0.5, 0.8], size: 560 });
+      disposeTree(g);
+    } catch (err) { console.warn('Could not draw the place:', err.message); }
+    cache.set(key, url);
+  }
   return cache.get(key);
 }
 

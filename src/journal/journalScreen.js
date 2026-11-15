@@ -15,7 +15,7 @@
 // Players see entries marked shown (RLS) and only map places they have discovered. Secrets are
 // never shown, so the database never sends them to players.
 import { icon } from '../ui/icons.js';
-import { monsterPortrait, fullPortrait, portraitImg } from '../ui/portraits.js';
+import { monsterPortrait, fullPortrait, portraitImg, areaPicture } from '../ui/portraits.js';
 import { NPC_FIGURES, npcFigureId, npcModel } from '../character/npcFigures.js';
 import { registerRecipe } from '../character/model.js';
 import { MONSTERS, addMonster } from '../data/monsters.js';
@@ -341,6 +341,7 @@ export function createJournalScreen(root, { entries, canEdit, mapPlaces, heroes 
   function placePage(p) {
     const d = p.data;
     return `
+      ${d.area && areaPicture(d.area) ? `<figure class="jr-scene"><img src="${areaPicture(d.area)}" alt="" draggable="false" /></figure>` : ''}
       <p class="jr-kicker">Place${d.shown === false ? ' · 🔒 hidden from players' : ''}</p>
       <h3 class="jr-name">${esc(d.title)}</h3>
       ${d.place ? `<p class="jr-meta">${placeLink(d.place, 'In ')}</p>` : ''}
