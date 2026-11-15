@@ -1348,7 +1348,9 @@ sceneScreen = createSceneScreen(screens.scene, {
   // A place the party has been: written into the Journal's Places (under its town), once.
   async onVisit(areaId) {
     const area = AREAS[areaId];
-    if (!area || quests.some((q) => q.data.kind === 'place' && q.data.area === areaId)) return;
+    if (!area) return;
+    discoverTownsOfVisits(areaId);
+    if (quests.some((q) => q.data.kind === 'place' && q.data.area === areaId)) return;
     // A place already in the Journal with the same name (e.g. from the lore) is linked instead.
     const same = quests.find((q) => q.data.kind === 'place' && !q.data.area && q.data.title?.toLowerCase() === area.name.toLowerCase());
     const town = views.world.places.find((p) => p.name === area.town)?.id ?? '';
@@ -1362,11 +1364,24 @@ sceneScreen = createSceneScreen(screens.scene, {
   },
 });
 let watchingQuests = null;
+// A town the party has been in is discovered on the map (otherwise its places stay hidden from
+// the players in the Journal). `only`: just the town of this area.
+function discoverTownsOfVisits(only) {
+  if (!me?.dm) return;
+  const ids = new Set();
+  for (const q of quests) if (q.data.kind === 'place' && q.data.area && q.data.place && (!only || q.data.area === only)) ids.add(q.data.place);
+  if (only && AREAS[only]) { const t = views.world.places.find((p) => p.name === AREAS[only].town); if (t) ids.add(t.id); }
+  const fresh = [...ids].filter((id) => views.world.places.some((p) => p.id === id) && !revealed.has(id));
+  if (!fresh.length) return;
+  fresh.forEach((id) => revealed.add(id));
+  setRevealed(fresh, true).then(() => { applyFog(); journalScreen.refresh(); }).catch((err) => console.warn('Could not reveal:', err.message));
+}
 async function loadJournal() {
   try {
     quests.splice(0, quests.length, ...(await loadQuests()));
     for (const q of quests) if (q.data.kind === 'area') registerArea(q.id, q.data); // places Claude made
     for (const q of quests) if (q.data.kind === 'catalog') registerItem(q.id, q.data.item); // items Claude made
+    discoverTownsOfVisits(); // towns of places already visited
   } catch (err) { console.warn('Journal not available yet:', err.message); return; }
   watchingQuests ??= watchQuests((event, row) => {
     const i = quests.findIndex((q) => q.id === row.id);

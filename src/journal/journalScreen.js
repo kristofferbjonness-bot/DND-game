@@ -55,7 +55,7 @@ const TIER_NAME = { continent: 'Continent', city: 'Town', local: 'Place', region
 // `onMonstersChanged()`: a creature was added to the Bestiary from here (a person made with Claude).
 export function createJournalScreen(root, { entries, canEdit, mapPlaces, heroes = () => [], monsters = () => [], onSave, onDelete, onShowPlace, onOpenBestiary, onMonstersChanged }) {
   // A person being made with Claude: their figure and fighting stats, saved to the Bestiary with them.
-  let genDraft = null, genBusy = false;
+  let genDraft = null, genBusy = false, genError = '';
   root.innerHTML = `
     <div class="jr">
       <header class="jr__head">
@@ -198,7 +198,8 @@ export function createJournalScreen(root, { entries, canEdit, mapPlaces, heroes 
         cls: m.secret ? ' is-hidden' : '',
       }) + inside.map(ownItem).join('');
     }).join('');
-    const elsewhere = own.filter((p) => !townOf(p.data.place) && ownMatch(p));
+    const known = new Set(mapPlaces().map((m) => m.id));
+    const elsewhere = own.filter((p) => (!townOf(p.data.place) || !known.has(townOf(p.data.place))) && ownMatch(p));
     return [
       towns ? `<ul>${towns}</ul>` : '',
       elsewhere.length ? `<p class="jr-group">Elsewhere</p><ul>${elsewhere.map(ownItem).join('')}</ul>` : '',
@@ -461,7 +462,7 @@ export function createJournalScreen(root, { entries, canEdit, mapPlaces, heroes 
           <textarea class="field__input" name="genprompt" rows="2" maxlength="600" placeholder="What they look like and how they fight, e.g. a scarred old harpooner with a peg leg and a rusty harpoon">${esc(d.genprompt ?? '')}</textarea>
           <div class="jr-gen__row">
             <button type="button" class="btn" data-do="gen"${genBusy ? ' disabled' : ''}>${icon('magic')}${genDraft ? 'Make another' : 'Create with Claude'}</button>
-            <span class="jr-gen__status">${genBusy ? 'Claude is sculpting them…' : genDraft ? 'Saving keeps this figure, and they can be fought.' : ''}</span>
+            <span class="jr-gen__status">${genBusy ? 'Claude is thinking… (this takes about a minute)' : genError ? `<b class="jr-gen__error">${esc(genError)}</b>` : genDraft ? 'Saving keeps this figure, and they can be fought.' : ''}</span>
           </div>
           ${genDraft ? `<div class="jr-gen__out"><span class="jr-gen__face">${portraitImg(monsterPortrait('jr-draft', genDraft.v), { name: genDraft.name })}</span>
             <span><b>${esc(genDraft.kind)}</b><small>HP ${genDraft.hp} · AC ${genDraft.ac} · ${genDraft.attacks.map((a) => `${esc(a.name)} ${a.toHit >= 0 ? '+' : ''}${a.toHit} (${a.dice}${a.bonus ? `${a.bonus > 0 ? '+' : ''}${a.bonus}` : ''})`).join(', ')}</small></span></div>` : ''}
@@ -797,16 +798,18 @@ export function createJournalScreen(root, { entries, canEdit, mapPlaces, heroes 
     const name = f.title.value.trim(), role = f.role.value.trim(), what = f.genprompt.value.trim();
     if (!name && !what) { f.genprompt.focus(); return; }
     editing.data = { ...editing.data, title: name, role, body: f.body.value, place: f.place.value, attitude: f.attitude.value, status: f.status.value, genprompt: what };
-    genBusy = true;
+    genBusy = true; genError = '';
     renderPage();
     try {
       const place = mapPlaces().find((p) => p.id === f.place.value)?.name;
       const prompt = `A person (a humanoid NPC, about human size, standing on two legs): ${name || 'unnamed'}${role ? `, ${role}` : ''}${place ? `, met at ${place}` : ''}. ${what}`;
-      const draft = cleanMonster(await generateMonster(prompt, () => {}), prompt);
+      const status = () => pageEl.querySelector('.jr-gen__status');
+      const draft = cleanMonster(await generateMonster(prompt, (n) => { const el = status(); if (el) el.textContent = `Claude is sculpting them… ${Math.min(99, Math.round((n / 7000) * 100))}%`; }), prompt);
       genDraft = { ...draft, name: name || draft.name, short: (name || draft.short).split(' ')[0].slice(0, 12), v: Date.now() };
       registerRecipe('jr-draft', genDraft.figure);
     } catch (err) {
-      alert(explain(err));
+      genError = explain(err);
+      console.warn('Person generator:', err);
     } finally {
       genBusy = false;
       renderPage();
