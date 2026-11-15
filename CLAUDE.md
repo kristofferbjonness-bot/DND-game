@@ -25,7 +25,7 @@ The original assets (hand-drawn world map, location art, character art, lore doc
   the owner says "deploy".
   - To test on an iPhone, run the dev server with `--host`; the phone opens the Mac's IP on the
     same Wi-Fi.
-  - The Claude generators (edge function) only run on the live site.
+  - The Claude generators (edge function) run on the live site; the dev server proxies `/api` there (vite.config.js), so they work locally too.
 - `npm run bake`: regenerates `src/data/world-grid.json` from the map PNG. This is only needed
   if the source map changes.
 - `npm run postcards`: re-renders the location pictures in `public/art/places/` (needs the dev

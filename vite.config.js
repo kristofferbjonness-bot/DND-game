@@ -24,7 +24,9 @@ const journalDump = {
 // plain double-click (no server needed): all code is inlined into one HTML file.
 export default defineConfig({
   base: './',
-  server: { open: true },
+  // The Claude generators (/api/…) are Netlify edge functions that only exist on the live site:
+  // the dev server passes them on there (same login, same key on Netlify), so they work locally too.
+  server: { open: true, proxy: { '/api': { target: 'https://cool-jelly-22cdf9.netlify.app', changeOrigin: true } } },
   plugins: [viteSingleFile(), journalDump],
   // Shown in the name-badge menu, to check a phone runs the newest version.
   define: { __BUILD_TIME__: JSON.stringify(new Date().toISOString()) },

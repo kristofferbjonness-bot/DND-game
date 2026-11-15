@@ -300,7 +300,7 @@ async function generate(path, request, onProgress) {
     body: JSON.stringify(request),
   });
   if (!res.ok || !res.headers.get('content-type')?.includes('text/event-stream')) {
-    let message = `The generator answered ${res.status}.`;
+    let message = res.status === 404 ? 'The Claude generator is not reachable from here (only on the live site or the dev server).' : `The generator answered ${res.status}.`;
     try { message = (await res.json()).error ?? message; } catch { /* keep the status */ }
     throw new Error(message);
   }
