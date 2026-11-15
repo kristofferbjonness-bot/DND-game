@@ -8,7 +8,7 @@
 // where `fig` is 'npc:<NPC figure id>' or 'monster:<Bestiary id>'. Which scene is live is
 // shared through the world row (`scene` in main.js), so players switch with the DM.
 import { createSceneView } from './sceneView.js';
-import { AREAS, areaOptions, towns, sanitizePlace, registerArea } from './areas.js';
+import { AREAS, areaOptions, towns, sanitizePlace, registerArea, unregisterArea } from './areas.js';
 import { generatePlace, explain } from '../net/backend.js';
 import { NPC_FIGURES, npcFigureId } from '../character/npcFigures.js';
 import { monsterPortrait, heroPortrait, portraitImg } from '../ui/portraits.js';
@@ -130,6 +130,7 @@ export function createSceneScreen(root, { entries, heroes, monsters, canEdit, li
       </header>
       <form class="scn__form">
         <label class="field"><span>Where</span><select class="field__input" name="area">${areaOptions(d.area, esc)}</select></label>
+        ${AREAS[d.area]?.generated ? `<button type="button" class="scn__delplace" data-do="delplace">${icon('lock', 'inline')} Delete this place</button>` : ''}
         ${maker ? `
         <div class="scn__maker">
           <p class="scn__h">A new place, made by Claude</p>
@@ -206,6 +207,13 @@ export function createSceneScreen(root, { entries, heroes, monsters, canEdit, li
     return person ? { type: 'npc', id: person.id } : null;
   }
 
+  // Deletes a place Claude made: the scene moves back to the port of Razz first.
+  async function deletePlace(areaId) {
+    const area = AREAS[areaId];
+    if (!area?.generated || !confirm(`Delete “${area.name}”? It is gone for good.`)) return;
+    changed({ area: 'port' });
+    try { await push(); await onDelete(areaId); unregisterArea(areaId); drawPanel(); } catch (err) { alert(err.message); }
+  }
   function readMaker(f) {
     if (!maker || !f) return;
     maker.town = f.maketown?.value ?? maker.town;
@@ -265,6 +273,7 @@ export function createSceneScreen(root, { entries, heroes, monsters, canEdit, li
     if (b.dataset.do === 'maker') { maker = { town: (AREAS[current().data.area] ?? AREAS.port).town }; drawPanel(); return; }
     if (b.dataset.do === 'makecancel') { maker = null; drawPanel(); return; }
     if (b.dataset.do === 'make') { makePlace(); return; }
+    if (b.dataset.do === 'delplace') { deletePlace(current().data.area); return; }
     if (b.dataset.fig) {
       const people = (current().data.people ?? []).map((p) => ({ ...p }));
       const p = people.find((x) => x.fig === b.dataset.fig);

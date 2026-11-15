@@ -2512,3 +2512,4 @@ body[data-screen="combat"]:not(:has(#combat.is-battle)) .tags-toggle { display: 
   .topnav__tab span { font-size: 8.5px; }
 }
 .jr-gen__error { color: var(--pp-accent); font-style: normal; }
+.scn__delplace { justify-self: start; background: none; border: 0; padding: 0; cursor: pointer; font: 600 12px var(--font-body); color: var(--pp-accent); }
