@@ -68,8 +68,8 @@ The original assets (hand-drawn world map, location art, character art, lore doc
   forks to Sirivik and Ytterhavn, and a gravel road from the Bartedalen Mine (`MINE`, at ground level in the corner SW of
   Bartedalen where the brown and grey mountains meet) to Bartedalen. Road cells
   are coloured in terrain.js and kept free of trees.
-- Two small natural caves at the foot of Rama's mountains (`CAVES` in roads.js, `buildCave` in features.js): a sandstone one in
-  the desert east of Razz of Mataz, and a grey, mossy one at the edge of Sortland's dark forest.
+- Two small natural caves at the foot of Rama's mountains (`CAVES` in roads.js, `buildCave` in features.js): two sandstone ones in
+  the desert east of Razz of Mataz, and a grey, mossy one on the far (north-east) edge of Sortland's dark forest.
 - Settlements in features.js placed in `buildWorldView`: the mine (`buildMine`), two horse-nomad camps of gers on
   Lama's east side by the Strait of Skinder (`NOMADS`, `buildYurtCamp`, with horse herds), and three desert nomad
   camps found in Rama's desert (`DESERT`, `buildDesertCamp`, with camels).
