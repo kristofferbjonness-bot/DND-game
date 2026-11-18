@@ -177,6 +177,38 @@ const STYLES = {
     block(g, [0.04, 0.6, 0.04], [-1.6, -0.15, 0.5], '#5b4a3a');
     block(g, [0.03, 0.4, 0.3], [-1.6, 0.0, 0.5], '#f2ecdf');
   },
+  // A rough hunters' trading post (Skinnvika): grey timber shacks with hide-patched roofs, frames of
+  // stretched skins drying (tan, dark, spotted, striped, white), empty and full cages, antlers over a
+  // door, a tanning vat, a smoking fire and a small jetty to the east where skins go out by boat.
+  poachers(g) {
+    const timber = '#6e6458', timberDark = '#4f473f', hidePatch = '#8a6a48', frame = '#5e4128';
+    house(g, -0.45, -0.35, { w: 0.55, d: 0.45, h: 0.32, wall: timber, roof: hidePatch, flat: true });
+    house(g, 0.25, -0.55, { w: 0.45, d: 0.4, h: 0.28, wall: timberDark, roof: '#6a5038', flat: true });
+    house(g, -0.55, 0.45, { w: 0.4, d: 0.4, h: 0.26, wall: timber, roof: '#7a5a3a', flat: true });
+    block(g, [0.3, 0.04, 0.04], [-0.45, 0.36, -0.12], '#e8dcc0'); block(g, [0.04, 0.12, 0.04], [-0.58, 0.38, -0.12], '#e8dcc0'); block(g, [0.04, 0.12, 0.04], [-0.32, 0.38, -0.12], '#e8dcc0'); // antlers over the door
+    // Drying frames with stretched skins.
+    [['#b8895a', -0.05], ['#4a3a2e', 0.25], ['#d9a04a', 0.55], ['#ece6da', 0.85]].forEach(([hide, z], i) => {
+      const x = 0.35 + (i % 2) * 0.05;
+      block(g, [0.03, 0.42, 0.03], [x - 0.15, 0, z], frame); block(g, [0.03, 0.42, 0.03], [x + 0.15, 0, z], frame);
+      block(g, [0.34, 0.03, 0.03], [x, 0.4, z], frame);
+      block(g, [0.26, 0.24, 0.02], [x, 0.13, z], hide);
+      if (i === 2) for (const o of [-0.08, 0, 0.08]) block(g, [0.03, 0.22, 0.025], [x + o, 0.14, z], '#2a2018'); // stripes
+      if (i === 0) for (const [o, h] of [[-0.06, 0.25], [0.05, 0.18], [0.02, 0.3]]) block(g, [0.04, 0.04, 0.025], [x + o, h, z], '#5a4028'); // spots
+    });
+    // Cages: one empty, one with a small animal.
+    for (const [x, z, full] of [[-0.05, 0.75, false], [0.15, 0.95, true]]) {
+      block(g, [0.24, 0.03, 0.24], [x, 0, z], frame); block(g, [0.24, 0.03, 0.24], [x, 0.22, z], frame);
+      for (const [a, b] of [[-0.1, -0.1], [0.1, -0.1], [-0.1, 0.1], [0.1, 0.1], [0, -0.1], [0, 0.1]]) block(g, [0.02, 0.22, 0.02], [x + a, 0, z + b], timberDark);
+      if (full) block(g, [0.12, 0.09, 0.08], [x, 0.03, z], '#9a6a42');
+    }
+    // The tanning vat and a smoking fire.
+    block(g, [0.22, 0.16, 0.22], [-0.15, 0, 0.1], '#5e4128'); block(g, [0.18, 0.02, 0.18], [-0.15, 0.15, 0.1], '#6a5a2a');
+    block(g, [0.12, 0.06, 0.12], [-0.95, 0, 0.05], '#6a655e'); block(g, [0.07, 0.07, 0.07], [-0.95, 0.04, 0.05], '#ff8a2a');
+    // A small jetty out to the east with a rowing boat.
+    block(g, [1.0, 0.05, 0.22], [1.25, -0.1, -0.2], '#7a5634');
+    for (const x of [0.9, 1.3, 1.7]) block(g, [0.05, 0.3, 0.05], [x, -0.35, -0.08], '#5e4128');
+    block(g, [0.45, 0.12, 0.2], [1.5, -0.32, 0.12], '#6a4a2e'); block(g, [0.18, 0.06, 0.14], [1.5, -0.22, 0.12], '#b8895a'); // a boat with a bundle of skins
+  },
   sirivik(g) {
     const wall = '#3a3640', roof = '#1f1d24';
     house(g, -0.2, -0.35, { w: 0.55, d: 0.5, h: 0.45, wall, roof });
@@ -259,15 +291,14 @@ export function buildHrimnir({ centre, wall, gateAt, inside, at, toWorld }) {
   const put = (x, z, fn) => { const c = at(x, z); const [wx, wz] = toWorld(x, z); const s = new THREE.Group(); s.position.set(wx, c.y, wz); fn(s); g.add(s); };
   const n = (x, z, k) => { let h = (x * 374761393 + z * 668265263 + k * 1442695041) | 0; h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967296; };
   const log = '#7a5634', logDark = '#5e4128', burnt = '#2a2420', stone = '#8a8478', earth = '#6e5a40', plank = '#a07a50', roofs = ['#2f3640', '#3b4250', '#353a33'];
-  // The wall's cells, coast to coast.
-  const [[x0, z0], [x1, z1]] = wall;
-  const steps = Math.max(Math.abs(x1 - x0), Math.abs(z1 - z0));
-  const along = Math.atan2(z1 - z0, x1 - x0);
-  const cells = [];
-  for (let i = 0; i <= steps; i++) { const x = Math.round(x0 + ((x1 - x0) * i) / steps), z = Math.round(z0 + ((z1 - z0) * i) / steps); if (at(x, z).dry && !cells.some(([a, b]) => a === x && b === z)) cells.push([x, z]); }
+  // The wall's cells, coast to coast, in order; each faces along the curve (from its neighbours).
+  const cells = wall.filter(([x, z]) => at(x, z).dry);
   const onWall = (x, z) => cells.some(([a, b]) => a === x && b === z);
+  const xs = cells.map(([x]) => x), zs = cells.map(([, z]) => z);
   cells.forEach(([x, z], i) => put(x, z, (s) => {
-    const t = new THREE.Group(); t.rotation.y = -along; s.add(t); // x runs along the wall, +z faces the town (south)
+    const [ax, az] = cells[Math.max(0, i - 1)], [bx, bz] = cells[Math.min(cells.length - 1, i + 1)];
+    const along = Math.atan2(bz - az, bx - ax);
+    const t = new THREE.Group(); t.rotation.y = -along; s.add(t); // x runs along the wall, +z faces the town
     block(t, [1.05, 0.18, 0.75], [0, -0.05, 0], stone); // stone footing
     block(t, [1.05, 0.3, 0.45], [0, 0, 0.45], earth); // earth bank behind
     if (x === gateAt[0] && z === gateAt[1]) { // the gate: heavy posts, a lintel, double doors and a torii in front
@@ -303,12 +334,12 @@ export function buildHrimnir({ centre, wall, gateAt, inside, at, toWorld }) {
   // The town fills the end of the peninsula behind the wall (the ground is paved light brown: terrain.js),
   // houses in blocks with paved streets between them, and an open square round the pagoda.
   const [px0, pz0] = centre;
-  for (let z = Math.min(z0, z1) - 2; z <= Math.max(z0, z1) + 2; z++) for (let x = Math.min(x0, x1) - 16; x <= Math.max(x0, x1) + 16; x++) {
+  for (let z = Math.min(...zs) - 2; z <= Math.max(...zs) + 2; z++) for (let x = Math.min(...xs) - 16; x <= Math.max(...xs) + 16; x++) {
     if (!inside(x, z) || onWall(x, z)) continue;
     if (!at(x, z).dry) continue;
     put(x, z, (s) => {
-      const square = Math.hypot(x - px0, z - pz0) < 2.2, street = x % 4 === 0 || z % 4 === 1;
-      if (square || street || Math.abs(x - x0) + Math.abs(z - z0) === 0 || Math.min(...cells.map(([a, b]) => Math.hypot(a - x, b - z))) < 1.5) {
+      const square = Math.hypot(x - px0, z - pz0) < 1.6 || (x === px0 - 2 && z === pz0) || (x === px0 - 1 && z === pz0), street = x % 4 === 0 || z % 4 === 1;
+      if (square || street || Math.min(...cells.map(([a, b]) => Math.hypot(a - x, b - z))) < 1.5) {
         if (!square && n(x, z, 15) > 0.85) block(s, [0.08, 0.3, 0.08], [0.4, 0.04, 0.4], '#d9a23a'); // a lantern post
         return;
       }
@@ -318,21 +349,27 @@ export function buildHrimnir({ centre, wall, gateAt, inside, at, toWorld }) {
       block(s, [0.7, 0.05, 0.05], [0, 0.14, 0.36], '#4e3520'); // a dark timber band
     });
   }
-  // The pagoda in the middle (five red tiers), and the dojo of the rune-swordsmen beside it.
+  // The great pagoda at the cliff edge (seven red tiers on a stone base), and the dojo of the
+  // rune-swordsmen just inland of it, on its own cell (the ground steps down towards the wall).
   put(px0, pz0, (s) => {
-    let w = 1.15, y = 0.12;
-    block(s, [1.3, 0.12, 1.3], [0, 0, 0], '#8f9299');
-    for (let i = 0; i < 5; i++) {
-      block(s, [w * 0.68, 0.32, w * 0.68], [0, y, 0], '#b8463c');
-      block(s, [w, 0.08, w], [0, y + 0.32, 0], '#2f3640');
-      block(s, [w * 0.82, 0.05, w * 0.82], [0, y + 0.4, 0], '#2f3640');
-      y += 0.42; w *= 0.8;
+    let w = 1.75, y = 0.3;
+    block(s, [1.9, 0.18, 1.9], [0, 0, 0], '#8f9299');
+    block(s, [1.6, 0.12, 1.6], [0, 0.18, 0], '#a3a6ad');
+    for (let i = 0; i < 7; i++) {
+      block(s, [w * 0.66, 0.42, w * 0.66], [0, y, 0], i % 2 ? '#a83e35' : '#b8463c');
+      block(s, [w, 0.1, w], [0, y + 0.42, 0], '#2f3640');
+      block(s, [w * 0.84, 0.06, w * 0.84], [0, y + 0.52, 0], '#2f3640');
+      for (const [cxo, czo] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) block(s, [0.08, 0.06, 0.08], [cxo * w * 0.5, y + 0.48, czo * w * 0.5], '#d9a23a'); // upturned gold corners
+      y += 0.56; w *= 0.84;
     }
-    block(s, [0.06, 0.45, 0.06], [0, y, 0], '#d9a23a');
-    block(s, [1.5, 0.4, 0.7], [0, 0, 1.25], '#6b4a32');
-    block(s, [1.4, 0.06, 0.6], [0, 0.18, 1.6], '#e8dcc8');
-    block(s, [1.7, 0.1, 0.9], [0, 0.4, 1.25], '#2f3640'); block(s, [1.3, 0.1, 0.6], [0, 0.5, 1.25], '#2f3640'); block(s, [0.8, 0.08, 0.3], [0, 0.6, 1.25], '#2f3640');
-    for (const o of [-0.5, 0.5]) block(s, [0.06, 0.3, 0.06], [o, 0, 1.68], '#b8463c');
+    block(s, [0.1, 0.8, 0.1], [0, y, 0], '#d9a23a'); // the spire
+    for (let k = 0; k < 3; k++) block(s, [0.22 - k * 0.05, 0.05, 0.22 - k * 0.05], [0, y + 0.2 + k * 0.2, 0], '#d9a23a');
+  });
+  put(px0 - 2, pz0, (s) => {
+    block(s, [0.75, 0.42, 1.6], [0, 0, 0], '#6b4a32');
+    block(s, [0.06, 0.2, 1.5], [-0.38, 0.12, 0], '#e8dcc8');
+    block(s, [0.95, 0.1, 1.8], [0, 0.42, 0], '#2f3640'); block(s, [0.65, 0.1, 1.4], [0, 0.52, 0], '#2f3640'); block(s, [0.3, 0.08, 0.9], [0, 0.62, 0], '#2f3640');
+    for (const o of [-0.55, 0.55]) block(s, [0.06, 0.32, 0.06], [-0.42, 0, o], '#b8463c');
   });
   g.userData.wallCells = cells;
   return g;

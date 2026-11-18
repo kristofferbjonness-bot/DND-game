@@ -48,13 +48,16 @@ for (const p of PEAKS) {
 // Hrimnir's site: the east side of the jungle peninsula in south-east Rama, east of a wall at x = 190
 // that runs from the north coast to the south coast. Its ground rises from the wall to a small cliff
 // over the sea on the east, where the pagoda stands.
-export const HRIMNIR_SITE = { wallX: 190, z0: 137, z1: 158 };
-export const inHrimnir = (x, z) => x > HRIMNIR_SITE.wallX && z >= HRIMNIR_SITE.z0 && z <= HRIMNIR_SITE.z1;
+// The wall bows gently westwards in the middle (wallXAt), so it follows the land more naturally.
+export const HRIMNIR_SITE = { wallX: 190, z0: 137, z1: 158, bow: 3 };
+export const wallXAt = (z) => HRIMNIR_SITE.wallX - Math.round(HRIMNIR_SITE.bow * Math.sin((Math.PI * (z - HRIMNIR_SITE.z0)) / (HRIMNIR_SITE.z1 - HRIMNIR_SITE.z0)));
+export const inHrimnir = (x, z) => z >= HRIMNIR_SITE.z0 && z <= HRIMNIR_SITE.z1 && x > wallXAt(z);
 for (let z = HRIMNIR_SITE.z0; z <= HRIMNIR_SITE.z1; z++) {
-  let east = HRIMNIR_SITE.wallX;
-  for (let x = HRIMNIR_SITE.wallX + 1; x < cols && grid.land[z * cols + x]; x++) east = x;
-  for (let x = HRIMNIR_SITE.wallX + 1; x <= east; x++) {
-    const k = z * cols + x, t = (x - HRIMNIR_SITE.wallX) / Math.max(4, east - HRIMNIR_SITE.wallX);
+  const w = wallXAt(z);
+  let east = w;
+  for (let x = w + 1; x < cols && grid.land[z * cols + x]; x++) east = x;
+  for (let x = w + 1; x <= east; x++) {
+    const k = z * cols + x, t = (x - w) / Math.max(4, east - w);
     grid.heights[k] = 2 + Math.round(7 * t ** 1.3); // a slope up to the cliff top
     grid.river[k] = 0;
   }

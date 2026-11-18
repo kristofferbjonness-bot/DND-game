@@ -112,6 +112,15 @@ export const LOCATIONS = [
     text: 'A small fishing village between Razz of Mataz and Kolaveri Di. Boats are pulled up on the shingle and fish hang drying on wooden racks.',
   },
   {
+    id: 'skinnvika',
+    name: 'Skinnvika',
+    tier: 'local',
+    style: 'poachers',
+    px: [957, 597],
+    subtitle: 'Rama · on the east coast, where desert, grassland and jungle meet',
+    text: 'A rough hunters\' post in a little bay. Skins of every colour hang drying on wooden frames, and boats take bundles of furs away by sea. Nobody here asks where an animal came from.',
+  },
+  {
     id: 'sirivik',
     name: 'Sirivik',
     tier: 'local',

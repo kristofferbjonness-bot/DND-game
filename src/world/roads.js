@@ -4,7 +4,7 @@
 //   - an old, unkept dirt road from Razz of Mataz to Ikeheim and on to the Empire of Tine, with a
 //     fork to Sirivik;
 //   - a gravel road from the mine in the mountains to Bartedalen.
-import { grid, idx, inBounds, hash, darkForest, nearestLand, HRIMNIR_SITE, inHrimnir } from './grid.js';
+import { grid, idx, inBounds, hash, darkForest, nearestLand, HRIMNIR_SITE, inHrimnir, wallXAt } from './grid.js';
 import { LOCATIONS } from './locations.js';
 
 // The Bartedalen Mine: at ground level, tucked into the corner south-west of Bartedalen where the
@@ -30,7 +30,13 @@ export const RUNE_STONES = [
 // grid.js). Its border is a strong log wall from the north coast to the south coast (walked from south
 // to north, the town is on the right); the pagoda stands on the cliff top over the sea, the houses
 // below it towards the wall. The jungle people who attack it live deep in the jungle to the west.
-export const HRIMNIR = { centre: [199, 146], wall: [[HRIMNIR_SITE.wallX, HRIMNIR_SITE.z1], [HRIMNIR_SITE.wallX, HRIMNIR_SITE.z0]], gateAt: [HRIMNIR_SITE.wallX, 147], camps: [[174, 129], [178, 147], [170, 136]], inside: inHrimnir };
+const hrimnirWall = [];
+for (let z = HRIMNIR_SITE.z1; z >= HRIMNIR_SITE.z0; z--) { // south to north, one cell per row (and the step between rows)
+  const x = wallXAt(z), prev = hrimnirWall.at(-1);
+  if (prev) for (let s = prev[0]; s !== x; s += Math.sign(x - prev[0])) if (s !== prev[0]) hrimnirWall.push([s, prev[1]]);
+  hrimnirWall.push([x, z]);
+}
+export const HRIMNIR = { centre: [201, 146], wall: hrimnirWall, gateAt: [wallXAt(147), 147], camps: [[174, 129], [176, 147], [170, 136]], inside: inHrimnir };
 // The bridge east of Ytterhavn (cells along z): roads cross the river there.
 export const BRIDGE = { cx: 104, from: 106, to: 108 };
 const onBridge = (k) => k % grid.cols === BRIDGE.cx && ((k / grid.cols) | 0) >= BRIDGE.from && ((k / grid.cols) | 0) <= BRIDGE.to;
