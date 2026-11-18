@@ -2487,3 +2487,47 @@ body[data-screen="combat"]:not(:has(#combat.is-battle)) .tags-toggle { display: 
 /* A place's page: a picture of its scene at the top. */
 .jr-scene { margin: 12px 0; border-radius: 8px; overflow: hidden; background: #e8dcc0; box-shadow: 0 0 0 2px var(--pp-line-dark), 0 0 0 5px #efe0bd, 0 0 0 6.5px var(--pp-line-dark); }
 .jr-scene img { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; }
+
+/* ---------- Shops: a window over the scene with the wares, prices and the purse ---------- */
+.shop { position: fixed; inset: 0; z-index: 30; display: grid; place-items: center; padding: var(--top) 12px var(--nav); background: rgba(20, 12, 6, 0.45); }
+.shop[hidden] { display: none; }
+.shop__card {
+  width: min(520px, 100%); max-height: 100%; overflow-y: auto; overscroll-behavior: contain; padding: 4px 8px 8px; color: #2b2118;
+  border: 22px solid transparent; border-image: url('/art/ui/paper/ledger-sheet.webp') 34 fill / 30px / 0 stretch;
+  --pp-line: #cdb38a; --pp-line-dark: #a8865a; --pp-accent: #8a2e1f; --pp-soft: #5c4a36;
+}
+.shop__head { display: flex; align-items: center; gap: 10px; padding-bottom: 8px; border-bottom: 1.5px solid var(--pp-line); }
+.shop__sign .ic { width: 34px; height: 34px; }
+.shop__head h2 { margin: 0; font: 700 20px/1.15 var(--font-display); }
+.shop__head small { display: block; font-size: 13.5px; color: var(--pp-soft); font-style: italic; }
+.shop__head > div { flex: 1; min-width: 0; }
+.shop__close { align-self: flex-start; background: none; border: 0; font-size: 26px; line-height: 1; cursor: pointer; color: var(--pp-soft); }
+.shop__purse { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 14px; padding: 8px 2px; font-size: 15px; }
+.shop__purse b { font: 700 15px var(--font-display); }
+.shop__purse select { font: 600 14px var(--font-body); padding: 3px 6px; border-radius: 6px; border: 1.5px solid var(--pp-line-dark); background: rgba(255, 252, 240, 0.85); color: #2b2118; }
+.shop__edit { margin-left: auto; background: none; border: 0; cursor: pointer; font: 600 13px var(--font-body); color: var(--pp-accent); text-decoration: underline; }
+.shop__said { margin: 0; min-height: 1em; font-size: 13.5px; color: #3a6a2a; font-weight: 700; }
+.shop__closed { margin: 6px 0; color: var(--pp-accent); font-style: italic; }
+.shop__wares { list-style: none; margin: 4px 0 0; padding: 0; }
+.shop__ware { display: flex; align-items: center; gap: 10px; padding: 7px 2px; border-bottom: 1px solid rgba(168, 134, 90, 0.4); }
+.shop__ware > .ic { width: 28px; height: 28px; flex-shrink: 0; }
+.shop__what { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.shop__what b { font: 600 15.5px var(--font-body); }
+.shop__what small { font-size: 12.5px; color: var(--pp-soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.shop__price { font: 700 14px var(--font-display); white-space: nowrap; }
+.shop__buy { padding: 5px 12px; border-radius: 14px; cursor: pointer; font: 700 12px var(--font-display); letter-spacing: 0.04em; color: #fff8ec; background: #3f7a3a; border: 1.5px solid #2a5a26; }
+.shop__buy:disabled { opacity: 0.35; cursor: default; }
+.shop__ware.is-dear .shop__price { color: var(--pp-accent); }
+.shop__none { padding: 12px 4px; color: var(--pp-soft); font-style: italic; }
+.shop__open { margin: 4px 0; color: #2b2118; }
+.shop__price-in { width: 92px; padding: 4px 6px; border-radius: 6px; border: 1.5px solid var(--pp-line-dark); background: rgba(255, 252, 240, 0.85); font: 600 13px var(--font-body); color: #2b2118; }
+.shop__remove { background: none; border: 0; font-size: 20px; cursor: pointer; color: var(--pp-accent); }
+.shop__search { width: 100%; margin-top: 8px; padding: 6px 10px; border-radius: 16px; border: 1.5px solid var(--pp-line-dark); background: rgba(255, 252, 240, 0.85); font: 14px var(--font-body); }
+.shop__add { list-style: none; margin: 4px 0; padding: 0; display: flex; flex-wrap: wrap; gap: 4px; }
+.shop__add button { display: flex; align-items: center; gap: 5px; padding: 3px 9px 3px 4px; border-radius: 14px; border: 1.5px solid var(--pp-line-dark); background: rgba(255, 252, 240, 0.8); cursor: pointer; font: 13px var(--font-body); color: #2b2118; }
+.shop__add .ic { width: 20px; height: 20px; }
+.shop__hint { margin: 4px 0 0; font-size: 12.5px; color: var(--pp-soft); }
+/* The Shop button on the scene's name card. */
+.scn__shop { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 14px; cursor: pointer; font: 700 12px var(--font-display); color: #fff8ec; background: #3f7a3a; border: 1.5px solid #2a5a26; white-space: nowrap; }
+.scn__shop .ic { width: 16px; height: 16px; }
+@media (max-height: 500px) and (orientation: landscape) { .shop { padding-top: 8px; padding-bottom: 8px; } .shop__card { border-width: 14px; } }

@@ -33,11 +33,13 @@ import { createCreatorScreen } from './creator/creatorScreen.js';
 import { createRulebook } from './rulebook/rulebook.js';
 import { createJournalScreen } from './journal/journalScreen.js';
 import { createSceneScreen } from './scene/sceneScreen.js';
+import { createShopWindow } from './shop/shopWindow.js';
+import { shopFor, pay, priceText } from './shop/shops.js';
 import { AREAS, registerArea, unregisterArea } from './scene/areas.js';
 import { sanitizeItem, registerItem } from './data/items.js';
 import { createDiceTray } from './dice/diceTray.js';
 import { createHeroManager } from './status/heroManager.js';
-import { shortRest, longRest, readyToLevel } from './character/progress.js';
+import { shortRest, longRest, readyToLevel, giveItem } from './character/progress.js';
 import { icon } from './ui/icons.js';
 import { heroPortrait, portraitImg } from './ui/portraits.js';
 import { loadRevealed, setRevealed, watchRevealed, loadWorld, saveWorld, watchWorld, loadEncounter, saveEncounter, loadRolls, addRoll, clearRolls, watchRolls, loadQuests, saveQuest, deleteQuest, watchQuests, generateItem } from './net/backend.js';
@@ -1171,6 +1173,7 @@ function applyRow(row) {
   }
   refilterParty();
   sceneScreen?.refresh();
+  shopWindow?.refresh();
   manager.refresh(row.id);
   heroChanged(row.id);
 }
@@ -1344,6 +1347,8 @@ sceneScreen = createSceneScreen(screens.scene, {
   },
   onOpenJournal(type, id) { showScreen('journal'); journalScreen.openEntry(type, id); },
   onFight(setup) { combatScreen.prepare(setup); showScreen('combat'); },
+  myHero: () => (me && !me.dm ? me.heroId : viewAs),
+  onShop(shop, heroes) { shopHeroes = heroes.map((c) => c.id); shopWindow.open(shop); },
   // A place the party has been: written into the Journal's Places (under its town), once.
   async onVisit(areaId) {
     const area = AREAS[areaId];
@@ -1360,6 +1365,29 @@ sceneScreen = createSceneScreen(screens.scene, {
       if (i >= 0) quests[i] = row; else quests.push(row);
       journalScreen.refresh();
     } catch (err) { console.warn('Could not note the place:', err.message); }
+  },
+});
+// The shop window (opened from a scene's Shop button). A player buys for their own hero; the DM
+// for any hero in the scene. Buying takes the coins and adds the item, saved at once.
+let shopHeroes = [];
+const shopEl = document.createElement('div');
+document.body.appendChild(shopEl);
+const shopWindow = createShopWindow(shopEl, {
+  heroes: () => everyone.filter((c) => shopHeroes.includes(c.id)),
+  me: () => ({ dm: seesAll(), heroId: me && !me.dm ? me.heroId : viewAs }),
+  async onBuy(heroId, itemId, price) {
+    const c = everyone.find((h) => h.id === heroId);
+    if (!c) throw new Error('No hero to buy for.');
+    if (!pay(c.coins, price)) throw new Error(`Not enough money: it costs ${priceText(price)}.`);
+    giveItem(c, { id: itemId, qty: 1 });
+    await saveCharacter(c);
+    heroChanged(c.id);
+  },
+  async onSaveShop(shop, data) {
+    const row = await saveQuest({ id: shop.row?.id, data: { kind: 'shop', area: shop.area, name: shop.name, keeper: shop.keeper, greeting: shop.greeting, ...data, shown: true } });
+    const i = quests.findIndex((q) => q.id === row.id);
+    if (i >= 0) quests[i] = row; else quests.push(row);
+    shop.row = row;
   },
 });
 let watchingQuests = null;
@@ -1388,13 +1416,14 @@ async function loadJournal() {
     if (event !== 'DELETE' && row.data?.kind === 'area') registerArea(row.id, row.data);
     if (event !== 'DELETE' && row.data?.kind === 'catalog') registerItem(row.id, row.data.item);
     // Something new for a player: added, or revealed by the DM (it was not in their list before).
-    if (event !== 'DELETE' && i < 0 && me && !seesAll() && row.data.shown !== false && !['scene', 'area', 'catalog'].includes(row.data.kind)) {
+    if (event !== 'DELETE' && i < 0 && me && !seesAll() && row.data.shown !== false && !['scene', 'area', 'catalog', 'shop'].includes(row.data.kind)) {
       const what = { npc: 'Someone new in your journal', place: 'A new place in your journal', placenote: 'New notes in your journal', item: '📖 You found', creature: 'A new creature in your journal' }[row.data.kind] ?? '📜 New quest';
       const name = row.data.title ?? MONSTERS[row.data.monster]?.name;
       toast(name ? `${what}: ${name}` : what);
     }
     journalScreen.refresh();
     sceneScreen.refresh();
+    if (row.data?.kind === 'shop' && shopWindow.area === row.data.area) shopWindow.refresh(shopFor(row.data.area, quests));
     applyFog();
     dumpJournal();
   });

@@ -10,6 +10,7 @@
 import { createSceneView } from './sceneView.js';
 import { AREAS, areaOptions, towns, sanitizePlace, registerArea, unregisterArea } from './areas.js';
 import { generatePlace, explain } from '../net/backend.js';
+import { shopFor } from '../shop/shops.js';
 import { NPC_FIGURES, npcFigureId } from '../character/npcFigures.js';
 import { monsterPortrait, heroPortrait, portraitImg } from '../ui/portraits.js';
 import { icon } from '../ui/icons.js';
@@ -22,7 +23,8 @@ const MAX_PEOPLE = 9;
 // onDelete(id); onLive(id | null); onOpenJournal(type, id).
 // onFight({ heroes, enemies: { Bestiary id: n }, area }) starts setting up a fight in a scene.
 // onVisit(area): the party is shown at a place (it goes into the Journal's Places).
-export function createSceneScreen(root, { entries, heroes, monsters, canEdit, liveId, onSave, onDelete, onLive, onOpenJournal, onFight, onVisit }) {
+// onShop(shop, heroes): open the shop window of the place (myHero(): the player's hero id, or null).
+export function createSceneScreen(root, { entries, heroes, monsters, canEdit, liveId, onSave, onDelete, onLive, onOpenJournal, onFight, onVisit, onShop, myHero = () => null }) {
   root.innerHTML = `
     <div class="scn__stage"></div>
     <header class="scn__plate" hidden></header>
@@ -90,6 +92,7 @@ export function createSceneScreen(root, { entries, heroes, monsters, canEdit, li
       plate.innerHTML = `
         <small>${esc(area.town)}</small>
         <b>${esc(area.name)}</b>
+        ${shopButton(s)}
         <button type="button" class="scn__tags" title="Hide or show the names" aria-label="Hide or show the names"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h11l4 5-4 5H4z" /><path d="M8 12h5" /></svg></button>`;
       if (plate.dataset.area !== s.data.area) { plate.dataset.area = s.data.area; plate.style.animation = 'none'; void plate.offsetWidth; plate.style.animation = ''; } // drop down again for a new place
       const people = cast(s.data), crew = heroesIn(s.data);
@@ -255,7 +258,18 @@ export function createSceneScreen(root, { entries, heroes, monsters, canEdit, li
     if (s.id && liveId() !== s.id) await onLive(s.id, { quiet: true });
     onFight({ heroes: heroesIn(s.data).map((c) => c.id), enemies, area: s.data.area });
   }
-  plate.addEventListener('click', (e) => { if (e.target.closest('.scn__tags')) document.getElementById('tags-toggle').click(); });
+  // The shop of the place, for the DM always, for a player when it is open and their hero is here.
+  function placeShop(s) {
+    const shop = s && shopFor(s.data.area, entries);
+    if (!shop) return null;
+    if (dm()) return shop;
+    return shop.open && heroesIn(s.data).some((c) => c.id === myHero()) ? shop : null;
+  }
+  const shopButton = (s) => (placeShop(s) ? `<button type="button" class="scn__shop">${icon('coin', 'inline')} Shop</button>` : '');
+  plate.addEventListener('click', (e) => {
+    if (e.target.closest('.scn__tags')) document.getElementById('tags-toggle').click();
+    if (e.target.closest('.scn__shop')) { const s = current(), shop = placeShop(s); if (shop) onShop?.(shop, heroesIn(s.data)); }
+  });
 
   // --- Events ------------------------------------------------------------------------------------------
   card.addEventListener('click', (e) => {

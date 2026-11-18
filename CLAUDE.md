@@ -166,6 +166,12 @@ The original assets (hand-drawn world map, location art, character art, lore doc
 - **Secondary weapons**: the off hand takes any light or thrown, non-two-handed weapon beside any one-handed main weapon (house
   rule, equipment.js). Small weapons added: darts, light hammer, sickle, club, javelin, throwing axes, hidden wrist blade.
 - Tab names show under the icons on all small screens.
+- **Shops** (`src/shop/`): `SHOPS` in shops.js gives each shop scene area (kvini, habibi-hands, shop = Bob's, tavern = Bobby's
+  bar, sirivikcentre = Paul's, sirivikbar) its keeper and default stock `[item id, price in cp]`. The scene's name card shows a
+  Shop button (DM always; a player when the shop is open and their hero is in the scene). `shopWindow.js`: wares, prices, the
+  buyer's purse, Buy (`pay` makes change; the item is added and the hero saved, players save their own hero). The DM picks the
+  buyer and can "Edit stock" (prices like "2 gp 5 sp", remove, add any item, open/closed), saved as a journal row
+  `{ kind: 'shop', area, stock, open }` over the defaults (`shopFor`).
 - **No Bestiary tab and no Creatures section any more** (by request: everything is a person). `MONSTERS` (data/monsters.js) still
   holds every fighter's stats and generated people are still saved to the `monsters` table; `cleanMonster` is in data/cleanMonster.js.
 - **Fights happen in the Scene tab** (there is no Fight tab any more, by request). The DM presses "Fight!" in the scene
