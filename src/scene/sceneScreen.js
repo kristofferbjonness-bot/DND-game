@@ -235,9 +235,16 @@ export function createSceneScreen(root, { entries, heroes, monsters, canEdit, li
   // Deletes a place Claude made: the scene moves back to the port of Razz first.
   async function deletePlace(areaId) {
     const area = AREAS[areaId];
-    if (!area?.generated || !confirm(`Delete “${area.name}”? It is gone for good.`)) return;
+    if (!area?.generated || !confirm(`Delete “${area.name}”? It is gone for good, and so is its page in the Journal.`)) return;
     changed({ area: 'port' });
-    try { await push(); await onDelete(areaId); unregisterArea(areaId); drawPanel(); } catch (err) { alert(err.message); }
+    try {
+      await push();
+      await onDelete(areaId);
+      // Its page in the Journal's Places goes too.
+      for (const e of entries.filter((x) => x.data.kind === 'place' && x.data.area === areaId)) await onDelete(e.id);
+      unregisterArea(areaId);
+      drawPanel();
+    } catch (err) { alert(err.message); }
   }
   function readMaker(f) {
     if (!maker || !f) return;
