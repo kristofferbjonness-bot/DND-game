@@ -327,6 +327,40 @@ export function buildCave(kind = 'desert') {
   return g;
 }
 
+// Rune stones: a small group of weathered standing stones, each cut with faintly glowing pale-blue
+// runes (the language of the gods) that slowly brighten and fade. `n` stones; one alone stands taller.
+export function buildRuneStones(n = 3, seed = 1) {
+  const g = new THREE.Group();
+  const stones = [solid('#5d6470'), solid('#6b707a'), solid('#4f5560')];
+  const moss = solid('#5f7058');
+  const glow = new THREE.MeshBasicMaterial({ color: '#b8f0ff', toneMapped: false, transparent: true, opacity: 0.9 });
+  const rnd = (i) => { const v = Math.sin(seed * 91.7 + i * 47.3) * 43758.5; return v - Math.floor(v); };
+  for (let i = 0; i < n; i++) {
+    const a = (i / n) * Math.PI * 2 + rnd(i) * 0.6, r = n === 1 ? 0 : 0.55 + rnd(i + 9) * 0.15;
+    const h = n === 1 ? 1.25 : 0.7 + rnd(i + 3) * 0.35, w = 0.26 + rnd(i + 5) * 0.08;
+    const stone = new THREE.Group();
+    stone.position.set(Math.cos(a) * r, 0, Math.sin(a) * r);
+    stone.rotation.y = n === 1 ? rnd(2) * 3 : -a + Math.PI / 2; // faces the middle of the ring
+    stone.rotation.z = (rnd(i + 7) - 0.5) * 0.18; // leaning a little with age
+    block(stone, [w, h, 0.16], [0, 0, 0], stones[i % 3]);
+    block(stone, [w * 0.7, 0.12, 0.17], [0.02, h, 0], stones[(i + 1) % 3]); // a rough, broken top
+    block(stone, [w + 0.04, 0.08, 0.2], [0, 0, 0], moss);
+    // Runes down the face: short strokes, different on every stone.
+    for (let j = 0; j < 4; j++) {
+      const y = 0.18 + j * (h - 0.3) / 4;
+      const rune = new THREE.Mesh(bevelBox(0.05 + rnd(i * 7 + j) * 0.09, 0.05, 0.02, 0.006), glow);
+      rune.position.set((rnd(i * 5 + j) - 0.5) * w * 0.4, y, 0.09);
+      rune.rotation.z = (rnd(i * 3 + j) - 0.5) * 1.6;
+      stone.add(rune);
+      if (rnd(i * 11 + j) > 0.5) { const dot = new THREE.Mesh(bevelBox(0.03, 0.03, 0.02, 0.005), glow); dot.position.set((rnd(j + i) - 0.5) * w * 0.5, y + 0.07, 0.09); stone.add(dot); }
+    }
+    g.add(stone);
+  }
+  let t = rnd(1) * 6;
+  g.userData.update = (dt) => { t += dt; glow.opacity = 0.55 + Math.sin(t * 0.8) * 0.35; };
+  return g;
+}
+
 // A camp of horse nomads (Mongolian-style felt tents): round white gers with domed roofs, a red
 // roof ring and painted doors, a horse corral, a fire and a pole with blue streamers.
 export function buildYurtCamp(n = 5) {

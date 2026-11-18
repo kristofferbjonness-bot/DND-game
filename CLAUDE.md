@@ -70,6 +70,8 @@ The original assets (hand-drawn world map, location art, character art, lore doc
   are coloured in terrain.js and kept free of trees.
 - Two small natural caves at the foot of Rama's mountains (`CAVES` in roads.js, `buildCave` in features.js): two sandstone ones spread
   apart on the far (east) side of the desert, far from Razz, and a grey, mossy one on the far (north-east) edge of Sortland's dark forest.
+- Rune stones (the language of the gods; `RUNE_STONES` in roads.js, `buildRuneStones` in features.js, runes glow and fade): on the
+  summit of Rama's mountains, the highest ridge of Lama beside the volcano, and at the icy foot of the ice spire. Mountain haze keeps clear of them.
 - Settlements in features.js placed in `buildWorldView`: the mine (`buildMine`), two horse-nomad camps of gers on
   Lama's east side by the Strait of Skinder (`NOMADS`, `buildYurtCamp`, with horse herds), and three desert nomad
   camps found in Rama's desert (`DESERT`, `buildDesertCamp`, with camels).

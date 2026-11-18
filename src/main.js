@@ -11,8 +11,8 @@ import { buildTerrain, surfaceY } from './world/terrain.js';
 import { buildPlants, buildClouds } from './world/scatter.js';
 import { buildLandmark, buildTine } from './world/landmarks.js';
 import { buildAnimals } from './world/animals.js';
-import { MINE, CAVES, BRIDGE, crossings, road } from './world/roads.js';
-import { buildLighthouse, buildShadowMist, buildCabin, buildBridge, buildVolcanoSparks, buildCloudCap, buildMountainMist, buildMine, buildCave, buildYurtCamp, buildDesertCamp, buildGibbet, buildBrokenStatue, buildShrine, buildLift } from './world/features.js';
+import { MINE, CAVES, RUNE_STONES, BRIDGE, crossings, road } from './world/roads.js';
+import { buildLighthouse, buildShadowMist, buildCabin, buildBridge, buildVolcanoSparks, buildCloudCap, buildMountainMist, buildMine, buildCave, buildRuneStones, buildYurtCamp, buildDesertCamp, buildGibbet, buildBrokenStatue, buildShrine, buildLift } from './world/features.js';
 import { LOCATIONS } from './world/locations.js';
 import { CITIES } from './city/cities.js';
 import { createTiltShiftPasses } from './fx/tiltShift.js';
@@ -158,7 +158,7 @@ function buildWorldView() {
     return out;
   })();
   const clear = [...(sortCell ? [[sortCell[0], sortCell[1], 2]] : []), [BRIDGE.cx, BRIDGE.from, 0], [BRIDGE.cx, BRIDGE.to, 0],
-    [MINE.cx, MINE.cz, 2], ...CAVES.map((c) => [c.cx, c.cz, 1]), ...NOMADS.map(([x, z]) => [x, z, 3]), ...DESERT.map(([x, z]) => [x, z, 3])];
+    [MINE.cx, MINE.cz, 2], ...CAVES.map((c) => [c.cx, c.cz, 1]), ...RUNE_STONES.map((r) => [r.cx, r.cz, 1]), ...NOMADS.map(([x, z]) => [x, z, 3]), ...DESERT.map(([x, z]) => [x, z, 3])];
   const reach = (p) => (p.style === 'empire' ? 7 : 3); // how far a town keeps trees away
   const plants = buildPlants((x, z) => towns.some((p) => Math.abs(p.cx - x) <= reach(p) && Math.abs(p.cz - z) <= reach(p))
     || clear.some(([cx, cz, r]) => Math.abs(cx - x) <= r && Math.abs(cz - z) <= r));
@@ -224,6 +224,13 @@ function buildWorldView() {
     cave.scale.setScalar(1.5);
     scene.add(cave);
   }
+  RUNE_STONES.forEach((r, i) => {
+    const stones = buildRuneStones(r.n, i + 1);
+    const [x, z] = cellToWorld(r.cx, r.cz);
+    stones.position.set(x, surfaceY(r.cx, r.cz), z);
+    stones.scale.setScalar(1.6);
+    scene.add(stones); features.push(stones);
+  });
   for (const [cx, cz] of NOMADS) { const camp = buildYurtCamp(5); const [x, z] = cellToWorld(cx, cz); camp.position.set(x, surfaceY(cx, cz), z); camp.scale.setScalar(1.7); scene.add(camp); }
   for (const [cx, cz] of DESERT) { const camp = buildDesertCamp(3); const [x, z] = cellToWorld(cx, cz); camp.position.set(x, surfaceY(cx, cz), z); camp.rotation.y = cellHash(cx, cz, 104) * 6; camp.scale.setScalar(1.5); scene.add(camp); }
   for (const [cx, cz, alongX] of crossings) {
@@ -257,6 +264,7 @@ function buildWorldView() {
       const jx = cx + Math.floor(cellHash(cx, cz, 64) * 4) - 2, jz = cz + Math.floor(cellHash(cx, cz, 65) * 4) - 2;
       const k = jz * grid.cols + jx;
       if (jx < 3 || jz < 3 || jx >= grid.cols - 3 || jz >= grid.rows - 3 || !grid.land[k] || grid.heights[k] < 13) continue;
+      if (RUNE_STONES.some((r) => Math.hypot(r.cx - jx, r.cz - jz) < 7)) continue; // keep the rune stones in view
       let high = 0;
       for (let dz = -3; dz <= 3; dz++) for (let dx = -3; dx <= 3; dx++) if (grid.heights[(jz + dz) * grid.cols + jx + dx] >= 12) high++;
       if (high < 40) continue;

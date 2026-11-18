@@ -18,6 +18,14 @@ export const CAVES = [
   { cx: 149, cz: 100, face: [0, 1], kind: 'desert' },
   { cx: 127, cz: 91, face: [1, 0], kind: 'forest' },
 ];
+// Rune stones (the language of the gods): on the summit of Rama's mountains, on the highest ridge of
+// Lama (beside the volcano), and at the icy foot of the ice spire. n = stones in the group.
+export const RUNE_STONES = [
+  { cx: 137, cz: 68, n: 5 },
+  { cx: 90, cz: 63, n: 3 },
+  { cx: 190, cz: 27, n: 3 },
+  { cx: 196, cz: 21, n: 1 },
+];
 // The bridge east of Ytterhavn (cells along z): roads cross the river there.
 export const BRIDGE = { cx: 104, from: 106, to: 108 };
 const onBridge = (k) => k % grid.cols === BRIDGE.cx && ((k / grid.cols) | 0) >= BRIDGE.from && ((k / grid.cols) | 0) <= BRIDGE.to;
