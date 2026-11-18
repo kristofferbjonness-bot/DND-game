@@ -11,7 +11,7 @@ import { createSceneView } from './sceneView.js';
 import { AREAS, areaOptions, towns, sanitizePlace, registerArea, unregisterArea } from './areas.js';
 import { generatePlace, explain } from '../net/backend.js';
 import { shopFor } from '../shop/shops.js';
-import { NPC_FIGURES, npcFigureId } from '../character/npcFigures.js';
+import { NPC_FIGURES, npcFigureId, FIGURE_TOWN } from '../character/npcFigures.js';
 import { monsterPortrait, heroPortrait, portraitImg } from '../ui/portraits.js';
 import { icon } from '../ui/icons.js';
 
@@ -49,10 +49,10 @@ export function createSceneScreen(root, { entries, heroes, monsters, canEdit, li
 
   // Everyone who can be put in a scene.
   function figures() {
-    const list = Object.entries(NPC_FIGURES).map(([id, f]) => ({ fig: `npc:${id}`, name: f.name, model: `npc-${id}` }));
+    const list = Object.entries(NPC_FIGURES).map(([id, f]) => ({ fig: `npc:${id}`, name: f.name, model: `npc-${id}`, town: FIGURE_TOWN[id] ?? 'Others' }));
     for (const [id, m] of Object.entries(monsters())) {
       if (m.model?.startsWith('npc-') && list.some((f) => f.model === m.model)) continue; // already listed as a person
-      list.push({ fig: `monster:${id}`, name: m.name, short: m.short, model: m.model ?? id, generated: m.generated, id });
+      list.push({ fig: `monster:${id}`, name: m.name, short: m.short, model: m.model ?? id, generated: m.generated, id, town: id.startsWith('hooknose') ? 'Razz of Mataz' : m.generated ? 'Made with Claude' : 'Others' });
     }
     return list;
   }
@@ -91,8 +91,7 @@ export function createSceneScreen(root, { entries, heroes, monsters, canEdit, li
       const area = AREAS[s.data.area] ?? AREAS.port;
       plate.innerHTML = `
         <span class="scn__where"><small>${esc(area.town)}</small><b>${esc(area.name)}</b></span>
-        <span class="scn__acts">${shopButton(s)}${tagsButton}</span>`;
-      if (plate.dataset.area !== s.data.area) { plate.dataset.area = s.data.area; plate.style.animation = 'none'; void plate.offsetWidth; plate.style.animation = ''; } // drop down again for a new place
+        <span class="scn__acts">${placeShop(s) ? `<button type="button" class="scn-btn scn__shop">${icon('coin', 'inline')}<span>Shop</span></button>` : ''}<button type="button" class="scn-btn scn__tags">${icon('pen', 'inline')}<span>Names</span></button></span>`;
       const people = cast(s.data), crew = heroesIn(s.data);
       const key = JSON.stringify([s.data.area, people.map((p) => p.key + p.model), crew.map((c) => `${c.id}|${JSON.stringify(c.equipped)}|${c.figure ? 1 : 0}`)]);
       if (key !== shownKey) { shownKey = key; view.show({ area: s.data.area, heroes: crew, npcs: people }); card.hidden = true; }
@@ -111,55 +110,75 @@ export function createSceneScreen(root, { entries, heroes, monsters, canEdit, li
     const counts = Object.fromEntries((d.people ?? []).map((p) => [p.fig, p.n ?? 1]));
     const total = Object.values(counts).reduce((a, b) => a + b, 0);
     const fighters = (d.people ?? []).some((p) => fightType(p.fig));
-    const row = (f) => `
-      <li class="scn__who${counts[f.fig] ? ' is-on' : ''}">
-        ${portraitImg(monsterPortrait(f.model, f.generated ? f.id : ''), { name: f.name, colour: '#5c4a36', cls: 'scn__face' })}
-        <span>${esc(f.name)}</span>
-        <span class="stepper">
-          <button type="button" data-fig="${f.fig}" data-d="-1" aria-label="One fewer"${counts[f.fig] ? '' : ' disabled'}>−</button>
-          <b>${counts[f.fig] ?? 0}</b>
-          <button type="button" data-fig="${f.fig}" data-d="1" aria-label="One more"${total >= MAX_PEOPLE ? ' disabled' : ''}>+</button>
-        </span>
-      </li>`;
-    const here = figures().filter((f) => counts[f.fig]), rest = figures().filter((f) => !counts[f.fig]);
-    const scroll = panel.querySelector('.scn__whos')?.scrollTop ?? 0, top = panel.scrollTop;
+    const here = figures().filter((f) => counts[f.fig]);
+    const area = AREAS[d.area] ?? AREAS.port;
+    const btn = (cls, ic, label, attrs = '') => `<button type="button" class="scn-btn ${cls}"${attrs}>${icon(ic, 'inline')}<span>${label}</span></button>`;
+    const face = (f) => portraitImg(monsterPortrait(f.model, f.generated ? f.id : ''), { name: f.name, colour: '#5c4a36', cls: 'scn__face' });
+    // Where: the towns as tabs, then that town's places as buttons.
+    const town = whereTown ?? area.town;
+    const places = Object.entries(AREAS).filter(([, a]) => a.town === town);
+    // Who is here: everyone present with − n +, then everyone else by town (tap to add one).
+    const q = whoQuery.trim().toLowerCase();
+    const others = figures().filter((f) => !counts[f.fig] && (!q || f.name.toLowerCase().includes(q)));
+    const groups = [...new Set([area.town, ...others.map((f) => f.town)])].filter((t) => others.some((f) => f.town === t));
+    const scroll = panel.querySelector('.scn__body')?.scrollTop ?? 0;
     panel.innerHTML = `
       <header class="scn__head">
         <button type="button" class="scn__fold" aria-expanded="${!folded}" title="${folded ? 'Open the scene settings' : 'Fold away'}">
-          <span class="scn__where"><small><span class="scn__live is-on" title="Every change is shown to the players at once">Live</span> · ${esc((AREAS[d.area] ?? AREAS.port).town)}</small><b>${esc((AREAS[d.area] ?? AREAS.port).name)}</b></span>
-          <i>${folded ? '▸' : '▾'}</i>
+          <span class="scn__where"><small><span class="scn__live" title="Every change is shown to the players at once">Live</span> · ${esc(area.town)}</small><b>${esc(area.name)}</b></span>
+          <i>${folded ? '▾' : '▴'}</i>
         </button>
         <span class="scn__acts">
-          ${shopButton(s)}${tagsButton}
-          <button type="button" class="btn btn--gold scn__fight"${fighters ? '' : ' disabled title="Add someone who can fight first"'}>${icon('combat')}Fight!</button>
+          ${placeShop(s) ? btn('scn__shop', 'coin', 'Shop') : ''}
+          ${btn('scn__tags', 'pen', 'Names')}
+          ${btn('scn__fight', 'combat', 'Fight!', fighters ? '' : ' disabled title="Add someone who can fight first"')}
         </span>
       </header>
-      <form class="scn__form">
-        <label class="field"><span>Where</span><select class="field__input" name="area">${areaOptions(d.area, esc)}</select></label>
-        ${AREAS[d.area]?.generated ? `<button type="button" class="scn__delplace" data-do="delplace">${icon('lock', 'inline')} Delete this place</button>` : ''}
-        ${maker ? `
-        <div class="scn__maker">
-          <p class="scn__h">A new place, made by Claude</p>
-          <label class="field"><span>In</span><select class="field__input" name="maketown">${towns().map((t) => `<option${t === maker.town ? ' selected' : ''}>${esc(t)}</option>`).join('')}<option value="+"${maker.town === '+' ? ' selected' : ''}>A new town or area…</option></select></label>
-          ${maker.town === '+' ? `<input class="field__input" name="makenewtown" maxlength="40" placeholder="Name of the town or area" value="${esc(maker.newTown ?? '')}" />` : ''}
-          <textarea class="field__input" name="makeprompt" rows="3" maxlength="800" placeholder="Describe it, e.g. a cramped smugglers' cellar under the harbour, crates of stolen spice, a lantern swinging from a beam">${esc(maker.prompt ?? '')}</textarea>
-          <div class="scn__maker-row">
-            <button type="button" class="btn" data-do="makecancel"${maker.busy ? ' disabled' : ''}>Cancel</button>
-            <button type="button" class="btn btn--gold" data-do="make"${maker.busy ? ' disabled' : ''}>${icon('magic')}${maker.busy ? 'Claude is building…' : 'Create with Claude'}</button>
+      <form class="scn__form scn__body">
+        <section class="scn__sec">
+          <p class="scn__h">Where</p>
+          <div class="scn__towns">${towns().map((t) => `<button type="button" data-town="${esc(t)}"${t === town ? ' class="is-on"' : ''}>${esc(t)}</button>`).join('')}</div>
+          <ul class="scn__places">
+            ${places.map(([k, a]) => `<li><button type="button" data-area="${esc(k)}" class="${k === d.area ? 'is-on' : ''}">${k === d.area ? icon('pin', 'inline') : ''}${esc(a.name)}${a.generated ? ' <small>Claude</small>' : ''}</button></li>`).join('')}
+            <li><button type="button" class="scn__newplace" data-do="maker">${icon('magic', 'inline')} New place with Claude…</button></li>
+          </ul>
+          ${area.generated ? `<button type="button" class="scn__delplace" data-do="delplace">Delete “${esc(area.name)}”</button>` : ''}
+          ${maker ? `
+          <div class="scn__maker">
+            <label class="field"><span>In</span><select class="field__input" name="maketown">${towns().map((t) => `<option${t === maker.town ? ' selected' : ''}>${esc(t)}</option>`).join('')}<option value="+"${maker.town === '+' ? ' selected' : ''}>A new town or area…</option></select></label>
+            ${maker.town === '+' ? `<input class="field__input" name="makenewtown" maxlength="40" placeholder="Name of the town or area" value="${esc(maker.newTown ?? '')}" />` : ''}
+            <textarea class="field__input" name="makeprompt" rows="3" maxlength="800" placeholder="Describe it, e.g. a cramped smugglers' cellar under the harbour, crates of stolen spice, a lantern swinging from a beam">${esc(maker.prompt ?? '')}</textarea>
+            <div class="scn__maker-row">
+              <button type="button" class="scn-btn" data-do="makecancel"${maker.busy ? ' disabled' : ''}><span>Cancel</span></button>
+              <button type="button" class="scn-btn scn-btn--main" data-do="make"${maker.busy ? ' disabled' : ''}>${icon('magic', 'inline')}<span>${maker.busy ? 'Claude is building…' : 'Create'}</span></button>
+            </div>
+            ${maker.error ? `<p class="scn__maker-error">${esc(maker.error)}</p>` : ''}
+          </div>` : ''}
+        </section>
+        <section class="scn__sec">
+          <p class="scn__h">Heroes here</p>
+          <div class="scn__heroes">${heroes().map((c) => `
+            <label class="scn__hero"><input type="checkbox" name="hero" value="${esc(c.id)}"${!d.heroes || d.heroes.includes(c.id) ? ' checked' : ''} />${portraitImg(heroPortrait(c), { name: c.name, colour: c.colour, cls: 'scn__face' })}<span>${esc(c.name.split(' ')[0])}</span></label>`).join('')}
           </div>
-          ${maker.error ? `<p class="scn__maker-error">${esc(maker.error)}</p>` : ''}
-        </div>` : `<button type="button" class="scn__newplace" data-do="maker">${icon('magic', 'inline')} A new place with Claude…</button>`}
-        <p class="scn__h">Heroes here</p>
-        <div class="scn__heroes">${heroes().map((c) => `
-          <label class="scn__hero"><input type="checkbox" name="hero" value="${esc(c.id)}"${!d.heroes || d.heroes.includes(c.id) ? ' checked' : ''} />${portraitImg(heroPortrait(c), { name: c.name, colour: c.colour, cls: 'scn__face' })}<span>${esc(c.name.split(' ')[0])}</span></label>`).join('')}
-        </div>
-        <p class="scn__h">Who is here <small>${total} / ${MAX_PEOPLE}${total ? ' · <button type="button" class="scn__clear" data-do="clear">clear</button>' : ''}</small></p>
-        <input class="field__input scn__search" type="search" name="whosearch" placeholder="Find someone…" value="${esc(whoQuery)}" autocomplete="off" />
-        <ul class="scn__whos">${here.map(row).join('')}${here.length ? '<li class="scn__sep"></li>' : ''}${rest.filter((f) => !whoQuery || f.name.toLowerCase().includes(whoQuery.toLowerCase())).map(row).join('')}</ul>
+        </section>
+        <section class="scn__sec">
+          <p class="scn__h">Who is here <small>${total} / ${MAX_PEOPLE}${total ? ' · <button type="button" class="scn__clear" data-do="clear">clear all</button>' : ''}</small></p>
+          ${here.length ? `<ul class="scn__present">${here.map((f) => `
+            <li>${face(f)}<span>${esc(f.name)}</span>
+              <span class="stepper"><button type="button" data-fig="${f.fig}" data-d="-1" aria-label="One fewer">−</button><b>${counts[f.fig]}</b><button type="button" data-fig="${f.fig}" data-d="1" aria-label="One more"${total >= MAX_PEOPLE ? ' disabled' : ''}>+</button></span>
+            </li>`).join('')}</ul>` : '<p class="scn__empty-who">Nobody yet: add people below.</p>'}
+          <input class="field__input scn__search" type="search" name="whosearch" placeholder="Find someone to add…" value="${esc(whoQuery)}" autocomplete="off" />
+          ${groups.map((t) => `
+            <details class="scn__group"${t === area.town || q || openGroups.has(t) ? ' open' : ''} data-group="${esc(t)}">
+              <summary>${esc(t)} <small>${others.filter((f) => f.town === t).length}</small></summary>
+              <div class="scn__chips">${others.filter((f) => f.town === t).map((f) => `<button type="button" class="scn__chip" data-fig="${f.fig}" data-d="1"${total >= MAX_PEOPLE ? ' disabled' : ''} title="Add ${esc(f.name)}">${face(f)}<span>${esc(f.name)}</span></button>`).join('')}</div>
+            </details>`).join('')}
+        </section>
       </form>`;
-    panel.scrollTop = top;
-    const list = panel.querySelector('.scn__whos'); if (list) list.scrollTop = scroll;
+    const body = panel.querySelector('.scn__body'); if (body) body.scrollTop = scroll;
   }
+  let whereTown = null; // the town tab open in Where (null: the scene's own town)
+  const openGroups = new Set(); // "Who is here" town groups the DM opened
   let whoQuery = '';
   let maker = null; // the new-place form: { town, newTown, prompt, busy, error }
 
@@ -290,6 +309,8 @@ export function createSceneScreen(root, { entries, heroes, monsters, canEdit, li
     if (b.classList.contains('scn__tags')) { document.getElementById('tags-toggle').click(); return; }
     if (b.classList.contains('scn__shop')) { const sc = current(), shop = placeShop(sc); if (shop) onShop?.(shop, heroesIn(sc.data)); return; }
     if (b.dataset.do === 'clear') { changed({ people: [] }); return; }
+    if (b.dataset.town) { whereTown = b.dataset.town; drawPanel(); return; }
+    if (b.dataset.area) { whereTown = null; changed({ area: b.dataset.area }); return; }
     if (b.dataset.do === 'maker') { maker = { town: (AREAS[current().data.area] ?? AREAS.port).town }; drawPanel(); return; }
     if (b.dataset.do === 'makecancel') { maker = null; drawPanel(); return; }
     if (b.dataset.do === 'make') { makePlace(); return; }
@@ -304,10 +325,10 @@ export function createSceneScreen(root, { entries, heroes, monsters, canEdit, li
   panel.addEventListener('change', (e) => {
     const f = e.target.form;
     if (e.target.name === 'maketown') { readMaker(f); drawPanel(); return; }
-    if (!f || ['whosearch', 'makeprompt', 'makenewtown'].includes(e.target.name)) return;
+    if (!f || e.target.name !== 'hero') return;
     const all = heroes().map((c) => c.id);
     const on = [...f.querySelectorAll('input[name=hero]:checked')].map((i) => i.value);
-    changed({ area: f.area.value, heroes: on.length === all.length ? undefined : on });
+    changed({ heroes: on.length === all.length ? undefined : on });
   });
   panel.addEventListener('input', (e) => {
     if (e.target.name !== 'whosearch') return;
@@ -316,9 +337,13 @@ export function createSceneScreen(root, { entries, heroes, monsters, canEdit, li
     const i = panel.querySelector('[name=whosearch]'); i.focus(); i.setSelectionRange(i.value.length, i.value.length);
   });
   panel.addEventListener('submit', (e) => e.preventDefault());
+  panel.addEventListener('toggle', (e) => { const g = e.target.closest?.('.scn__group'); if (g) { if (g.open) openGroups.add(g.dataset.group); else openGroups.delete(g.dataset.group); } }, true);
 
   return {
-    start() { running = true; plate.dataset.area = ''; view.start(); draw(); },
+    start() {
+      running = true; plate.dataset.area = ''; view.start(); draw();
+      for (const el of [panel, plate]) { el.classList.remove('is-dropping'); void el.offsetWidth; el.classList.add('is-dropping'); } // drop down from the bar
+    },
     stop() { running = false; view.stop(); },
     // The journal, the party or the live scene changed somewhere.
     refresh() { if (running) draw(); else shownKey = shownKey && 'stale'; },

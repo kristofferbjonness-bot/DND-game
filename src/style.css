@@ -2581,3 +2581,75 @@ body[data-screen="combat"]:not(:has(#combat.is-battle)) .tags-toggle { display: 
   /* The scene card starts beside the book and dice buttons at the bottom left. */
   .scn__panel, .scn__panel.is-folded, .scn__plate { left: 60px; right: 8px; }
 }
+
+/* ---------- The scene card, take 3: hanging from the bar, one button style ---------- */
+.scn-btn {
+  display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; min-height: 28px; border-radius: 15px; cursor: pointer;
+  font: 700 11.5px var(--font-display); letter-spacing: 0.05em; white-space: nowrap;
+  color: var(--pp-ink); background: rgba(255, 252, 240, 0.85); border: 1.5px solid var(--pp-line-dark);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.6) inset, 0 1px 2px rgba(60, 40, 15, 0.2);
+}
+.scn-btn .ic { width: 16px; height: 16px; margin: 0; }
+.scn-btn:hover:not(:disabled) { background: #fffaf0; border-color: var(--pp-ink); }
+.scn-btn:disabled { opacity: 0.4; cursor: default; }
+.scn-btn.scn__fight, .scn-btn--main { color: #fff8ec; background: var(--pp-accent); border-color: #5e1d14; }
+body.no-labels .scn-btn.scn__tags { color: var(--pp-accent); border-color: var(--pp-accent); }
+.scn__acts { display: flex; flex-wrap: wrap; gap: 5px; }
+.scn__acts .scn__fight { margin-left: auto; }
+.scn__live { color: var(--pp-accent); font-weight: 700; }
+.scn__live::before { content: '● '; }
+
+/* The card: tucked under the bar, top right; drops down when the Scene opens. */
+.scn__panel, .scn__panel.is-folded, .scn__plate {
+  position: absolute; z-index: 3; top: calc(var(--safe-t) + var(--bar) - 10px); right: calc(max(16px, var(--safe-r)) + 10px); left: auto; bottom: auto;
+  width: 320px; max-height: calc(100% - var(--safe-t) - var(--bar) - var(--nav) - 6px); display: flex; flex-direction: column; overflow: hidden;
+  padding: 10px 6px 6px; transform: none; border: 16px solid transparent; border-image: url('/art/ui/paper/ledger-sheet.webp') 34 fill / 24px / 0 stretch;
+}
+.scn__plate { width: auto; max-width: 300px; gap: 6px; }
+.scn__panel.is-dropping, .scn__plate.is-dropping { animation: scn-hang 0.5s cubic-bezier(.2, 1.3, .4, 1); }
+@keyframes scn-hang { from { transform: translateY(-105%); } to { transform: none; } }
+.scn__body { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; display: grid; gap: 4px; padding: 2px 2px 4px; }
+.scn__panel.is-folded .scn__body { display: none; }
+.scn__head { border-bottom: 1.5px solid var(--pp-line); padding-bottom: 8px; }
+.scn__panel.is-folded .scn__head { border-bottom: 0; padding-bottom: 0; }
+.scn__sec { display: grid; gap: 6px; padding: 8px 0; border-bottom: 1px solid rgba(168, 134, 90, 0.4); }
+.scn__sec:last-child { border-bottom: 0; }
+.scn__h { margin: 0; }
+
+/* Where: town tabs and the town's places. */
+.scn__towns { display: flex; flex-wrap: wrap; gap: 4px; }
+.scn__towns button { padding: 2px 9px; border-radius: 12px; cursor: pointer; font: 600 11.5px var(--font-body); color: var(--pp-soft); background: none; border: 1px solid rgba(168, 134, 90, 0.6); }
+.scn__towns button.is-on { color: #fff8ec; background: var(--pp-ink); border-color: var(--pp-ink); }
+.scn__places { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.scn__places button { width: 100%; display: flex; align-items: center; gap: 5px; padding: 5px 8px; border-radius: 6px; cursor: pointer; text-align: left; font: 14px var(--font-body); color: var(--pp-ink); background: none; border: 0; }
+.scn__places button:hover { background: rgba(154, 107, 31, 0.1); }
+.scn__places button.is-on { font-weight: 700; background: rgba(138, 46, 31, 0.1); box-shadow: inset 3px 0 0 var(--pp-accent); }
+.scn__places button small { margin-left: auto; font-size: 10.5px; color: var(--pp-soft); }
+.scn__places .ic { width: 15px; height: 15px; }
+.scn__places .scn__newplace { color: var(--pp-accent); font-weight: 600; text-decoration: none; }
+
+/* Who is here: the people present, then everyone else by town. */
+.scn__present { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.scn__present li { display: flex; align-items: center; gap: 8px; padding: 3px 4px; border-radius: 6px; background: rgba(154, 107, 31, 0.08); font: 600 14px var(--font-body); }
+.scn__present li > span:nth-of-type(1) { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.scn__empty-who { margin: 0; font-size: 13px; color: var(--pp-soft); font-style: italic; }
+.scn__group { border-radius: 6px; }
+.scn__group summary { cursor: pointer; padding: 4px 2px; font: 700 11px var(--font-display); letter-spacing: 0.1em; text-transform: uppercase; color: var(--pp-soft); }
+.scn__group summary small { font-weight: 400; letter-spacing: 0; }
+.scn__chips { display: flex; flex-wrap: wrap; gap: 4px; padding: 2px 0 6px; }
+.scn__chip { display: inline-flex; align-items: center; gap: 5px; padding: 2px 9px 2px 2px; border-radius: 16px; cursor: pointer; font: 13px var(--font-body); color: var(--pp-ink); background: rgba(255, 252, 240, 0.7); border: 1px solid rgba(168, 134, 90, 0.7); max-width: 100%; }
+.scn__chip span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.scn__chip:hover:not(:disabled) { background: #fffaf0; }
+.scn__chip:disabled { opacity: 0.4; }
+.scn__chip .scn__face { width: 24px; height: 24px; }
+
+@media (orientation: portrait) and (max-width: 600px) {
+  /* Upright phones: the bar is at the bottom, so the card rises out of it instead. */
+  .scn__panel, .scn__panel.is-folded, .scn__plate { top: auto; bottom: calc(var(--nav) - 12px); left: 60px; right: 8px; width: auto; max-width: none; max-height: 56vh; padding-bottom: 14px; }
+  @keyframes scn-rise { from { transform: translateY(105%); } to { transform: none; } }
+  .scn__panel.is-dropping, .scn__plate.is-dropping { animation-name: scn-rise; }
+}
+@media (max-height: 500px) and (orientation: landscape) {
+  .scn__panel, .scn__panel.is-folded, .scn__plate { right: calc(max(10px, var(--safe-r)) + 50px); width: 280px; top: calc(var(--safe-t) + var(--bar) - 8px); }
+}
+.scn-btn.scn__tags, .scn__acts .scn-btn { width: auto; height: auto; border-radius: 15px; place-items: unset; }

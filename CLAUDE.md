@@ -173,8 +173,10 @@ The original assets (hand-drawn world map, location art, character art, lore doc
   buyer and can "Edit stock" (prices like "2 gp 5 sp", remove, add any item, open/closed), saved as a journal row
   `{ kind: 'shop', area, stock, open }` over the defaults (`shopFor`). Sell tab: the buyer's things not held or worn, at 75% of
   `valueOf` (this shop's price, else the lowest shop price, else a 5e-ish default by kind).
-- The scene card (top right; bottom on upright phones, beside the book/dice buttons): the DM's panel header shows Live, the
-  town and the place, Shop, names and Fight!, folding open to the settings; players get the same card without settings (`.scn__plate`).
+- The scene card hangs from the bar (top right; rises from the bottom dock on upright phones) and drops down when the Scene
+  opens (`is-dropping`). One button style (`.scn-btn`: Shop, Names, Fight!). The DM's card: Live · town · place, buttons, and
+  folded open: Where (town tabs, then that town's places, "New place with Claude…"), Heroes here, Who is here (the people
+  present with − n +, a search, then everyone else in `<details>` groups by town, `FIGURE_TOWN` in npcFigures.js; tap to add).
 - **No Bestiary tab and no Creatures section any more** (by request: everything is a person). `MONSTERS` (data/monsters.js) still
   holds every fighter's stats and generated people are still saved to the `monsters` table; `cleanMonster` is in data/cleanMonster.js.
 - **Fights happen in the Scene tab** (there is no Fight tab any more, by request). The DM presses "Fight!" in the scene

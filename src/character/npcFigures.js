@@ -542,6 +542,15 @@ export const NPC_FIGURES = {
 
 for (const [id, f] of Object.entries(NPC_FIGURES)) if (f.build) registerRecipe(`npc-${id}`, f.build());
 
+// Where each figure lives, for grouping in the scene's "Who is here" list.
+export const FIGURE_TOWN = {
+  'lord-wolf': 'Razz of Mataz', 'the-man': 'Razz of Mataz', habibi: 'Razz of Mataz', 'silk-sister': 'Razz of Mataz', 'sand-nug': 'Razz of Mataz',
+  olemann: 'Ytterhavn', bobby: 'Ytterhavn', bob: 'Ytterhavn', 'ytter-guard': 'Ytterhavn',
+  'per-hul-oye': 'Sirivik', paul: 'Sirivik', 'hostel-owner': 'Sirivik', lasse: 'Sirivik', accordion: 'Sirivik', 'god-of-beauty': 'Sirivik',
+  findus: 'Bartedalen', eggen: 'Bartedalen',
+  'bridge-troll': 'On the road', 'lighthouse-keeper': 'At sea', varg: 'With the party',
+};
+
 // The figure id for a journal person: their chosen figure, or one matching their name.
 // A figure can also be any Bestiary creature: 'monster:<id>' (e.g. one Claude made in the Journal).
 export function npcFigureId(data) {
