@@ -26,6 +26,9 @@ export const RUNE_STONES = [
   { cx: 190, cz: 27, n: 3 },
   { cx: 196, cz: 21, n: 1 },
 ];
+// Hrimnir: a larger town on the jungle coast of south-east Rama, inside a battered wooden wall with its
+// gate facing inland (west); the jungle people who attack it live in camps in the forest round it.
+export const HRIMNIR = { cx: 195, cz: 146, r: 5, gate: Math.PI, camps: [[184, 141], [186, 153]] };
 // The bridge east of Ytterhavn (cells along z): roads cross the river there.
 export const BRIDGE = { cx: 104, from: 106, to: 108 };
 const onBridge = (k) => k % grid.cols === BRIDGE.cx && ((k / grid.cols) | 0) >= BRIDGE.from && ((k / grid.cols) | 0) <= BRIDGE.to;

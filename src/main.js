@@ -9,9 +9,9 @@ import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { grid, WATER_LEVEL, pixelToCell, nearestLand, cellToWorld, PEAKS, hash as cellHash } from './world/grid.js';
 import { buildTerrain, surfaceY } from './world/terrain.js';
 import { buildPlants, buildClouds } from './world/scatter.js';
-import { buildLandmark, buildTine } from './world/landmarks.js';
+import { buildLandmark, buildTine, buildHrimnir, buildJungleCamp } from './world/landmarks.js';
 import { buildAnimals } from './world/animals.js';
-import { MINE, CAVES, RUNE_STONES, BRIDGE, crossings, road } from './world/roads.js';
+import { MINE, CAVES, RUNE_STONES, HRIMNIR, BRIDGE, crossings, road } from './world/roads.js';
 import { buildLighthouse, buildShadowMist, buildCabin, buildBridge, buildVolcanoSparks, buildCloudCap, buildMountainMist, buildMine, buildCave, buildRuneStones, buildYurtCamp, buildDesertCamp, buildGibbet, buildBrokenStatue, buildShrine, buildLift } from './world/features.js';
 import { LOCATIONS } from './world/locations.js';
 import { CITIES } from './city/cities.js';
@@ -158,7 +158,7 @@ function buildWorldView() {
     return out;
   })();
   const clear = [...(sortCell ? [[sortCell[0], sortCell[1], 2]] : []), [BRIDGE.cx, BRIDGE.from, 0], [BRIDGE.cx, BRIDGE.to, 0],
-    [MINE.cx, MINE.cz, 2], ...CAVES.map((c) => [c.cx, c.cz, 1]), ...RUNE_STONES.map((r) => [r.cx, r.cz, 1]), ...NOMADS.map(([x, z]) => [x, z, 3]), ...DESERT.map(([x, z]) => [x, z, 3])];
+    [MINE.cx, MINE.cz, 2], [HRIMNIR.cx, HRIMNIR.cz, HRIMNIR.r + 1], ...HRIMNIR.camps.map(([x, z]) => [x, z, 2]), ...CAVES.map((c) => [c.cx, c.cz, 1]), ...RUNE_STONES.map((r) => [r.cx, r.cz, 1]), ...NOMADS.map(([x, z]) => [x, z, 3]), ...DESERT.map(([x, z]) => [x, z, 3])];
   const reach = (p) => (p.style === 'empire' ? 7 : 3); // how far a town keeps trees away
   const plants = buildPlants((x, z) => towns.some((p) => Math.abs(p.cx - x) <= reach(p) && Math.abs(p.cz - z) <= reach(p))
     || clear.some(([cx, cz, r]) => Math.abs(cx - x) <= r && Math.abs(cz - z) <= r));
@@ -181,6 +181,15 @@ function buildWorldView() {
         toWorld: cellToWorld,
         skip: (x, z) => road[z * grid.cols + x] > 0 && Math.hypot(x - 112, z - 73) > 2,
       }));
+      continue;
+    }
+    if (p.id === 'hrimnir') { // a larger town behind a battered wooden wall, in the jungle
+      townGroup.add(buildHrimnir({
+        ...HRIMNIR,
+        at: (x, z) => { const k = z * grid.cols + x; return { dry: Boolean(grid.land[k]) && !grid.river[k], y: surfaceY(x, z) }; },
+        toWorld: cellToWorld,
+      }));
+      HRIMNIR.camps.forEach(([cx, cz], i) => { const camp = buildJungleCamp(3 + i, i + 1); const [x, z] = cellToWorld(cx, cz); camp.position.set(x, surfaceY(cx, cz), z); camp.scale.setScalar(1.4); townGroup.add(camp); });
       continue;
     }
     const town = buildLandmark(p.style);
