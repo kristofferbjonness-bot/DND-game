@@ -607,6 +607,47 @@ function kaldHand() {
   return s.done();
 }
 
+// Maria, lesser god of forgetfulness: a tall, veiled woman of grey-violet mist with no face, only a
+// smooth pale veil; long silver hair; her robe thins and breaks apart towards the hem, as if she is
+// being forgotten from the feet up. Faded pages (lost memories) drift round her and vanish.
+function maria() {
+  const p = { robe: '#6c5f96', robe2: '#8577b0', robe3: '#b9b0dc', veil: '#eeeaf6', veil2: '#d8d2ea', hair: '#d4d8e2', hand: '#e6e2ee', page: '#f4efe0', ink: '#b9b0a0', glow: '#d9ccff' };
+  const s = sculpt(p);
+  s.part('body', [0, 10, 0], 'hover');
+  // The robe: whole from the waist up, breaking into gaps towards the hem.
+  s.box('body', -2, 13, -2, 2, 20, 2, 'robe');
+  for (const y of [14, 17]) s.box('body', -2, y, -2, 2, y, 2, 'robe2');
+  s.box('body', -1, 21, -1, 1, 23, 1, 'robe2');
+  s.box('body', -3, 10, -3, 3, 12, 3, 'robe');
+  for (let y = 4; y <= 9; y++) for (let x = -3; x <= 3; x++) for (let z = -3; z <= 3; z++) {
+    if (Math.abs(x) < 3 && Math.abs(z) < 3) continue; // only the outer shell (the inside cannot be seen)
+    if ((x * 7 + z * 13 + y * 5) % (y < 7 ? 2 : 3) === 0) continue; // dissolving
+    s.box('body', x, y, z, x, y, z, y < 7 ? 'robe3' : 'robe2');
+  }
+  for (const [x, y, z] of [[-1, 2, 0], [2, 1, 1], [0, 0, -1], [1, 3, -2]]) s.box('body', x, y, z, x, y, z, 'robe3'); // wisps falling away
+  s.box('body', -2, 21, -2, 2, 23, -2, 'hair'); // hair down the back
+  s.box('body', -2, 14, -2, 2, 20, -2, 'hair');
+  s.parts.body.glow.push('robe3');
+  s.part('head', [0, 24, 0], 'nod');
+  s.box('head', -1, 24, -1, 1, 27, 1, 'veil'); // a smooth veil, no face
+  s.box('head', -2, 26, 1, 2, 26, 1, 'glow'); // a faint band of light where eyes should be
+  s.box('head', -2, 25, -2, 2, 28, -1, 'hair');
+  s.box('head', -1, 28, -1, 1, 28, 1, 'hair');
+  s.box('head', -2, 23, 1, 2, 24, 2, 'veil2'); // the veil falling over the shoulders
+  s.parts.head.glow.push('veil', 'glow');
+  for (const side of [-1, 1]) {
+    const a = s.arm(side), x = side * 3;
+    s.part(a, [x, 22, 0], 'hover', side < 0 ? 0.6 : 1.8);
+    s.box(a, x, 15, 0, x, 22, 0, 'robe2'); // long hanging sleeves
+    s.box(a, x, 13, 0, x, 14, 1, 'robe3');
+    s.box(a, x, 12, 1, x, 12, 1, 'hand');
+  }
+  s.part('pages', [0, 16, 0], 'spin');
+  for (let i = 0; i < 6; i++) { const ang = i * 1.05, r = 7 + (i % 2) * 2, y = 10 + (i * 5) % 18, x = Math.round(Math.cos(ang) * r), z = Math.round(Math.sin(ang) * r); s.box('pages', x, y, z, x + 1, y + 1, z, i % 3 ? 'page' : 'glow'); s.box('pages', x, y + 1, z, x, y + 1, z, 'ink'); }
+  s.parts.pages.glow.push('glow');
+  return s.done();
+}
+
 // id → { name, match (for journal titles), recipe }.
 export const NPC_FIGURES = {
   'lord-wolf': { name: 'Lord Wolf', match: /lord wolf|toucher of girls/i, build: lordWolf },
@@ -630,6 +671,7 @@ export const NPC_FIGURES = {
   'god-of-beauty': { name: 'The God of Beauty', match: /god of beauty/i, build: godOfBeauty },
   ferran: { name: 'Ferran (god of heat)', match: /^ferran\b|god of heat/i, build: ferran },
   'kald-hand': { name: 'Kald hånd (god of cold)', match: /kald h[åa]nd|god of cold/i, build: kaldHand },
+  maria: { name: 'Maria (god of forgetfulness)', match: /^maria\b|god(dess)? of forgetfulness/i, build: maria },
   varg: { name: 'Varg (Edbart’s wolf)', match: /^varg$/i, build: null }, // built in model.js (MONSTER_LOOKS)
 };
 
@@ -642,7 +684,7 @@ export const FIGURE_TOWN = {
   'per-hul-oye': 'Sirivik', paul: 'Sirivik', 'hostel-owner': 'Sirivik', lasse: 'Sirivik', accordion: 'Sirivik', 'god-of-beauty': 'Sirivik',
   findus: 'Bartedalen', eggen: 'Bartedalen',
   'bridge-troll': 'On the road', 'lighthouse-keeper': 'At sea', varg: 'With the party',
-  ferran: 'The gods', 'kald-hand': 'The gods',
+  ferran: 'The gods', 'kald-hand': 'The gods', maria: 'The gods',
 };
 
 // The figure id for a journal person: their chosen figure, or one matching their name.

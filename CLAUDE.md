@@ -292,7 +292,7 @@ The original assets (hand-drawn world map, location art, character art, lore doc
   Per Hul Øye, Three-Fingered Paul, the hostel owner, Lasse, the Accordion and the God of Beauty; Ytterhavn's Olemann, Bobby, Bob and its guards; Razz's Sand Nug). Sirivik's people are Bestiary enemies too (not the god). Recipes built with small helpers (`slim`, `stout`,
   `huge` builds), registered as `npc-<id>` monster models. Journal people show the figure (round face in the
   list, full body on the page): `data.figure`, or by name (`match`); the person form has a "3D figure" picker.
-  EVERY NPC figure is also a fighter (monsters.js), including Findus, Lord Eggen, Varg and the God of Beauty and the nature-gods Ferran (heat) and Kald hånd (cold), grouped under "The gods" in the scene (Lord Wolf, Silk Sister, Habibi,
+  EVERY NPC figure is also a fighter (monsters.js), including Findus, Lord Eggen, Varg and the God of Beauty the nature-gods Ferran (heat) and Kald hånd (cold), and Maria (god of forgetfulness), grouped under "The gods" in the scene (Lord Wolf, Silk Sister, Habibi,
   the young Hooknose, the Man, the Sand Nug, Olemann, Bobby, Bob); stats other than the lore's are placeholders.
   The bridge troll and the lighthouse keeper have figures and Bestiary entries; the bridge and the lighthouse are scene areas.
   The Journal's person form can "Create with Claude" (same generator as the Bestiary, `cleanMonster`): saving adds the
@@ -420,7 +420,7 @@ The original assets (hand-drawn world map, location art, character art, lore doc
   Per Hul Øye, Three-Fingered Paul, the hostel owner, Lasse, the Accordion and the God of Beauty; Ytterhavn's Olemann, Bobby, Bob and its guards; Razz's Sand Nug). Sirivik's people are Bestiary enemies too (not the god). Recipes built with small helpers (`slim`, `stout`,
   `huge` builds), registered as `npc-<id>` monster models. Journal people show the figure (round face in the
   list, full body on the page): `data.figure`, or by name (`match`); the person form has a "3D figure" picker.
-  EVERY NPC figure is also a fighter (monsters.js), including Findus, Lord Eggen, Varg and the God of Beauty and the nature-gods Ferran (heat) and Kald hånd (cold), grouped under "The gods" in the scene (Lord Wolf, Silk Sister, Habibi,
+  EVERY NPC figure is also a fighter (monsters.js), including Findus, Lord Eggen, Varg and the God of Beauty the nature-gods Ferran (heat) and Kald hånd (cold), and Maria (god of forgetfulness), grouped under "The gods" in the scene (Lord Wolf, Silk Sister, Habibi,
   the young Hooknose, the Man, the Sand Nug, Olemann, Bobby, Bob); stats other than the lore's are placeholders.
   The bridge troll and the lighthouse keeper have figures and Bestiary entries; the bridge and the lighthouse are scene areas.
   The Journal's person form can "Create with Claude" (same generator as the Bestiary, `cleanMonster`): saving adds the
@@ -515,7 +515,7 @@ The original assets (hand-drawn world map, location art, character art, lore doc
     it adds what is missing (hidden), and updates or removes entries the lore file changed, but only
     if they still match the old text (`was` / `removed` in the lore file), so edits made in the app
     are never overwritten. When the owner updates DND world.docx: re-extract it (textutil), diff, and
-    edit lore-import.local.js with `was` for changed entries and `removed` for deleted ones.
+    edit lore-import.local.js with `was` for changed entries (a field in `was` may list several earlier versions) and `removed` for deleted ones.
   - Players see entries with `shown` (RLS) and only discovered map places. The DM writes, edits, ticks
     steps, completes, hides and deletes. Players get a toast for new entries.
   - Places of active visible quests get a 📜 on their map label (`questFor`, quests only).

@@ -143,6 +143,11 @@ export const MONSTERS = {
     attacks: [{ name: 'The cold hand', toHit: 13, dice: '4d10', bonus: 6, type: 'cold' }, { name: 'Breath of winter', toHit: 13, dice: '5d8', bonus: 0, type: 'cold' }],
     note: 'The lesser god of cold. Frost creeps over everything it passes, and its touch stops a heart. Fighting it is unwise.', model: 'npc-kald-hand',
   },
+  maria: {
+    name: 'Maria', short: 'Maria', kind: 'Celestial · lesser god', ac: 18, hp: 220, initiative: 4, speed: 30,
+    attacks: [{ name: 'Fading touch', toHit: 12, dice: '4d8', bonus: 6, type: 'psychic' }, { name: 'Wave of forgetting', toHit: 12, dice: '3d10', bonus: 0, type: 'psychic' }],
+    note: 'A veiled woman nobody can quite remember afterwards. Fighting her is unwise.', model: 'npc-maria',
+  },
   accordion: {
     name: 'The Accordion', short: 'Accordion', kind: 'Monstrosity', ac: 14, hp: 85, initiative: 2, speed: 40,
     attacks: [{ name: 'Crushing fold', toHit: 7, dice: '2d8', bonus: 4, type: 'bludgeoning' }, { name: 'Grasping claws', toHit: 7, dice: '1d10', bonus: 4, type: 'slashing' }],

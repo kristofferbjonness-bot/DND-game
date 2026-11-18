@@ -637,6 +637,8 @@ export function createJournalScreen(root, { entries, canEdit, mapPlaces, heroes 
     const steps = [];
     const ids = {}; // lore place keys → journal ids (filled in as places are found or added)
     const resolve = (ref) => ids[ref] ?? ref;
+    // Earlier versions of a field in the lore file (`was.body` etc. may be one text or a list of them).
+    const past = (l, field) => [l.was?.[field]].flat().filter((v) => v !== undefined);
     // One entry of `kind` from the lore file: `data` is what it should hold, `about` gives its secret's key.
     const sync = (kind, l, data, about = (row) => row.id) => {
       const current = find(kind, l.title) ?? (l.was?.title ? find(kind, l.was.title) : null);
@@ -650,12 +652,12 @@ export function createJournalScreen(root, { entries, canEdit, mapPlaces, heroes 
       }
       const want = data();
       const differs = Object.keys(want).some((k) => (current.data[k] ?? '') !== (want[k] ?? ''));
-      const untouched = current.data.body === (l.was?.body ?? l.body) && (!l.was?.title || current.data.title === l.was.title || current.data.title === l.title);
+      const untouched = (current.data.body === l.body || past(l, 'body').includes(current.data.body ?? '')) && (!l.was?.title || current.data.title === l.was.title || current.data.title === l.title);
       if (differs && l.was && untouched) {
         steps.push({ what: 'update', run: async () => put({ id: current.id, data: { ...current.data, ...want } }) });
       }
       const sec = secretText(about(current));
-      if (l.secret && sec !== l.secret && (!sec || sec === l.was?.secret)) {
+      if (l.secret && sec !== l.secret && (!sec || past(l, 'secret').includes(sec))) {
         steps.push({ what: 'update', run: async () => putSecret(about(current), l.secret) });
       }
       return current;
