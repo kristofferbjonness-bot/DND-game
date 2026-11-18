@@ -9,7 +9,7 @@ import { createBattleScene } from './battleScene.js';
 import { areaOptions } from '../scene/areas.js';
 
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
-const MAX_ENEMIES = 6;
+const MAX_ENEMIES = 9;
 const d20 = () => 1 + Math.floor(Math.random() * 20);
 const plus = (n) => (n ? ` ${n > 0 ? '+' : '−'} ${Math.abs(n)}` : '');
 

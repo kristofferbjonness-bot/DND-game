@@ -198,7 +198,7 @@ The original assets (hand-drawn world map, location art, character art, lore doc
   between parties in Manage → Party. Everything that lists heroes (bar, Party, Hero picker, scenes, fights, map
   marker) uses `party`; the DM's "View the app as" lists everyone.
 - **Combat** (`src/combat/`, DM only):
-  - Setup: pick the heroes and the number of each enemy (max 6). Enemy types are in
+  - Setup: pick the heroes and the number of each enemy (max 9, like a scene). Enemy types are in
     `src/data/monsters.js` (only the Hooknose cutthroat for now; its figure is
     `buildMonsterFigure` in model.js).
   - Battle: a Pokémon-style 3D field (`battleScene.js`) with heroes on the left and enemies
@@ -288,7 +288,7 @@ The original assets (hand-drawn world map, location art, character art, lore doc
   Per Hul Øye, Three-Fingered Paul, the hostel owner, Lasse, the Accordion and the God of Beauty; Ytterhavn's Olemann, Bobby, Bob and its guards; Razz's Sand Nug). Sirivik's people are Bestiary enemies too (not the god). Recipes built with small helpers (`slim`, `stout`,
   `huge` builds), registered as `npc-<id>` monster models. Journal people show the figure (round face in the
   list, full body on the page): `data.figure`, or by name (`match`); the person form has a "3D figure" picker.
-  Every NPC of Razz and Ytterhavn with a figure is also a Bestiary enemy (monsters.js: Lord Wolf, Silk Sister, Habibi,
+  EVERY NPC figure is also a fighter (monsters.js), including Findus, Lord Eggen, Varg and the God of Beauty (Lord Wolf, Silk Sister, Habibi,
   the young Hooknose, the Man, the Sand Nug, Olemann, Bobby, Bob); stats other than the lore's are placeholders.
   The bridge troll and the lighthouse keeper have figures and Bestiary entries; the bridge and the lighthouse are scene areas.
   The Journal's person form can "Create with Claude" (same generator as the Bestiary, `cleanMonster`): saving adds the
@@ -326,7 +326,7 @@ The original assets (hand-drawn world map, location art, character art, lore doc
   between parties in Manage → Party. Everything that lists heroes (bar, Party, Hero picker, scenes, fights, map
   marker) uses `party`; the DM's "View the app as" lists everyone.
 - **Combat** (`src/combat/`, DM only):
-  - Setup: pick the heroes and the number of each enemy (max 6). Enemy types are in
+  - Setup: pick the heroes and the number of each enemy (max 9, like a scene). Enemy types are in
     `src/data/monsters.js` (only the Hooknose cutthroat for now; its figure is
     `buildMonsterFigure` in model.js).
   - Battle: a Pokémon-style 3D field (`battleScene.js`) with heroes on the left and enemies
@@ -416,7 +416,7 @@ The original assets (hand-drawn world map, location art, character art, lore doc
   Per Hul Øye, Three-Fingered Paul, the hostel owner, Lasse, the Accordion and the God of Beauty; Ytterhavn's Olemann, Bobby, Bob and its guards; Razz's Sand Nug). Sirivik's people are Bestiary enemies too (not the god). Recipes built with small helpers (`slim`, `stout`,
   `huge` builds), registered as `npc-<id>` monster models. Journal people show the figure (round face in the
   list, full body on the page): `data.figure`, or by name (`match`); the person form has a "3D figure" picker.
-  Every NPC of Razz and Ytterhavn with a figure is also a Bestiary enemy (monsters.js: Lord Wolf, Silk Sister, Habibi,
+  EVERY NPC figure is also a fighter (monsters.js), including Findus, Lord Eggen, Varg and the God of Beauty (Lord Wolf, Silk Sister, Habibi,
   the young Hooknose, the Man, the Sand Nug, Olemann, Bobby, Bob); stats other than the lore's are placeholders.
   The bridge troll and the lighthouse keeper have figures and Bestiary entries; the bridge and the lighthouse are scene areas.
   The Journal's person form can "Create with Claude" (same generator as the Bestiary, `cleanMonster`): saving adds the

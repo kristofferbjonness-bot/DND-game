@@ -15,7 +15,7 @@ const TOUCH = window.matchMedia('(pointer: coarse)').matches;
 // Where fighters stand. Heroes are nearer the camera on the left, enemies
 // further back on the right.
 const HERO_SPOTS = [[-16, 12], [-30, 6], [-23, 20], [-37, 15]];
-const ENEMY_SPOTS = [[18, -10], [32, -14], [25, -22], [39, -24], [12, -22], [44, -12]];
+const ENEMY_SPOTS = [[18, -10], [32, -14], [25, -22], [39, -24], [12, -22], [44, -12], [20, -34], [34, -34], [48, -26]];
 
 function arena() {
   const cells = [];

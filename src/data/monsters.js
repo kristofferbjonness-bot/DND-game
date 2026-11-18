@@ -90,6 +90,23 @@ export const MONSTERS = {
     attacks: [{ name: 'Cutlass', toHit: 5, dice: '1d6', bonus: 3, type: 'slashing' }, { name: 'Boarding hook', toHit: 5, dice: '1d8', bonus: 3, type: 'piercing' }],
     note: 'Sailors who keep the peace in Ytterhavn. Make trouble in the town and they come running, several at a time.', model: 'npc-ytter-guard',
   },
+  // Bartedalen.
+  findus: {
+    name: 'Findus', short: 'Findus', kind: 'Humanoid · dockmaster', ac: 12, hp: 20, initiative: 0, speed: 30,
+    attacks: [{ name: 'Gaff hook', toHit: 4, dice: '1d6', bonus: 2, type: 'piercing' }, { name: 'Ring of keys', toHit: 4, dice: '1d4', bonus: 2, type: 'bludgeoning' }],
+    note: 'The grumpy dockmaster of Bartedalen, who knows every boat, tide and smuggler.', model: 'npc-findus',
+  },
+  eggen: {
+    name: 'Lord Eggen', short: 'Eggen', kind: 'Humanoid · Assembly Speaker', ac: 10, hp: 15, initiative: -1, speed: 30,
+    attacks: [{ name: 'Speaker’s cane', toHit: 2, dice: '1d4', bonus: 0, type: 'bludgeoning' }],
+    note: 'The elected leader of Bartedalen, with a colossal wing-shaped moustache.', model: 'npc-eggen',
+  },
+  // With the party.
+  varg: {
+    name: 'Varg', short: 'Varg', kind: 'Beast · wolf', ac: 13, hp: 11, initiative: 2, speed: 40,
+    attacks: [{ name: 'Bite', toHit: 4, dice: '2d4', bonus: 2, type: 'piercing' }],
+    note: 'Edbart’s wolf, rescued from poachers. Loyal, and very fond of Flame Slinger.', model: 'npc-varg',
+  },
   // Sirivik.
   'per-hul-oye': {
     name: 'Per Hul Øye', short: 'Per', kind: 'Humanoid · bar owner', ac: 11, hp: 14, initiative: 0, speed: 30,
@@ -110,6 +127,11 @@ export const MONSTERS = {
     name: 'Lasse', short: 'Lasse', kind: 'Humanoid · drunk', ac: 9, hp: 8, initiative: -1, speed: 30,
     attacks: [{ name: 'Wild swing of the mug', toHit: 1, dice: '1d4', bonus: 0, type: 'bludgeoning' }],
     note: 'A nervous regular at Per Hul Øye’s bar in Sirivik.', model: 'npc-lasse',
+  },
+  'god-of-beauty': {
+    name: 'The God of Beauty', short: 'God', kind: 'Celestial · lesser god', ac: 19, hp: 250, initiative: 5, speed: 40,
+    attacks: [{ name: 'Radiant touch', toHit: 12, dice: '4d10', bonus: 6, type: 'radiant' }, { name: 'Unbearable gaze', toHit: 12, dice: '3d8', bonus: 6, type: 'psychic' }],
+    note: 'One of the lesser gods. Fighting it is unwise.', model: 'npc-god-of-beauty',
   },
   accordion: {
     name: 'The Accordion', short: 'Accordion', kind: 'Monstrosity', ac: 14, hp: 85, initiative: 2, speed: 40,
