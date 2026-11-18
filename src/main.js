@@ -34,12 +34,12 @@ import { createRulebook } from './rulebook/rulebook.js';
 import { createJournalScreen } from './journal/journalScreen.js';
 import { createSceneScreen } from './scene/sceneScreen.js';
 import { createShopWindow } from './shop/shopWindow.js';
-import { shopFor, pay, priceText } from './shop/shops.js';
+import { shopFor, pay, priceText, receive } from './shop/shops.js';
 import { AREAS, registerArea, unregisterArea } from './scene/areas.js';
 import { sanitizeItem, registerItem } from './data/items.js';
 import { createDiceTray } from './dice/diceTray.js';
 import { createHeroManager } from './status/heroManager.js';
-import { shortRest, longRest, readyToLevel, giveItem } from './character/progress.js';
+import { shortRest, longRest, readyToLevel, giveItem, takeItem } from './character/progress.js';
 import { icon } from './ui/icons.js';
 import { heroPortrait, portraitImg } from './ui/portraits.js';
 import { loadRevealed, setRevealed, watchRevealed, loadWorld, saveWorld, watchWorld, loadEncounter, saveEncounter, loadRolls, addRoll, clearRolls, watchRolls, loadQuests, saveQuest, deleteQuest, watchQuests, generateItem } from './net/backend.js';
@@ -1380,6 +1380,14 @@ const shopWindow = createShopWindow(shopEl, {
     if (!c) throw new Error('No hero to buy for.');
     if (!pay(c.coins, price)) throw new Error(`Not enough money: it costs ${priceText(price)}.`);
     giveItem(c, { id: itemId, qty: 1 });
+    await saveCharacter(c);
+    heroChanged(c.id);
+  },
+  async onSell(heroId, index, price) {
+    const c = everyone.find((h) => h.id === heroId);
+    if (!c?.items[index]) throw new Error('That is not in the pack any more.');
+    takeItem(c, index);
+    receive(c.coins, price);
     await saveCharacter(c);
     heroChanged(c.id);
   },

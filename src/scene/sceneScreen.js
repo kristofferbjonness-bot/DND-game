@@ -82,7 +82,7 @@ export function createSceneScreen(root, { entries, heroes, monsters, canEdit, li
     const s = current();
     root.classList.toggle('is-dm', dm());
     empty.hidden = Boolean(s);
-    plate.hidden = !s;
+    plate.hidden = !s || dm(); // the DM's card holds the place name too
     if (!s) {
       empty.innerHTML = `<p class="scn__empty-title">No scene right now</p><p>When the Dungeon Master sets a scene, you will see your heroes and the people you meet here.</p>`;
       view.clear();
@@ -90,10 +90,8 @@ export function createSceneScreen(root, { entries, heroes, monsters, canEdit, li
     } else {
       const area = AREAS[s.data.area] ?? AREAS.port;
       plate.innerHTML = `
-        <small>${esc(area.town)}</small>
-        <b>${esc(area.name)}</b>
-        ${shopButton(s)}
-        <button type="button" class="scn__tags" title="Hide or show the names" aria-label="Hide or show the names"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h11l4 5-4 5H4z" /><path d="M8 12h5" /></svg></button>`;
+        <span class="scn__where"><small>${esc(area.town)}</small><b>${esc(area.name)}</b></span>
+        <span class="scn__acts">${shopButton(s)}${tagsButton}</span>`;
       if (plate.dataset.area !== s.data.area) { plate.dataset.area = s.data.area; plate.style.animation = 'none'; void plate.offsetWidth; plate.style.animation = ''; } // drop down again for a new place
       const people = cast(s.data), crew = heroesIn(s.data);
       const key = JSON.stringify([s.data.area, people.map((p) => p.key + p.model), crew.map((c) => `${c.id}|${JSON.stringify(c.equipped)}|${c.figure ? 1 : 0}`)]);
@@ -127,9 +125,14 @@ export function createSceneScreen(root, { entries, heroes, monsters, canEdit, li
     const scroll = panel.querySelector('.scn__whos')?.scrollTop ?? 0, top = panel.scrollTop;
     panel.innerHTML = `
       <header class="scn__head">
-        <button type="button" class="scn__fold" aria-expanded="${!folded}">${icon('scene', 'inline')} Scene <i>${folded ? '▸' : '▾'}</i></button>
-        <span class="scn__live is-on" title="Every change is shown to the players at once">Live</span>
-        <button type="button" class="btn btn--gold scn__fight"${fighters ? '' : ' disabled title="Add someone who can fight first"'}>${icon('combat')}Fight!</button>
+        <button type="button" class="scn__fold" aria-expanded="${!folded}" title="${folded ? 'Open the scene settings' : 'Fold away'}">
+          <span class="scn__where"><small><span class="scn__live is-on" title="Every change is shown to the players at once">Live</span> · ${esc((AREAS[d.area] ?? AREAS.port).town)}</small><b>${esc((AREAS[d.area] ?? AREAS.port).name)}</b></span>
+          <i>${folded ? '▸' : '▾'}</i>
+        </button>
+        <span class="scn__acts">
+          ${shopButton(s)}${tagsButton}
+          <button type="button" class="btn btn--gold scn__fight"${fighters ? '' : ' disabled title="Add someone who can fight first"'}>${icon('combat')}Fight!</button>
+        </span>
       </header>
       <form class="scn__form">
         <label class="field"><span>Where</span><select class="field__input" name="area">${areaOptions(d.area, esc)}</select></label>
@@ -265,6 +268,7 @@ export function createSceneScreen(root, { entries, heroes, monsters, canEdit, li
     if (dm()) return shop;
     return shop.open && heroesIn(s.data).some((c) => c.id === myHero()) ? shop : null;
   }
+  const tagsButton = `<button type="button" class="scn__tags" title="Hide or show the names" aria-label="Hide or show the names"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h11l4 5-4 5H4z" /><path d="M8 12h5" /></svg></button>`;
   const shopButton = (s) => (placeShop(s) ? `<button type="button" class="scn__shop">${icon('coin', 'inline')} Shop</button>` : '');
   plate.addEventListener('click', (e) => {
     if (e.target.closest('.scn__tags')) document.getElementById('tags-toggle').click();
@@ -283,6 +287,8 @@ export function createSceneScreen(root, { entries, heroes, monsters, canEdit, li
     if (!b) return;
     if (b.classList.contains('scn__fold')) { folded = !folded; drawPanel(); return; }
     if (b.classList.contains('scn__fight')) { fight(); return; }
+    if (b.classList.contains('scn__tags')) { document.getElementById('tags-toggle').click(); return; }
+    if (b.classList.contains('scn__shop')) { const sc = current(), shop = placeShop(sc); if (shop) onShop?.(shop, heroesIn(sc.data)); return; }
     if (b.dataset.do === 'clear') { changed({ people: [] }); return; }
     if (b.dataset.do === 'maker') { maker = { town: (AREAS[current().data.area] ?? AREAS.port).town }; drawPanel(); return; }
     if (b.dataset.do === 'makecancel') { maker = null; drawPanel(); return; }

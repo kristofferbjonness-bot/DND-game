@@ -2531,3 +2531,53 @@ body[data-screen="combat"]:not(:has(#combat.is-battle)) .tags-toggle { display: 
 .scn__shop { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 14px; cursor: pointer; font: 700 12px var(--font-display); color: #fff8ec; background: #3f7a3a; border: 1.5px solid #2a5a26; white-space: nowrap; }
 .scn__shop .ic { width: 16px; height: 16px; }
 @media (max-height: 500px) and (orientation: landscape) { .shop { padding-top: 8px; padding-bottom: 8px; } .shop__card { border-width: 14px; } }
+
+.shop__tabs { display: flex; gap: 4px; border-bottom: 1.5px solid var(--pp-line); }
+.shop__tabs button { position: relative; padding: 6px 14px 8px; background: none; border: 0; cursor: pointer; font: 700 13px var(--font-display); letter-spacing: 0.08em; text-transform: uppercase; color: var(--pp-soft); }
+.shop__tabs button.is-on { color: var(--pp-accent); }
+.shop__tabs button.is-on::after { content: ''; position: absolute; left: 8px; right: 8px; bottom: -2px; height: 3px; border-radius: 2px; background: var(--pp-accent); }
+.shop__sell { background: #9a6b1f; border-color: #6e4b1c; }
+
+/* ---------- The scene card: one card in the top-right corner ----------
+   For the DM it is the panel: where we are, Shop / names / Fight!, and (unfolded) the settings.
+   For players it is the same card, small: where we are, Shop and names. */
+.scn__panel { top: calc(var(--top) + 4px); right: max(12px, var(--safe-r)); left: auto; bottom: auto; max-height: calc(100% - var(--top) - var(--nav) - 10px); width: 290px; }
+.scn__panel.is-folded { width: 290px; }
+.scn__head { display: grid; gap: 6px; padding-bottom: 8px; }
+.scn__fold { display: flex; align-items: center; gap: 8px; width: 100%; text-align: left; }
+.scn__fold i { margin-left: auto; font-size: 14px; }
+.scn__where { display: flex; flex-direction: column; min-width: 0; line-height: 1.15; }
+.scn__where small { font: 600 10px var(--font-display); letter-spacing: 0.1em; text-transform: uppercase; color: var(--pp-soft); }
+.scn__where b { font: 700 16px var(--font-display); color: var(--pp-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.scn__where .scn__live { display: inline; margin: 0; font-size: 10px; color: var(--pp-accent); }
+.scn__where .scn__live::before { content: '● '; }
+.scn__acts { display: flex; align-items: center; gap: 6px; }
+.scn__acts .scn__fight { margin-left: auto; }
+.scn__acts .scn__tags { width: 28px; height: 28px; }
+.scn__panel.is-folded .scn__head { border-bottom: 0; padding-bottom: 0; }
+/* Players: the same card, without settings. */
+.scn__plate {
+  top: calc(var(--top) + 4px); right: max(12px, var(--safe-r)); left: auto; transform: none; width: auto; max-width: min(300px, calc(100% - 24px));
+  display: flex; flex-direction: column; align-items: stretch; gap: 6px; padding: 4px 8px 6px; border-width: 14px; border-image-width: 22px;
+  animation: scn-in 0.35s ease;
+}
+.scn__plate .scn__where b { font-size: 15px; }
+@keyframes scn-in { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
+@media (orientation: portrait) and (max-width: 600px) {
+  .scn__panel, .scn__panel.is-folded { top: auto; bottom: calc(var(--nav) + 6px); left: 8px; right: 8px; width: auto; max-height: 52vh; }
+  .scn__plate { top: auto; bottom: calc(var(--nav) + 6px); right: 8px; left: 8px; max-width: none; }
+  .scn__plate small { display: block; }
+}
+@media (max-height: 500px) and (orientation: landscape) {
+  .scn__panel, .scn__panel.is-folded { width: 260px; right: calc(max(10px, var(--safe-r)) + 50px); top: calc(var(--top) + 2px); }
+  .scn__plate { right: calc(max(10px, var(--safe-r)) + 50px); top: calc(var(--top) + 2px); }
+}
+.scn__plate[hidden] { display: none; }
+.scn__fold { min-width: 0; overflow: hidden; }
+.scn__where { flex: 1; overflow: hidden; }
+.scn__where b, .scn__where small { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.scn__where .scn__live { display: inline; }
+@media (orientation: portrait) and (max-width: 600px) {
+  /* The scene card starts beside the book and dice buttons at the bottom left. */
+  .scn__panel, .scn__panel.is-folded, .scn__plate { left: 60px; right: 8px; }
+}

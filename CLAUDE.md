@@ -171,7 +171,10 @@ The original assets (hand-drawn world map, location art, character art, lore doc
   Shop button (DM always; a player when the shop is open and their hero is in the scene). `shopWindow.js`: wares, prices, the
   buyer's purse, Buy (`pay` makes change; the item is added and the hero saved, players save their own hero). The DM picks the
   buyer and can "Edit stock" (prices like "2 gp 5 sp", remove, add any item, open/closed), saved as a journal row
-  `{ kind: 'shop', area, stock, open }` over the defaults (`shopFor`).
+  `{ kind: 'shop', area, stock, open }` over the defaults (`shopFor`). Sell tab: the buyer's things not held or worn, at 75% of
+  `valueOf` (this shop's price, else the lowest shop price, else a 5e-ish default by kind).
+- The scene card (top right; bottom on upright phones, beside the book/dice buttons): the DM's panel header shows Live, the
+  town and the place, Shop, names and Fight!, folding open to the settings; players get the same card without settings (`.scn__plate`).
 - **No Bestiary tab and no Creatures section any more** (by request: everything is a person). `MONSTERS` (data/monsters.js) still
   holds every fighter's stats and generated people are still saved to the `monsters` table; `cleanMonster` is in data/cleanMonster.js.
 - **Fights happen in the Scene tab** (there is no Fight tab any more, by request). The DM presses "Fight!" in the scene

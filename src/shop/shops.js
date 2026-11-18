@@ -3,6 +3,7 @@
 // hero's purse. The DM can change the stock and prices (saved as a journal row, kind 'shop').
 //
 // Prices are in copper pieces (cp): 1 gp = 10 sp = 100 cp, 1 pp = 10 gp.
+import { ITEMS } from '../data/items.js';
 
 // The shops and what they sell to start with: [item id, price in cp].
 export const SHOPS = {
@@ -45,6 +46,35 @@ export function shopFor(area, entries) {
     open: row?.data.open ?? true,
     stock: (row?.data.stock ?? base?.stock ?? []).map(([id, price]) => ({ id, price })),
   };
+}
+
+// --- What things are worth (for selling back) --------------------------------------------------
+export const SELL_SHARE = 0.75; // shops buy at 75% of an item's value
+
+const DEFAULT_GP = { '1d4': 2, '1d6': 10, '1d8': 15, '1d10': 20, '1d12': 30, '2d6': 50 };
+// An item's value in cp: what this shop asks for it, else the lowest any shop asks, else a 5e-ish
+// default by kind. null for things that cannot be sold (unknown, the young Hooknose…).
+export function valueOf(id, shop) {
+  const here = shop?.stock.find((w) => w.id === id);
+  if (here) return here.price;
+  const asks = Object.values(SHOPS).flatMap((sh) => sh.stock).filter(([sid]) => sid === id).map(([, p]) => p);
+  if (asks.length) return Math.min(...asks);
+  const it = ITEMS[id];
+  if (!it || it.kind === 'passenger') return null;
+  if (it.kind === 'weapon') return (DEFAULT_GP[it.dice] ?? 10) * 100 * (it.gem ? 10 : 1);
+  if (it.kind === 'armour') return ({ Light: 10, Medium: 50, Heavy: 75 }[it.category] ?? 10) * 100;
+  if (it.kind === 'shield') return 1000;
+  const worth = /worth about (\d+) gp/i.exec(it.note ?? '');
+  if (worth) return Number(worth[1]) * 100;
+  return ({ potions: 5000, food: 20, tools: 500, treasure: 2500, curio: 10 }[it.group] ?? 50);
+}
+export const sellPrice = (id, shop) => { const v = valueOf(id, shop); return v === null ? null : Math.max(1, Math.floor(v * SELL_SHARE)); };
+
+// Adds `cp` to a purse as change (gp, sp, cp).
+export function receive(coins, cp) {
+  coins.gp = (coins.gp ?? 0) + Math.floor(cp / 100);
+  coins.sp = (coins.sp ?? 0) + Math.floor((cp % 100) / 10);
+  coins.cp = (coins.cp ?? 0) + (cp % 10);
 }
 
 // --- Money ---------------------------------------------------------------------------------------
