@@ -245,15 +245,16 @@ export function buildTine({ cx, cz, r, keep, cathedral, bridges, at, toWorld, sk
   return g;
 }
 
-// Hrimnir, a larger town (smaller than Tine) at the southern end of the jungle peninsula of south-east
-// Rama, built to fit its land: light-brown paving, dark-wood houses with plaster walls and grey roofs in
+// Hrimnir, a larger town (smaller than Tine) on the east side of the jungle peninsula of south-east
+// Rama, on ground rising to a cliff over the sea (grid.js), built to fit its land: light-brown paving, dark-wood houses with plaster walls and grey roofs in
 // blocks with streets between, and a square with a tall red pagoda and the long dojo of the rune-
 // swordsmen. Its border is a strong wall of big logs straight across the peninsula from coast to coast: a stone footing, an earth bank and a walkway
 // behind, square towers along it and one gate with a torii. The jungle people have attacked it:
 // some stretches are scorched black, and a few broken tops are patched with planks.
 //   at(x, z) → { dry, y }; toWorld(x, z) → [wx, wz]; wall: [[x0, z0], [x1, z0]] (cells, coast to
-//   coast; the town is south of it); gateAt: the wall cell with the gate; centre: the pagoda's cell.
-export function buildHrimnir({ centre, wall, gateAt, at, toWorld }) {
+//   coast; walking from the first to the second, the town is on the right); gateAt: the wall cell with
+//   the gate; centre: the pagoda's cell; inside(x, z): whether a cell is in the town.
+export function buildHrimnir({ centre, wall, gateAt, inside, at, toWorld }) {
   const g = new THREE.Group();
   const put = (x, z, fn) => { const c = at(x, z); const [wx, wz] = toWorld(x, z); const s = new THREE.Group(); s.position.set(wx, c.y, wz); fn(s); g.add(s); };
   const n = (x, z, k) => { let h = (x * 374761393 + z * 668265263 + k * 1442695041) | 0; h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967296; };
@@ -302,12 +303,12 @@ export function buildHrimnir({ centre, wall, gateAt, at, toWorld }) {
   // The town fills the end of the peninsula behind the wall (the ground is paved light brown: terrain.js),
   // houses in blocks with paved streets between them, and an open square round the pagoda.
   const [px0, pz0] = centre;
-  const wallZ = Math.min(z0, z1);
-  for (let z = wallZ + 1; z <= wallZ + 14; z++) for (let x = Math.min(x0, x1) - 2; x <= Math.max(x0, x1) + 2; x++) {
+  for (let z = Math.min(z0, z1) - 2; z <= Math.max(z0, z1) + 2; z++) for (let x = Math.min(x0, x1) - 16; x <= Math.max(x0, x1) + 16; x++) {
+    if (!inside(x, z) || onWall(x, z)) continue;
     if (!at(x, z).dry) continue;
     put(x, z, (s) => {
       const square = Math.hypot(x - px0, z - pz0) < 2.2, street = x % 4 === 0 || z % 4 === 1;
-      if (square || street || z === wallZ + 1) {
+      if (square || street || Math.abs(x - x0) + Math.abs(z - z0) === 0 || Math.min(...cells.map(([a, b]) => Math.hypot(a - x, b - z))) < 1.5) {
         if (!square && n(x, z, 15) > 0.85) block(s, [0.08, 0.3, 0.08], [0.4, 0.04, 0.4], '#d9a23a'); // a lantern post
         return;
       }

@@ -45,6 +45,20 @@ for (const p of PEAKS) {
     grid.river[k] = 0;
   }
 }
+// Hrimnir's site: the east side of the jungle peninsula in south-east Rama, east of a wall at x = 190
+// that runs from the north coast to the south coast. Its ground rises from the wall to a small cliff
+// over the sea on the east, where the pagoda stands.
+export const HRIMNIR_SITE = { wallX: 190, z0: 137, z1: 158 };
+export const inHrimnir = (x, z) => x > HRIMNIR_SITE.wallX && z >= HRIMNIR_SITE.z0 && z <= HRIMNIR_SITE.z1;
+for (let z = HRIMNIR_SITE.z0; z <= HRIMNIR_SITE.z1; z++) {
+  let east = HRIMNIR_SITE.wallX;
+  for (let x = HRIMNIR_SITE.wallX + 1; x < cols && grid.land[z * cols + x]; x++) east = x;
+  for (let x = HRIMNIR_SITE.wallX + 1; x <= east; x++) {
+    const k = z * cols + x, t = (x - HRIMNIR_SITE.wallX) / Math.max(4, east - HRIMNIR_SITE.wallX);
+    grid.heights[k] = 2 + Math.round(7 * t ** 1.3); // a slope up to the cliff top
+    grid.river[k] = 0;
+  }
+}
 // The cells of Rama (the eastern continent), found from its label: its mountains carry far less snow.
 export const onRama = (() => {
   const out = new Uint8Array(cols * rows);

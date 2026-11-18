@@ -78,7 +78,7 @@ export const LOCATIONS = [
     name: 'Hrimnir',
     tier: 'city',
     style: 'pagoda',
-    px: [937, 772],
+    px: [982, 732],
     subtitle: 'Rama · south-east',
     text: 'Where Rikart Hagenstorm trained under his master Levi Itadori, before Sukuna Matamoto and the Grey Hand killed him.',
     image: 'art/places/hrimnir.webp',

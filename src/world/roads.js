@@ -4,7 +4,7 @@
 //   - an old, unkept dirt road from Razz of Mataz to Ikeheim and on to the Empire of Tine, with a
 //     fork to Sirivik;
 //   - a gravel road from the mine in the mountains to Bartedalen.
-import { grid, idx, inBounds, hash, darkForest, nearestLand } from './grid.js';
+import { grid, idx, inBounds, hash, darkForest, nearestLand, HRIMNIR_SITE, inHrimnir } from './grid.js';
 import { LOCATIONS } from './locations.js';
 
 // The Bartedalen Mine: at ground level, tucked into the corner south-west of Bartedalen where the
@@ -26,10 +26,11 @@ export const RUNE_STONES = [
   { cx: 190, cz: 27, n: 3 },
   { cx: 196, cz: 21, n: 1 },
 ];
-// Hrimnir: a larger town filling the southern end of the jungle peninsula of south-east Rama. Its border
-// is a strong log wall straight across the peninsula from the west coast to the east coast; the jungle
-// people who attack it live in camps deep in the jungle further north.
-export const HRIMNIR = { centre: [187, 154], wall: [[175, 150], [202, 150]], gateAt: [188, 150], camps: [[174, 129], [184, 126], [170, 134]] };
+// Hrimnir: a larger town on the east side of the jungle peninsula of south-east Rama (HRIMNIR_SITE in
+// grid.js). Its border is a strong log wall from the north coast to the south coast (walked from south
+// to north, the town is on the right); the pagoda stands on the cliff top over the sea, the houses
+// below it towards the wall. The jungle people who attack it live deep in the jungle to the west.
+export const HRIMNIR = { centre: [199, 146], wall: [[HRIMNIR_SITE.wallX, HRIMNIR_SITE.z1], [HRIMNIR_SITE.wallX, HRIMNIR_SITE.z0]], gateAt: [HRIMNIR_SITE.wallX, 147], camps: [[174, 129], [178, 147], [170, 136]], inside: inHrimnir };
 // The bridge east of Ytterhavn (cells along z): roads cross the river there.
 export const BRIDGE = { cx: 104, from: 106, to: 108 };
 const onBridge = (k) => k % grid.cols === BRIDGE.cx && ((k / grid.cols) | 0) >= BRIDGE.from && ((k / grid.cols) | 0) <= BRIDGE.to;
