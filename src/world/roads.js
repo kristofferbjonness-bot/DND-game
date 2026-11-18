@@ -36,7 +36,7 @@ for (let z = HRIMNIR_SITE.z1; z >= HRIMNIR_SITE.z0; z--) { // south to north, on
   if (prev) for (let s = prev[0]; s !== x; s += Math.sign(x - prev[0])) if (s !== prev[0]) hrimnirWall.push([s, prev[1]]);
   hrimnirWall.push([x, z]);
 }
-export const HRIMNIR = { centre: [201, 146], wall: hrimnirWall, gateAt: [wallXAt(147), 147], camps: [[174, 129], [176, 147], [170, 136]], inside: inHrimnir };
+export const HRIMNIR = { centre: [201, 146], dojo: [200, 148], harbour: [192, 156], wall: hrimnirWall, gateAt: [wallXAt(146), 146], camps: [[174, 129], [176, 147], [170, 136]], inside: inHrimnir };
 // The bridge east of Ytterhavn (cells along z): roads cross the river there.
 export const BRIDGE = { cx: 104, from: 106, to: 108 };
 const onBridge = (k) => k % grid.cols === BRIDGE.cx && ((k / grid.cols) | 0) >= BRIDGE.from && ((k / grid.cols) | 0) <= BRIDGE.to;

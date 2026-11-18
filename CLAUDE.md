@@ -73,11 +73,12 @@ The original assets (hand-drawn world map, location art, character art, lore doc
 - Hrimnir is a larger town (smaller than Tine) on the east side of the jungle peninsula (`HRIMNIR_SITE` / `inHrimnir` in grid.js,
   which also raises its ground from the wall up to a small rock cliff over the sea; the wall bows gently west, `wallXAt`), built by `buildHrimnir` (landmarks.js; `HRIMNIR`
   in roads.js): light-brown paved ground and rock cliff sides (terrain.js `paved`), dark-wood houses in blocks with streets down the
-  slope, a big seven-tier red pagoda at the cliff edge and the dojo just inland of it. Its border is a strong log wall (stone footing, earth bank, walkway, square
+  slope, a big seven-tier red pagoda at the cliff edge and the dojo beside it, a great stone stair with lanterns straight up
+  from the gate to the pagoda, and a harbour with piers and junks at the low southern point. Its border is a strong log wall (stone footing, earth bank, walkway, square
   towers, one gate with a torii) from the north coast to the south coast; some stretches scorched or patched after attacks by the
   jungle people, whose primitive camps (`buildJungleCamp`: leaf domes, lean-to, skull pole) lie deep in the jungle to the west.
-- Skinnvika (`skinnvika` in locations.js, style `poachers` in landmarks.js): the poachers' hunting and trading post in a little bay on
-  Rama's east coast where desert, grassland and jungle meet (north of Hrimnir): shacks, drying skins, cages, a tanning vat, a jetty.
+- Skinnvika (`skinnvika` in locations.js, style `poachers` in landmarks.js, `rot` turns a landmark): Varg's poachers' hunting and
+  trading post in a bay at the western foot of Fjellene av Ferran on Lama: shacks, drying skins, cages, a tanning vat, a jetty.
 - Rune stones (the language of the gods; `RUNE_STONES` in roads.js, `buildRuneStones` in features.js, runes glow and fade): on the
   summit of Rama's mountains, the highest ridge of Lama beside the volcano, and at the icy foot of the ice spire. Mountain haze keeps clear of them.
 - Settlements in features.js placed in `buildWorldView`: the mine (`buildMine`), two horse-nomad camps of gers on

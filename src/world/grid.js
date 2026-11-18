@@ -58,7 +58,8 @@ for (let z = HRIMNIR_SITE.z0; z <= HRIMNIR_SITE.z1; z++) {
   for (let x = w + 1; x < cols && grid.land[z * cols + x]; x++) east = x;
   for (let x = w + 1; x <= east; x++) {
     const k = z * cols + x, t = (x - w) / Math.max(4, east - w);
-    grid.heights[k] = 2 + Math.round(7 * t ** 1.3); // a slope up to the cliff top
+    const south = Math.min(1, Math.max(0, (HRIMNIR_SITE.z1 - 1 - z) / 6)); // the southern point comes down to the sea (the harbour)
+    grid.heights[k] = 2 + Math.round(7 * t ** 1.3 * south * south); // a slope up to the cliff top
     grid.river[k] = 0;
   }
 }

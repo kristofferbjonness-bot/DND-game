@@ -196,6 +196,7 @@ function buildWorldView() {
     const town = buildLandmark(p.style);
     town.scale.setScalar(p.style === 'empire' ? 1.6 : p.style === 'poachers' ? 1.9 : p.tier === 'city' ? 1.5 : 1.2);
     town.position.set(p.x, p.ground, p.z);
+    if (p.rot) town.rotation.y = p.rot;
     townGroup.add(town);
     if (town.userData.spin) spinners.push(town.userData.spin);
   }

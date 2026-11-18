@@ -286,7 +286,7 @@ export function buildTine({ cx, cz, r, keep, cathedral, bridges, at, toWorld, sk
 //   at(x, z) → { dry, y }; toWorld(x, z) → [wx, wz]; wall: [[x0, z0], [x1, z0]] (cells, coast to
 //   coast; walking from the first to the second, the town is on the right); gateAt: the wall cell with
 //   the gate; centre: the pagoda's cell; inside(x, z): whether a cell is in the town.
-export function buildHrimnir({ centre, wall, gateAt, inside, at, toWorld }) {
+export function buildHrimnir({ centre, dojo, harbour, wall, gateAt, inside, at, toWorld }) {
   const g = new THREE.Group();
   const put = (x, z, fn) => { const c = at(x, z); const [wx, wz] = toWorld(x, z); const s = new THREE.Group(); s.position.set(wx, c.y, wz); fn(s); g.add(s); };
   const n = (x, z, k) => { let h = (x * 374761393 + z * 668265263 + k * 1442695041) | 0; h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967296; };
@@ -338,7 +338,7 @@ export function buildHrimnir({ centre, wall, gateAt, inside, at, toWorld }) {
     if (!inside(x, z) || onWall(x, z)) continue;
     if (!at(x, z).dry) continue;
     put(x, z, (s) => {
-      const square = Math.hypot(x - px0, z - pz0) < 1.6 || (x === px0 - 2 && z === pz0) || (x === px0 - 1 && z === pz0), street = x % 4 === 0 || z % 4 === 1;
+      const square = Math.hypot(x - px0, z - pz0) < 1.6 || (z === pz0 && x < px0) || (x === dojo[0] && z === dojo[1]) || Math.hypot(x - harbour[0], z - harbour[1]) < 1.5, street = x % 4 === 0 || z % 4 === 1;
       if (square || street || Math.min(...cells.map(([a, b]) => Math.hypot(a - x, b - z))) < 1.5) {
         if (!square && n(x, z, 15) > 0.85) block(s, [0.08, 0.3, 0.08], [0.4, 0.04, 0.4], '#d9a23a'); // a lantern post
         return;
@@ -349,8 +349,49 @@ export function buildHrimnir({ centre, wall, gateAt, inside, at, toWorld }) {
       block(s, [0.7, 0.05, 0.05], [0, 0.14, 0.36], '#4e3520'); // a dark timber band
     });
   }
+  // The great stair: from the gate straight up the slope to the pagoda, stone steps filling each
+  // rise in the ground, with lanterns on both sides.
+  for (let x = gateAt[0] + 1; x < px0; x++) {
+    if (!at(x, pz0).dry) continue;
+    put(x, pz0, (s) => {
+      const dh = Math.max(0, at(x + 1, pz0).y - at(x, pz0).y);
+      block(s, [1.0, 0.06, 0.8], [0, 0, 0], '#9a948a');
+      const k = Math.max(1, Math.round(dh / 0.12));
+      if (dh > 0) for (let i = 0; i < k; i++) block(s, [1 / k + 0.01, (dh * (i + 1)) / k, 0.8], [-0.5 + (i + 0.5) / k, 0, 0], i % 2 ? '#a8a298' : '#9a948a');
+      for (const side of [-0.48, 0.48]) block(s, [1.0, 0.1 + dh * 0.5, 0.06], [0, 0, side], '#7f7a72'); // low side walls
+      if (x % 2 === 0) for (const side of [-0.48, 0.48]) { block(s, [0.07, 0.35, 0.07], [-0.3, dh * 0.3, side], '#4e3520'); block(s, [0.1, 0.1, 0.1], [-0.3, dh * 0.3 + 0.35, side], '#ffcf70'); }
+    });
+  }
+  // The harbour at the southern point: a stone quay, wooden piers, a storehouse and the town's ships
+  // (junks with battened red-brown sails) moored in the water.
+  {
+    const [hx, hz] = harbour, [wx, wz] = toWorld(hx, hz);
+    const hb = new THREE.Group(); hb.position.set(wx, 0, wz); g.add(hb);
+    const deck = 0.45, quay = '#8f8a80', pier = '#7a5634', post = '#5e4128';
+    block(hb, [2.6, deck + 0.1, 0.5], [0.3, 0, 0.9], quay); // the quay along the shore
+    block(hb, [0.5, deck, 2.6], [0.3, 0, 2.3], pier); // a pier out to the south
+    block(hb, [2.4, deck, 0.45], [1.8, 0, 1.6], pier); // and one out to the east
+    for (const [x, z] of [[0.1, 2.0], [0.5, 2.0], [0.1, 3.4], [0.5, 3.4], [1.2, 1.4], [1.2, 1.8], [2.6, 1.4], [2.6, 1.8]]) block(hb, [0.08, deck + 0.15, 0.08], [x, -0.1, z], post);
+    const storeY = at(hx, hz).y;
+    block(hb, [1.0, 0.45, 0.6], [-0.4, storeY, 0], '#6b4a32'); block(hb, [1.15, 0.1, 0.75], [-0.4, storeY + 0.45, 0], '#2f3640'); block(hb, [0.7, 0.1, 0.45], [-0.4, storeY + 0.55, 0], '#2f3640');
+    for (const [x, z] of [[0.6, 1.0], [0.85, 1.05]]) block(hb, [0.18, 0.18, 0.18], [x, deck + 0.1, z], '#8a6a44'); // crates on the quay
+    // Junks: a hull with a raised stern, two masts with battened sails.
+    const junk = (x, z, rot, sail) => {
+      const j = new THREE.Group(); j.position.set(x, 0, z); j.rotation.y = rot; hb.add(j);
+      block(j, [0.5, 0.25, 1.5], [0, 0, 0], '#5a3a22'); block(j, [0.46, 0.06, 1.4], [0, 0.25, 0], '#8a6a44');
+      block(j, [0.5, 0.25, 0.35], [0, 0.25, -0.6], '#5a3a22'); block(j, [0.4, 0.15, 0.3], [0, 0.5, -0.6], '#b8463c'); // stern castle
+      for (const [mz, h] of [[0.3, 1.2], [-0.2, 1.45]]) {
+        block(j, [0.05, h, 0.05], [0, 0.25, mz], '#4e3520');
+        for (let i = 0; i < 4; i++) block(j, [0.03, h * 0.17, 0.5], [0.04, 0.45 + i * h * 0.19, mz], sail);
+        for (let i = 0; i < 5; i++) block(j, [0.05, 0.02, 0.52], [0.05, 0.43 + i * h * 0.19, mz], '#2a2018'); // battens
+      }
+    };
+    junk(1.15, 3.0, 0.1, '#a8503a');
+    junk(2.5, 2.6, Math.PI / 2 + 0.15, '#8a5a3a');
+    junk(3.4, 0.6, Math.PI / 2 - 0.1, '#a8503a');
+  }
   // The great pagoda at the cliff edge (seven red tiers on a stone base), and the dojo of the
-  // rune-swordsmen just inland of it, on its own cell (the ground steps down towards the wall).
+  // rune-swordsmen beside it, on its own cell.
   put(px0, pz0, (s) => {
     let w = 1.75, y = 0.3;
     block(s, [1.9, 0.18, 1.9], [0, 0, 0], '#8f9299');
@@ -365,7 +406,7 @@ export function buildHrimnir({ centre, wall, gateAt, inside, at, toWorld }) {
     block(s, [0.1, 0.8, 0.1], [0, y, 0], '#d9a23a'); // the spire
     for (let k = 0; k < 3; k++) block(s, [0.22 - k * 0.05, 0.05, 0.22 - k * 0.05], [0, y + 0.2 + k * 0.2, 0], '#d9a23a');
   });
-  put(px0 - 2, pz0, (s) => {
+  put(dojo[0], dojo[1], (s) => {
     block(s, [0.75, 0.42, 1.6], [0, 0, 0], '#6b4a32');
     block(s, [0.06, 0.2, 1.5], [-0.38, 0.12, 0], '#e8dcc8');
     block(s, [0.95, 0.1, 1.8], [0, 0.42, 0], '#2f3640'); block(s, [0.65, 0.1, 1.4], [0, 0.52, 0], '#2f3640'); block(s, [0.3, 0.08, 0.9], [0, 0.62, 0], '#2f3640');

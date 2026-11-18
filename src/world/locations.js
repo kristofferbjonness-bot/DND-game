@@ -116,8 +116,9 @@ export const LOCATIONS = [
     name: 'Skinnvika',
     tier: 'local',
     style: 'poachers',
-    px: [957, 597],
-    subtitle: 'Rama · on the east coast, where desert, grassland and jungle meet',
+    px: [272, 387],
+    rot: Math.PI, // the jetty points west into the bay
+    subtitle: 'Lama · a bay at the western foot of Fjellene av Ferran',
     text: 'A rough hunters\' post in a little bay. Skins of every colour hang drying on wooden frames, and boats take bundles of furs away by sea. Nobody here asks where an animal came from.',
   },
   {
