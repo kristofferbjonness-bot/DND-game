@@ -284,6 +284,49 @@ export function buildMine() {
   return g;
 }
 
+// A small natural cave mouth at the foot of a mountain: a dark opening framed by stacked boulders,
+// loose rocks spilling out in front. `kind` 'desert' (warm sandstone) or 'forest' (grey, mossy stone).
+// The opening faces +z.
+export function buildCave(kind = 'desert') {
+  const g = new THREE.Group();
+  const [c1, c2, c3, c4] = kind === 'forest' ? ['#6e6a66', '#5a5753', '#807b74', '#4f6a45'] : ['#c49a68', '#a97f52', '#d8b27e', '#8d6a44'];
+  const rock = solid(c1), rockDark = solid(c2), rockLight = solid(c3), extra = solid(c4);
+  const black = new THREE.MeshBasicMaterial({ color: '#0a0807' });
+  // The hillside the cave is cut into.
+  block(g, [2.4, 1.1, 1.4], [0, 0, -1.0], rock);
+  block(g, [1.6, 0.6, 1.0], [0.2, 1.1, -1.2], rockDark);
+  // The opening: a dark hollow, a little lower than wide.
+  const hole = new THREE.Mesh(bevelBox(0.62, 0.62, 0.1, 0.03).clone().translate(0, 0.31, 0), black);
+  hole.position.set(0, 0, -0.29);
+  g.add(hole);
+  // Boulders framing it, uneven, with one big lintel stone across the top.
+  block(g, [0.42, 0.75, 0.5], [-0.52, 0, -0.3], rockDark);
+  block(g, [0.36, 0.55, 0.45], [0.5, 0, -0.32], rockLight);
+  block(g, [0.3, 0.25, 0.4], [0.52, 0.55, -0.3], rock);
+  block(g, [1.05, 0.28, 0.55], [0.03, 0.68, -0.3], rockLight);
+  block(g, [0.5, 0.22, 0.4], [-0.3, 0.96, -0.4], rockDark);
+  // Loose rocks spilling out in front.
+  block(g, [0.22, 0.14, 0.2], [-0.45, 0, 0.15], rockLight);
+  block(g, [0.16, 0.1, 0.16], [0.3, 0, 0.3], rockDark);
+  block(g, [0.12, 0.08, 0.12], [0.05, 0, 0.5], rock);
+  if (kind === 'forest') {
+    // Moss on the stones and a leaning dead tree beside the mouth.
+    block(g, [1.05, 0.05, 0.55], [0.03, 0.96, -0.3], extra);
+    block(g, [0.42, 0.05, 0.5], [-0.52, 0.75, -0.3], extra);
+    const dead = solid('#4a3f36');
+    const trunk = block(g, [0.09, 0.95, 0.09], [0.95, 0, 0.05], dead);
+    trunk.rotation.z = -0.25;
+    block(g, [0.32, 0.06, 0.06], [1.02, 0.7, 0.05], dead);
+  } else {
+    // Bleached bones by the mouth, and a few dry tufts.
+    const bone = solid('#efe6d2');
+    block(g, [0.3, 0.05, 0.06], [0.35, 0, 0.05], bone);
+    block(g, [0.08, 0.08, 0.08], [0.52, 0, 0.05], bone);
+    block(g, [0.1, 0.12, 0.1], [-0.8, 0, 0.1], extra);
+  }
+  return g;
+}
+
 // A camp of horse nomads (Mongolian-style felt tents): round white gers with domed roofs, a red
 // roof ring and painted doors, a horse corral, a fire and a pole with blue streamers.
 export function buildYurtCamp(n = 5) {

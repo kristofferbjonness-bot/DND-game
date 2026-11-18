@@ -10,6 +10,12 @@ import { LOCATIONS } from './locations.js';
 // The Bartedalen Mine: at ground level, tucked into the corner south-west of Bartedalen where the
 // brown (desert) mountains meet the grey ones; its tunnel runs into the mountain behind it.
 export const MINE = { cx: 158, cz: 86, face: [-0.35, -1] }; // face: the way out (world x, z)
+// Small natural caves at the foot of Rama's mountains (face: the way out, world x, z): one in the
+// desert near Razz of Mataz, one at the edge of Sortland's dark forest.
+export const CAVES = [
+  { cx: 112, cz: 114, face: [-1, 0], kind: 'desert' },
+  { cx: 113, cz: 103, face: [0, -1], kind: 'forest' },
+];
 // The bridge east of Ytterhavn (cells along z): roads cross the river there.
 export const BRIDGE = { cx: 104, from: 106, to: 108 };
 const onBridge = (k) => k % grid.cols === BRIDGE.cx && ((k / grid.cols) | 0) >= BRIDGE.from && ((k / grid.cols) | 0) <= BRIDGE.to;
