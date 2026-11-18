@@ -674,11 +674,11 @@ export function createJournalScreen(root, { entries, canEdit, mapPlaces, heroes 
         steps.push({ what: 'add', run: async () => { await put({ data: { kind: 'placenote', place: n.place, body: n.body, shown: false } }); if (n.secret) await putSecret(about, n.secret); } });
         continue;
       }
-      if (n.was && current.data.body !== n.body && current.data.body === n.was.body) {
+      if (n.was && current.data.body !== n.body && past(n, 'body').includes(current.data.body)) {
         steps.push({ what: 'update', run: async () => put({ id: current.id, data: { ...current.data, body: n.body } }) });
       }
       const sec = secretText(about);
-      if (n.secret && sec !== n.secret && (!sec || sec === n.was?.secret)) steps.push({ what: 'update', run: async () => putSecret(about, n.secret) });
+      if (n.secret && sec !== n.secret && (!sec || past(n, 'secret').includes(sec))) steps.push({ what: 'update', run: async () => putSecret(about, n.secret) });
     }
     for (const p of lore.people) {
       sync('npc', p, () => ({ kind: 'npc', title: p.title, role: p.role, place: resolve(p.place), attitude: p.attitude, status: p.status, body: p.body }));
