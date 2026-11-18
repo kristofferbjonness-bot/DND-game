@@ -158,7 +158,7 @@ function buildWorldView() {
     return out;
   })();
   const clear = [...(sortCell ? [[sortCell[0], sortCell[1], 2]] : []), [BRIDGE.cx, BRIDGE.from, 0], [BRIDGE.cx, BRIDGE.to, 0],
-    [MINE.cx, MINE.cz, 2], [HRIMNIR.cx, HRIMNIR.cz, HRIMNIR.r + 1], ...HRIMNIR.camps.map(([x, z]) => [x, z, 2]), ...CAVES.map((c) => [c.cx, c.cz, 1]), ...RUNE_STONES.map((r) => [r.cx, r.cz, 1]), ...NOMADS.map(([x, z]) => [x, z, 3]), ...DESERT.map(([x, z]) => [x, z, 3])];
+    [MINE.cx, MINE.cz, 2], [HRIMNIR.cx, HRIMNIR.cz, HRIMNIR.r + 1], ...Array.from({ length: HRIMNIR.wall[1][0] - HRIMNIR.wall[0][0] + 1 }, (_, i) => [HRIMNIR.wall[0][0] + i, HRIMNIR.wall[0][1], 1]), ...HRIMNIR.camps.map(([x, z]) => [x, z, 2]), ...CAVES.map((c) => [c.cx, c.cz, 1]), ...RUNE_STONES.map((r) => [r.cx, r.cz, 1]), ...NOMADS.map(([x, z]) => [x, z, 3]), ...DESERT.map(([x, z]) => [x, z, 3])];
   const reach = (p) => (p.style === 'empire' ? 7 : 3); // how far a town keeps trees away
   const plants = buildPlants((x, z) => towns.some((p) => Math.abs(p.cx - x) <= reach(p) && Math.abs(p.cz - z) <= reach(p))
     || clear.some(([cx, cz, r]) => Math.abs(cx - x) <= r && Math.abs(cz - z) <= r));
@@ -189,7 +189,7 @@ function buildWorldView() {
         at: (x, z) => { const k = z * grid.cols + x; return { dry: Boolean(grid.land[k]) && !grid.river[k], y: surfaceY(x, z) }; },
         toWorld: cellToWorld,
       }));
-      HRIMNIR.camps.forEach(([cx, cz], i) => { const camp = buildJungleCamp(3 + i, i + 1); const [x, z] = cellToWorld(cx, cz); camp.position.set(x, surfaceY(cx, cz), z); camp.scale.setScalar(1.4); townGroup.add(camp); });
+      HRIMNIR.camps.forEach(([cx, cz], i) => { const camp = buildJungleCamp(3 + (i % 2), i + 1); const [x, z] = cellToWorld(cx, cz); camp.position.set(x, surfaceY(cx, cz), z); camp.scale.setScalar(1.4); townGroup.add(camp); });
       continue;
     }
     const town = buildLandmark(p.style);

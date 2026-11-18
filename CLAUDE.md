@@ -71,8 +71,9 @@ The original assets (hand-drawn world map, location art, character art, lore doc
 - Two small natural caves at the foot of Rama's mountains (`CAVES` in roads.js, `buildCave` in features.js): two sandstone ones spread
   apart on the far (east) side of the desert, far from Razz, and a grey, mossy one on the far (north-east) edge of Sortland's dark forest.
 - Hrimnir is a larger town (smaller than Tine), built to fit its land by `buildHrimnir` (landmarks.js; `HRIMNIR` in roads.js): dark-wood
-  houses, a red pagoda and the dojo, inside a wooden palisade with watchtowers and one gate (a torii) facing inland, broken and burnt
-  in places by the jungle people, whose camps (`buildJungleCamp`) stand in the jungle round it.
+  houses, a red pagoda and the dojo. North of it a strong log wall (stone footing, earth bank, walkway, square towers, one gate with a
+  torii) cuts straight across the jungle peninsula coast to coast; some stretches scorched or patched after attacks by the jungle
+  people, whose primitive camps (`buildJungleCamp`: leaf domes, lean-to, skull pole) lie deep in the jungle to the north.
 - Rune stones (the language of the gods; `RUNE_STONES` in roads.js, `buildRuneStones` in features.js, runes glow and fade): on the
   summit of Rama's mountains, the highest ridge of Lama beside the volcano, and at the icy foot of the ice spire. Mountain haze keeps clear of them.
 - Settlements in features.js placed in `buildWorldView`: the mine (`buildMine`), two horse-nomad camps of gers on

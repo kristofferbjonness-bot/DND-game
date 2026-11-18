@@ -245,88 +245,76 @@ export function buildTine({ cx, cz, r, keep, cathedral, bridges, at, toWorld, sk
   return g;
 }
 
-// Hrimnir, a larger town (smaller than Tine) on the jungle coast of south-east Rama, built to fit its
-// land: dark-wood houses with plaster walls and grey roofs on every dry cell, a tall red pagoda and the
-// long dojo of the rune-swordsmen in the middle, and round it a palisade of sharpened logs with
-// watchtowers and a gate (with a torii) facing inland. The jungle people have attacked it: stretches
-// of the wall are broken, leaning, burnt black or gone, with fallen logs lying about.
-//   at(x, z) → { dry, y }; toWorld(x, z) → [wx, wz]; gate: the angle (radians) the gate faces.
-export function buildHrimnir({ cx, cz, r, gate = Math.PI, at, toWorld }) {
+// Hrimnir, a larger town (smaller than Tine) on the jungle peninsula of south-east Rama, built to fit
+// its land: dark-wood houses with plaster walls and grey roofs on every dry cell round the middle, a
+// tall red pagoda and the long dojo of the rune-swordsmen. North of it a strong wall of big logs cuts
+// straight across the peninsula from coast to coast: a stone footing, an earth bank and a walkway
+// behind, square towers along it and one gate with a torii. The jungle people have attacked it:
+// some stretches are scorched black, and a few broken tops are patched with planks.
+//   at(x, z) → { dry, y }; toWorld(x, z) → [wx, wz]; wall: [[x0, z0], [x1, z1]] (cells, coast to
+//   coast); gateAt: the wall cell with the gate.
+export function buildHrimnir({ cx, cz, r, wall, gateAt, at, toWorld }) {
   const g = new THREE.Group();
   const put = (x, z, fn) => { const c = at(x, z); const [wx, wz] = toWorld(x, z); const s = new THREE.Group(); s.position.set(wx, c.y, wz); fn(s); g.add(s); };
   const n = (x, z, k) => { let h = (x * 374761393 + z * 668265263 + k * 1442695041) | 0; h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967296; };
-  const log = '#7a5634', logDark = '#5e4128', burnt = '#2a2420', ash = '#4a423c', roofs = ['#2f3640', '#3b4250', '#353a33'];
-  const angleGap = (a, b) => Math.abs(Math.atan2(Math.sin(a - b), Math.cos(a - b)));
-  // The gate: the wall cell nearest the gate's angle; its neighbours along the wall are left open.
-  let gateCell = null, best = Infinity;
-  for (let z = Math.floor(cz - r - 1); z <= cz + r + 1; z++) for (let x = Math.floor(cx - r - 1); x <= cx + r + 1; x++) {
-    const d = Math.hypot(x - cx, z - cz), gap = angleGap(Math.atan2(z - cz, x - cx), gate);
-    if (d > r - 0.6 && d <= r + 0.45 && at(x, z).dry && gap < best) { best = gap; gateCell = [x, z]; }
-  }
+  const log = '#7a5634', logDark = '#5e4128', burnt = '#2a2420', stone = '#8a8478', earth = '#6e5a40', plank = '#a07a50', roofs = ['#2f3640', '#3b4250', '#353a33'];
+  // The wall's cells, coast to coast.
+  const [[x0, z0], [x1, z1]] = wall;
+  const steps = Math.max(Math.abs(x1 - x0), Math.abs(z1 - z0));
+  const along = Math.atan2(z1 - z0, x1 - x0);
+  const cells = [];
+  for (let i = 0; i <= steps; i++) { const x = Math.round(x0 + ((x1 - x0) * i) / steps), z = Math.round(z0 + ((z1 - z0) * i) / steps); if (at(x, z).dry && !cells.some(([a, b]) => a === x && b === z)) cells.push([x, z]); }
+  const onWall = (x, z) => cells.some(([a, b]) => a === x && b === z);
+  cells.forEach(([x, z], i) => put(x, z, (s) => {
+    const t = new THREE.Group(); t.rotation.y = -along; s.add(t); // x runs along the wall, +z faces the town (south)
+    block(t, [1.05, 0.18, 0.75], [0, -0.05, 0], stone); // stone footing
+    block(t, [1.05, 0.3, 0.45], [0, 0, 0.45], earth); // earth bank behind
+    if (x === gateAt[0] && z === gateAt[1]) { // the gate: heavy posts, a lintel, double doors and a torii in front
+      for (const o of [-0.42, 0.42]) block(t, [0.26, 1.45, 0.3], [o, 0, 0], logDark);
+      block(t, [1.15, 0.2, 0.34], [0, 1.3, 0], logDark);
+      block(t, [0.28, 0.9, 0.08], [-0.15, 0.1, 0.05], plank); block(t, [0.28, 0.9, 0.08], [0.22, 0.1, 0.22], plank); // one door ajar
+      block(t, [1.2, 0.12, 0.5], [0, 1.5, 0], roofs[0]);
+      const torii = new THREE.Group(); torii.position.set(0, 0, -0.95); t.add(torii);
+      for (const o of [-0.34, 0.34]) block(torii, [0.09, 0.85, 0.09], [o, 0, 0], '#b8463c');
+      block(torii, [0.95, 0.08, 0.12], [0, 0.85, 0], '#2a2420'); block(torii, [0.75, 0.06, 0.08], [0, 0.7, 0], '#b8463c');
+      return;
+    }
+    const scorched = n(x, z, 11) > 0.78, broken = n(x, z, 12) > 0.85;
+    // Big logs packed tight, two rows deep, sharpened at the top.
+    for (let k = 0; k < 4; k++) {
+      const top = broken && k > 0 && k < 3 ? 0.6 + n(x, z, 20 + k) * 0.15 : 1.15 + n(x, z, 30 + k) * 0.1;
+      const c = scorched && n(x, z, 40 + k) > 0.3 ? burnt : k % 2 ? log : logDark;
+      block(t, [0.25, top, 0.25], [-0.375 + k * 0.25, 0.1, -0.08], c);
+      block(t, [0.25, top - 0.15, 0.22], [-0.375 + k * 0.25, 0.1, 0.15], k % 2 ? logDark : log);
+      if (top > 1) block(t, [0.13, 0.12, 0.13], [-0.375 + k * 0.25, 0.1 + top, -0.08], c);
+    }
+    if (broken) for (let k = 0; k < 3; k++) block(t, [0.6, 0.07, 0.05], [0, 0.55 + k * 0.17, -0.22], plank); // patched with planks
+    block(t, [1.05, 0.07, 0.4], [0, 0.85, 0.42], plank); // the walkway
+    for (const o of [-0.35, 0.35]) block(t, [0.08, 0.75, 0.08], [o, 0.1, 0.6], logDark);
+    if (i % 5 === 2) { // a square tower
+      for (const [px, pz] of [[-0.4, -0.35], [0.4, -0.35], [-0.4, 0.45], [0.4, 0.45]]) block(t, [0.2, 1.75, 0.2], [px, 0.1, pz], logDark);
+      block(t, [1.0, 0.1, 1.0], [0, 1.4, 0.05], log);
+      block(t, [1.0, 0.3, 0.08], [0, 1.5, -0.42], log);
+      for (const o of [-0.45, 0.45]) block(t, [0.08, 0.3, 0.9], [o, 1.5, 0.05], log);
+      block(t, [1.25, 0.1, 1.25], [0, 1.95, 0.05], roofs[0]); block(t, [0.85, 0.1, 0.85], [0, 2.05, 0.05], roofs[0]); block(t, [0.4, 0.1, 0.4], [0, 2.15, 0.05], roofs[0]);
+    }
+  }));
+  // The town: houses on the dry cells round the middle (not on the wall).
   for (let z = Math.floor(cz - r - 1); z <= cz + r + 1; z++) for (let x = Math.floor(cx - r - 1); x <= cx + r + 1; x++) {
     const d = Math.hypot(x - cx, z - cz);
-    if (d > r + 0.45 || !at(x, z).dry) continue;
-    const a = Math.atan2(z - cz, x - cx);
-    if (d > r - 0.6) {
-      // The palisade: stakes along the tangent of the ring.
-      if (angleGap(a, gate) < 0.2 && !(x === gateCell?.[0] && z === gateCell?.[1])) continue; // the open way in
-      if (x === gateCell?.[0] && z === gateCell?.[1]) { // the gate: two posts, a beam and a torii in front
-        put(x, z, (s) => {
-          const t = new THREE.Group(); t.rotation.y = -a + Math.PI / 2; s.add(t);
-          for (const o of [-0.38, 0.38]) block(t, [0.16, 1.0, 0.16], [o, 0, 0], logDark);
-          block(t, [0.95, 0.1, 0.18], [0, 0.95, 0], logDark);
-          const torii = new THREE.Group(); torii.position.set(0, 0, 0.9); t.add(torii);
-          for (const o of [-0.32, 0.32]) block(torii, [0.08, 0.8, 0.08], [o, 0, 0], '#b8463c');
-          block(torii, [0.9, 0.07, 0.1], [0, 0.8, 0], '#2a2420'); block(torii, [0.7, 0.06, 0.08], [0, 0.66, 0], '#b8463c');
-        });
-        continue;
-      }
-      const damage = n(x, z, 11);
-      put(x, z, (s) => {
-        const t = new THREE.Group(); t.rotation.y = -a + Math.PI / 2; s.add(t);
-        if (damage > 0.9) { // a breach: stumps, a fallen log and ash
-          for (const o of [-0.35, 0.3]) block(t, [0.13, 0.18 + n(x, z, 12) * 0.15, 0.13], [o, 0, 0], burnt);
-          const fallen = new THREE.Group(); fallen.position.set(0, 0.06, 0.35); fallen.rotation.y = 0.5; t.add(fallen);
-          block(fallen, [0.85, 0.12, 0.12], [0, 0, 0], damage > 0.95 ? burnt : log);
-          block(t, [0.6, 0.03, 0.4], [0.1, 0, 0.1], ash);
-          return;
-        }
-        if (n(x, z, 13) > 0.86) { // a watchtower on stilts
-          for (const [px, pz] of [[-0.25, -0.2], [0.25, -0.2], [-0.25, 0.2], [0.25, 0.2]]) block(t, [0.08, 1.15, 0.08], [px, 0, pz], logDark);
-          block(t, [0.65, 0.07, 0.55], [0, 1.1, 0], log);
-          block(t, [0.6, 0.18, 0.04], [0, 1.17, 0.26], log);
-          block(t, [0.75, 0.08, 0.65], [0, 1.5, 0], roofs[0]); block(t, [0.45, 0.08, 0.4], [0, 1.58, 0], roofs[0]);
-          for (const [px, pz] of [[-0.25, 0.2], [0.25, 0.2]]) block(t, [0.06, 0.4, 0.06], [px, 1.12, pz], logDark);
-        }
-        for (let i = 0; i < 5; i++) { // stakes: some burnt, shorter, or leaning after the attacks
-          const hurt = damage > 0.62 && n(x, z, 20 + i) > 0.45;
-          const h = hurt ? 0.25 + n(x, z, 30 + i) * 0.35 : 0.72 + n(x, z, 40 + i) * 0.12;
-          const stake = new THREE.Group(); stake.position.set(-0.4 + i * 0.2, 0, 0);
-          if (hurt && n(x, z, 50 + i) > 0.5) stake.rotation.x = 0.35 + n(x, z, 60 + i) * 0.3;
-          t.add(stake);
-          const c = hurt && n(x, z, 70 + i) > 0.4 ? burnt : i % 2 ? log : logDark;
-          block(stake, [0.15, h, 0.15], [0, 0, 0], c);
-          if (!hurt) block(stake, [0.08, 0.1, 0.08], [0, h, 0], c); // a sharpened point
-        }
-        block(t, [1.0, 0.07, 0.06], [0, 0.45, -0.1], logDark); // the cross-beam behind
-      });
-      continue;
-    }
-    if (d < 1.6) continue; // room for the pagoda and the dojo
-    if (n(x, z, 1) < 0.1) continue; // a little yard now and then
+    if (d > r + 0.4 || d < 1.6 || !at(x, z).dry || onWall(x, z) || n(x, z, 1) < 0.08) continue;
     put(x, z, (s) => {
       const k = Math.floor(n(x, z, 2) * 3);
-      const wall = n(x, z, 3) > 0.45 ? '#e8dcc8' : '#6b4a32';
-      house(s, (n(x, z, 4) - 0.5) * 0.25, (n(x, z, 5) - 0.5) * 0.25, { w: 0.5 + n(x, z, 6) * 0.2, d: 0.45 + n(x, z, 7) * 0.2, h: 0.24 + n(x, z, 8) * 0.16, wall, roof: roofs[k], rot: n(x, z, 9) > 0.5 ? Math.PI / 2 : 0 });
+      const wallC = n(x, z, 3) > 0.45 ? '#e8dcc8' : '#6b4a32';
+      house(s, (n(x, z, 4) - 0.5) * 0.25, (n(x, z, 5) - 0.5) * 0.25, { w: 0.5 + n(x, z, 6) * 0.2, d: 0.45 + n(x, z, 7) * 0.2, h: 0.24 + n(x, z, 8) * 0.16, wall: wallC, roof: roofs[k], rot: n(x, z, 9) > 0.5 ? Math.PI / 2 : 0 });
       block(s, [0.62, 0.05, 0.05], [0, 0.12, 0.33], '#4e3520'); // a dark timber band
       if (n(x, z, 10) > 0.75) block(s, [0.08, 0.12, 0.08], [0.32, 0, 0.35], '#d9a23a'); // a lantern
     });
   }
   // The pagoda in the middle (five red tiers), and the dojo of the rune-swordsmen beside it.
   put(Math.round(cx), Math.round(cz), (s) => {
-    let w = 1.15, y = 0;
+    let w = 1.15, y = 0.12;
     block(s, [1.3, 0.12, 1.3], [0, 0, 0], '#8f9299');
-    y = 0.12;
     for (let i = 0; i < 5; i++) {
       block(s, [w * 0.68, 0.32, w * 0.68], [0, y, 0], '#b8463c');
       block(s, [w, 0.08, w], [0, y + 0.32, 0], '#2f3640');
@@ -334,34 +322,40 @@ export function buildHrimnir({ cx, cz, r, gate = Math.PI, at, toWorld }) {
       y += 0.42; w *= 0.8;
     }
     block(s, [0.06, 0.45, 0.06], [0, y, 0], '#d9a23a');
-    // The dojo: a long hall with a deep roof, south of the pagoda.
     block(s, [1.5, 0.4, 0.7], [0, 0, 1.25], '#6b4a32');
     block(s, [1.4, 0.06, 0.6], [0, 0.18, 1.6], '#e8dcc8');
     block(s, [1.7, 0.1, 0.9], [0, 0.4, 1.25], '#2f3640'); block(s, [1.3, 0.1, 0.6], [0, 0.5, 1.25], '#2f3640'); block(s, [0.8, 0.08, 0.3], [0, 0.6, 1.25], '#2f3640');
     for (const o of [-0.5, 0.5]) block(s, [0.06, 0.3, 0.06], [o, 0, 1.68], '#b8463c');
   });
+  g.userData.wallCells = cells;
   return g;
 }
 
-// A camp of the jungle people: a few round thatched huts on short stilts, a carved totem with a
-// painted face, a fire ring and a rack of spears.
+// A camp of the jungle people, deep in the jungle: low domed huts of bent branches and leaves, a
+// lean-to of sticks, a pole with an animal skull, a ring of stones round a fire, and a crude fence
+// of sharpened sticks.
 export function buildJungleCamp(n = 3, seed = 1) {
   const g = new THREE.Group();
   const rnd = (i) => { const v = Math.sin(seed * 71.3 + i * 37.9) * 43758.5; return v - Math.floor(v); };
+  const leaf = ['#4f6a2e', '#5d7a34', '#46602a'], stick = '#6a5034', mud = '#7a6044';
   for (let i = 0; i < n; i++) {
-    const a = (i / n) * Math.PI * 2 + rnd(i), r = 0.95 + rnd(i + 4) * 0.25, x = Math.cos(a) * r, z = Math.sin(a) * r;
-    for (const [px, pz] of [[-0.18, -0.18], [0.18, -0.18], [-0.18, 0.18], [0.18, 0.18]]) block(g, [0.05, 0.2, 0.05], [x + px, 0, z + pz], '#5e4128');
-    block(g, [0.55, 0.06, 0.55], [x, 0.2, z], '#7a5634');
-    block(g, [0.42, 0.26, 0.42], [x, 0.26, z], '#a8784a');
-    block(g, [0.62, 0.12, 0.62], [x, 0.52, z], '#c9a35c'); block(g, [0.44, 0.12, 0.44], [x, 0.64, z], '#b8914c'); block(g, [0.22, 0.12, 0.22], [x, 0.76, z], '#a8823f');
+    const a = (i / n) * Math.PI * 2 + rnd(i), r = 0.85 + rnd(i + 4) * 0.3, x = Math.cos(a) * r, z = Math.sin(a) * r;
+    // A low dome: stacked, shrinking layers of leaves over a mud base, a dark doorway.
+    block(g, [0.5, 0.12, 0.5], [x, 0, z], mud);
+    block(g, [0.48, 0.12, 0.48], [x, 0.1, z], leaf[i % 3]); block(g, [0.36, 0.1, 0.36], [x, 0.22, z], leaf[(i + 1) % 3]); block(g, [0.18, 0.08, 0.18], [x, 0.32, z], leaf[(i + 2) % 3]);
+    block(g, [0.12, 0.14, 0.04], [x - Math.cos(a) * 0.24, 0, z - Math.sin(a) * 0.24], '#1e1a14', -a + Math.PI / 2);
   }
-  // The totem: stacked carved faces, painted.
-  block(g, [0.2, 0.9, 0.2], [0, 0, 0], '#6b4a32');
-  block(g, [0.24, 0.12, 0.05], [0, 0.6, 0.1], '#c23b2a'); block(g, [0.24, 0.08, 0.05], [0, 0.3, 0.1], '#3a8f6a');
-  block(g, [0.5, 0.06, 0.1], [0, 0.82, 0], '#d9a23a');
-  // The fire ring and a rack of spears.
-  block(g, [0.3, 0.05, 0.3], [0.45, 0, 0.45], '#5a5550'); block(g, [0.14, 0.12, 0.14], [0.45, 0.04, 0.45], '#ff8a2a');
-  for (let i = 0; i < 4; i++) block(g, [0.03, 0.7, 0.03], [-0.5 + i * 0.08, 0, -0.45], '#8a6a44');
-  block(g, [0.35, 0.04, 0.04], [-0.38, 0.45, -0.45], '#5e4128');
+  // A lean-to of sticks and leaves.
+  for (let i = 0; i < 4; i++) { const b = new THREE.Group(); b.position.set(-0.55 + i * 0.12, 0, 0.35); b.rotation.x = -0.6; g.add(b); block(b, [0.04, 0.45, 0.04], [0, 0, 0], stick); }
+  block(g, [0.5, 0.04, 0.3], [-0.37, 0.25, 0.25], leaf[0]);
+  // A pole with an animal skull, and feathers.
+  block(g, [0.06, 0.8, 0.06], [0, 0, 0], stick);
+  block(g, [0.14, 0.1, 0.16], [0, 0.8, 0], '#ece4d0'); block(g, [0.04, 0.04, 0.04], [-0.035, 0.84, 0.08], '#1e1a14'); block(g, [0.04, 0.04, 0.04], [0.035, 0.84, 0.08], '#1e1a14');
+  block(g, [0.04, 0.16, 0.02], [0.06, 0.6, 0.03], '#c23b2a'); block(g, [0.04, 0.14, 0.02], [-0.06, 0.62, 0.03], '#3a8f6a');
+  // A fire in a ring of stones.
+  for (let i = 0; i < 6; i++) block(g, [0.07, 0.05, 0.07], [0.42 + Math.cos(i) * 0.13, 0, -0.35 + Math.sin(i) * 0.13], '#6a655e');
+  block(g, [0.1, 0.1, 0.1], [0.42, 0.02, -0.35], '#ff8a2a');
+  // A crude fence of sharpened sticks round part of the camp.
+  for (let i = 0; i < 9; i++) { const ang = 2.2 + i * 0.22; block(g, [0.04, 0.26 + rnd(i + 20) * 0.1, 0.04], [Math.cos(ang) * 1.45, 0, Math.sin(ang) * 1.45], stick); }
   return g;
 }
