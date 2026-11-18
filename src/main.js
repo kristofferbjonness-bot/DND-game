@@ -158,12 +158,13 @@ function buildWorldView() {
     return out;
   })();
   const clear = [...(sortCell ? [[sortCell[0], sortCell[1], 2]] : []), [BRIDGE.cx, BRIDGE.from, 0], [BRIDGE.cx, BRIDGE.to, 0],
-    [MINE.cx, MINE.cz, 2], [HRIMNIR.cx, HRIMNIR.cz, HRIMNIR.r + 1], ...Array.from({ length: HRIMNIR.wall[1][0] - HRIMNIR.wall[0][0] + 1 }, (_, i) => [HRIMNIR.wall[0][0] + i, HRIMNIR.wall[0][1], 1]), ...HRIMNIR.camps.map(([x, z]) => [x, z, 2]), ...CAVES.map((c) => [c.cx, c.cz, 1]), ...RUNE_STONES.map((r) => [r.cx, r.cz, 1]), ...NOMADS.map(([x, z]) => [x, z, 3]), ...DESERT.map(([x, z]) => [x, z, 3])];
+    [MINE.cx, MINE.cz, 2], ...Array.from({ length: HRIMNIR.wall[1][0] - HRIMNIR.wall[0][0] + 1 }, (_, i) => [HRIMNIR.wall[0][0] + i, HRIMNIR.wall[0][1], 1]), ...HRIMNIR.camps.map(([x, z]) => [x, z, 2]), ...CAVES.map((c) => [c.cx, c.cz, 1]), ...RUNE_STONES.map((r) => [r.cx, r.cz, 1]), ...NOMADS.map(([x, z]) => [x, z, 3]), ...DESERT.map(([x, z]) => [x, z, 3])];
   const reach = (p) => (p.style === 'empire' ? 7 : 3); // how far a town keeps trees away
-  const plants = buildPlants((x, z) => towns.some((p) => Math.abs(p.cx - x) <= reach(p) && Math.abs(p.cz - z) <= reach(p))
+  const inHrimnir = (x, z) => z >= HRIMNIR.wall[0][1] && x >= HRIMNIR.wall[0][0] - 3 && x <= HRIMNIR.wall[1][0] + 3 && z <= HRIMNIR.wall[0][1] + 14;
+  const plants = buildPlants((x, z) => inHrimnir(x, z) || towns.some((p) => Math.abs(p.cx - x) <= reach(p) && Math.abs(p.cz - z) <= reach(p))
     || clear.some(([cx, cz, r]) => Math.abs(cx - x) <= r && Math.abs(cz - z) <= r));
   scene.add(plants);
-  const animals = buildAnimals((x, z) => towns.some((p) => Math.abs(p.cx - x) <= 4 && Math.abs(p.cz - z) <= 4) || clear.some(([cx, cz, r]) => Math.abs(cx - x) <= r + 1 && Math.abs(cz - z) <= r + 1),
+  const animals = buildAnimals((x, z) => inHrimnir(x, z) || towns.some((p) => Math.abs(p.cx - x) <= 4 && Math.abs(p.cz - z) <= 4) || clear.some(([cx, cz, r]) => Math.abs(cx - x) <= r + 1 && Math.abs(cz - z) <= r + 1),
     [...NOMADS.map(([x, z]) => ({ kind: 'horse', cell: [x + 4, z + 1] })), ...DESERT.map(([x, z]) => ({ kind: 'camel', cell: [x + 3, z + 2] }))]);
   scene.add(animals);
   const clouds = buildClouds();

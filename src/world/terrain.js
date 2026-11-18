@@ -3,7 +3,7 @@
 // Blocks are grouped in chunks so the parts off-screen are not drawn at all.
 import * as THREE from 'three';
 import { bevelBox } from '../fx/bevelBox.js';
-import { road, roadAt } from './roads.js';
+import { road, roadAt, HRIMNIR } from './roads.js';
 import {
   grid, LAYER, WATER_LEVEL, BIOME, idx, heightAt, cellToWorld, distToSea, hash, darkForest, peakAt, onRama, iceField, RAMA_SUMMIT, ashField,
 } from './grid.js';
@@ -24,7 +24,9 @@ const ROCK = C('#a59c90');
 const RED_ROCK = C('#bf8f66');
 const SNOWCAP = C('#f7f9fb');
 const CRATER = C('#4a4440'), EMBER = C('#a8502a'), BASALT = C('#6e665e'), BASALT_SIDE = C('#5e5750'), ASH = C('#8a837b');
-const DIRT = C('#8a6a44'), GRAVEL = C('#7a7064');
+const DIRT = C('#8a6a44'), GRAVEL = C('#7a7064'), PAVING = [C('#cbb08a'), C('#c2a67e'), C('#d4ba94')], PAVING_SIDE = C('#a88d68');
+// Hrimnir's paved streets: every land cell behind its wall at the end of the peninsula.
+const paved = (x, z) => z > HRIMNIR.wall[0][1] && z <= HRIMNIR.wall[0][1] + 14 && x >= HRIMNIR.wall[0][0] - 3 && x <= HRIMNIR.wall[1][0] + 3;
 const ASH_GROUND = C('#6a6662'), ASH_DARK = C('#55514e'), ASH_SIDE = C('#4a4744'); // the volcano's ash
 const ICE_SNOW = C('#f4f8fb'), ICE = C('#8fcbea'), ICE_PALE = C('#bfe5f6'), ICE_DEEP = C('#6aa8cc'), ICE_SUMMIT = C('#eef8fc');
 const DARK_FLOOR = C('#43473f'), DARK_MOSS = C('#4c5244'), DARK_SOIL = C('#4d463d'); // dark forests: grey
@@ -79,12 +81,14 @@ function cubeColor(k, x, z, layer, top, out) {
     // Rama's mountains are mostly bare rock: snow only on the very highest tops.
     if (onRama[k] ? top >= 17 && Math.hypot(x - RAMA_SUMMIT.cx, z - RAMA_SUMMIT.cz) < RAMA_SUMMIT.r - hash(x, z, 86) * 2 : top >= SNOWCAP_FROM || (b === BIOME.SNOW && top >= MOUNTAIN_FROM)) out.copy(SNOWCAP);
     else if (top >= MOUNTAIN_FROM) out.copy(b === BIOME.DESERT ? RED_ROCK : ROCK);
+    else if (paved(x, z)) out.copy(PAVING[Math.floor(hash(x, z, 109) * 3)]);
     else if (distToSea[k] <= 1 && top <= 2 && b !== BIOME.SNOW) out.copy(SAND);
     else if (road[k]) out.copy(pal.top).lerp(road[k] === 2 ? GRAVEL : DIRT, roadAt(x, z));
     else if (iceField(x, z) > 0) out.copy(pal.top).lerp(hash(x, z, 88) > 0.72 ? ICE : hash(x, z, 88) > 0.4 ? ICE_PALE : ICE_SNOW, iceField(x, z));
     else out.copy(pal.top).lerp(hash(x, z, 78) > 0.7 ? DARK_MOSS : DARK_FLOOR, darkForest(x, z));
   } else {
     if (layer >= MOUNTAIN_FROM - 2) out.copy(b === BIOME.DESERT ? RED_ROCK : ROCK);
+    else if (paved(x, z)) out.copy(PAVING_SIDE);
     else out.copy(pal.side).lerp(DARK_SOIL, darkForest(x, z)).lerp(ICE_DEEP, iceField(x, z) * 0.6);
     out.multiplyScalar(0.82 + 0.03 * Math.min(layer, 6));
   }

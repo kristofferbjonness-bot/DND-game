@@ -26,10 +26,10 @@ export const RUNE_STONES = [
   { cx: 190, cz: 27, n: 3 },
   { cx: 196, cz: 21, n: 1 },
 ];
-// Hrimnir: a larger town on the jungle peninsula of south-east Rama. A strong log wall cuts across the
-// peninsula from the west coast to the east coast north of the town (gate near the town); the jungle
+// Hrimnir: a larger town filling the southern end of the jungle peninsula of south-east Rama. Its border
+// is a strong log wall straight across the peninsula from the west coast to the east coast; the jungle
 // people who attack it live in camps deep in the jungle further north.
-export const HRIMNIR = { cx: 195, cz: 146, r: 5, wall: [[167, 140], [193, 140]], gateAt: [188, 140], camps: [[174, 129], [184, 126], [170, 134]] };
+export const HRIMNIR = { centre: [187, 154], wall: [[175, 150], [202, 150]], gateAt: [188, 150], camps: [[174, 129], [184, 126], [170, 134]] };
 // The bridge east of Ytterhavn (cells along z): roads cross the river there.
 export const BRIDGE = { cx: 104, from: 106, to: 108 };
 const onBridge = (k) => k % grid.cols === BRIDGE.cx && ((k / grid.cols) | 0) >= BRIDGE.from && ((k / grid.cols) | 0) <= BRIDGE.to;
