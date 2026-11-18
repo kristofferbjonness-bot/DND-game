@@ -517,6 +517,10 @@ The original assets (hand-drawn world map, location art, character art, lore doc
   - Places of active visible quests get a 📜 on their map label (`questFor`, quests only).
   - Caveat: when the DM hides a shown entry, players keep seeing it until they reload (RLS stops the
     realtime update from reaching them).
+- **Lore Book** (fifth Journal tab, DM only, never shown): the master document of the world. `codex` rows `{ chapter, title, order,
+  body }` (body: blank line = paragraph, "- " lines = list; names of journal people/places and map places are linked the first time
+  they appear). A Contents page, chapters in the list, ‹ › page turning, Edit / New page. The text comes from `codex` in the private
+  lore-import.local.js via "Update from lore" (with the factions, nations and new people written 2026-11-18).
 - To read the live journal: on the dev server, the DM's app posts all journal rows to `/__journal-dump` (vite.config.js),
   saved as `tools/out/journal.local.json` (git-ignored). Ask the owner to open the dev server logged in as DM.
 - The SQL files (`world.sql`, `session.sql`) are safe to run again: `drop policy if exists`,

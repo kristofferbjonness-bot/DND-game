@@ -38,6 +38,7 @@ const SECTIONS = [
   { id: 'people', label: 'People', icon: 'hero', kind: 'npc', newLabel: 'New person' },
   { id: 'places', label: 'Places', icon: 'pin', kind: 'place', newLabel: 'New place' },
   { id: 'items', label: 'Items', icon: 'journal', kind: 'item', newLabel: 'New item' },
+  { id: 'lore', label: 'Lore Book', icon: 'crown', kind: 'codex', newLabel: 'New page', dm: true },
 ];
 const ITEM_TYPE = {
   book: { label: 'Book', icon: 'journal' }, note: { label: 'Note', icon: 'scroll' }, letter: { label: 'Letter', icon: 'scroll' },
@@ -224,12 +225,26 @@ export function createJournalScreen(root, { entries, canEdit, mapPlaces, heroes 
     ].join('');
   }
 
-  const ITEMS = { quests: questItems, people: peopleItems, places: placeItems, items: itemItems };
+  // The Lore Book (DM only): the master document of the world, as chapters of short pages, in order.
+  const codexPages = () => all('codex').sort((a, b) => (a.data.chapter ?? '').localeCompare(b.data.chapter ?? '', undefined, { numeric: true }) || (a.data.order ?? 0) - (b.data.order ?? 0) || a.data.title.localeCompare(b.data.title));
+  const chaptersOf = (pages) => pages.reduce((m, p) => { const c = p.data.chapter || 'Other'; (m.get(c) ?? m.set(c, []).get(c)).push(p); return m; }, new Map());
+  function loreItems() {
+    if (!canEdit()) return '';
+    const pages = codexPages().filter((p) => matches(p.data.title, p.data.body, p.data.chapter));
+    if (!pages.length) return '';
+    const contents = query ? '' : `<ul>${item('codex', 'contents', { title: 'Contents', sub: `${pages.length} pages`, mark: `<span class="jr-mark">${icon('scroll')}</span>` })}</ul>`;
+    return contents + [...chaptersOf(pages)].map(([c, list]) => `
+      <p class="jr-group">${esc(c)}</p>
+      <ul>${list.map((p) => item('codex', p.id, { title: p.data.title, mark: '<span class="jr-mark jr-mark--page"></span>', cls: ' is-child' })).join('')}</ul>`).join('');
+  }
+
+  const ITEMS = { quests: questItems, people: peopleItems, places: placeItems, items: itemItems, lore: loreItems };
   const EMPTY = {
     items: 'No books, notes or special things yet.',
     quests: 'No quests yet.',
     people: 'Nobody written down yet. People the party meets will appear here.',
     places: 'No places yet.',
+    lore: 'The Lore Book is empty. Press “Update from lore” (on the dev server) or “New page”.',
   };
 
   function renderList() {
@@ -238,14 +253,16 @@ export function createJournalScreen(root, { entries, canEdit, mapPlaces, heroes 
       people: all('npc').length,
       places: mapPlaces().length + all('place').length,
       items: all('item').length,
+      lore: all('codex').length,
     };
-    tabsEl.innerHTML = SECTIONS.map((s) => `
+    if (!canEdit() && section === 'lore') section = 'quests';
+    tabsEl.innerHTML = SECTIONS.filter((s) => !s.dm || canEdit()).map((s) => `
       <button type="button" role="tab" class="jr-tab${s.id === section && !query ? ' is-on' : ''}" data-section="${s.id}">
         ${icon(s.icon)}<span>${s.label}</span><small>${counts[s.id]}</small>
       </button>`).join('');
     if (query) {
       // A search looks through all three sections at once.
-      const parts = SECTIONS.map((s) => [s, ITEMS[s.id]()]).filter(([, html]) => html);
+      const parts = SECTIONS.filter((s) => !s.dm || canEdit()).map((s) => [s, ITEMS[s.id]()]).filter(([, html]) => html);
       listEl.innerHTML = parts.length
         ? parts.map(([s, html]) => `<p class="jr-group jr-group--section">${icon(s.icon, 'inline')} ${s.label}</p>${html}`).join('')
         : `<p class="jr-empty">Nothing matches “${esc(query)}”.</p>`;
@@ -314,6 +331,56 @@ export function createJournalScreen(root, { entries, canEdit, mapPlaces, heroes 
       ${secretBox(n.id)}
       ${related(`Also met at ${esc(placeRef(d.place)?.name ?? '')}`, others, 'npc', (x) => `${esc(x.data.title)}${x.data.role ? ` <small>${esc(x.data.role)}</small>` : ''}`)}
       ${tools(n)}`;
+  }
+
+  // --- The Lore Book's pages ---
+  // Turns a page's text into paragraphs and lists ("- " lines), linking the names of people and
+  // places that have a journal page (each the first time it appears).
+  function codexText(body) {
+    const targets = [
+      ...all('npc').map((e) => [e.data.title, `npc:${e.id}`]),
+      ...all('place').map((e) => [e.data.title, `place:${e.id}`]),
+      ...mapPlaces().map((m) => [m.name, `map:${m.id}`]),
+    ].filter(([t]) => t && t.length > 3).sort((a, b) => b[0].length - a[0].length);
+    const to = new Map(targets.map(([t, ref]) => [esc(t).toLowerCase(), ref]));
+    const re = targets.length ? new RegExp(`(${targets.map(([t]) => esc(t).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})`, 'gi') : null;
+    const linked = new Set();
+    const link = (html) => (re ? html.replace(re, (m) => {
+      const ref = to.get(m.toLowerCase());
+      if (!ref || linked.has(ref)) return m;
+      linked.add(ref);
+      return `<button type="button" class="jr-link jr-link--text" data-open="${esc(ref)}">${m}</button>`;
+    }) : html);
+    return String(body ?? '').split(/\n\s*\n/).map((block) => {
+      const rows = block.split('\n').map((r) => r.trim()).filter(Boolean);
+      if (rows.length && rows.every((r) => r.startsWith('- '))) return `<ul>${rows.map((r) => `<li>${link(esc(r.slice(2)))}</li>`).join('')}</ul>`;
+      return `<p>${rows.map((r) => link(esc(r))).join('<br />')}</p>`;
+    }).join('');
+  }
+  function contentsPage() {
+    const pages = codexPages();
+    return `
+      <p class="jr-kicker">Dungeon Master only · never shown to players</p>
+      <h3 class="jr-name">The Lore Book</h3>
+      <p class="jr-text">The whole world in one place: from the gods down to the story threads. Tap a page to read it.</p>
+      <ol class="jr-toc">${[...chaptersOf(pages)].map(([c, list]) => `
+        <li><b>${esc(c)}</b><ul>${list.map((p) => `<li><button type="button" class="jr-link" data-open="codex:${esc(p.id)}">${esc(p.data.title)}</button></li>`).join('')}</ul></li>`).join('')}</ol>`;
+  }
+  function codexPage(p) {
+    const pages = codexPages(), i = pages.indexOf(p), prev = pages[i - 1], next = pages[i + 1];
+    return `
+      <p class="jr-kicker">${esc(p.data.chapter || 'Lore Book')}</p>
+      <h3 class="jr-name">${esc(p.data.title)}</h3>
+      <div class="jr-codex">${codexText(p.data.body)}</div>
+      <nav class="jr-turn">
+        ${prev ? `<button type="button" class="jr-link" data-open="codex:${esc(prev.id)}">‹ ${esc(prev.data.title)}</button>` : '<span></span>'}
+        <button type="button" class="jr-link" data-open="codex:contents">Contents</button>
+        ${next ? `<button type="button" class="jr-link" data-open="codex:${esc(next.id)}">${esc(next.data.title)} ›</button>` : '<span></span>'}
+      </nav>
+      <div class="jr-tools">
+        <button type="button" data-do="edit">${icon('pen')}Edit</button>
+        <button type="button" data-do="delete" class="jr-tools__delete">Delete</button>
+      </div>`;
   }
 
   // Lists what is at a place: people, smaller places and quests.
@@ -451,6 +518,20 @@ export function createJournalScreen(root, { entries, canEdit, mapPlaces, heroes 
         <label class="field"><span>What is written in it (or what it is)</span><textarea class="field__input" name="body" rows="9" maxlength="6000">${esc(d.body)}</textarea></label>
         ${secretField(editing.id)}${shownBox(d, 'The party has been given it')}${formEnd}
       </form>`;
+    if (kind === 'codex') {
+      const chapters = [...chaptersOf(codexPages()).keys()];
+      return `
+      <form class="jr-form" data-kind="codex">
+        <h3 class="jr-name">${isNew ? 'New page in the Lore Book' : 'Edit page'}</h3>
+        <div class="field-row">
+          <label class="field"><span>Chapter</span><input class="field__input" name="chapter" list="jr-chapters" maxlength="60" required value="${esc(d.chapter)}" placeholder="e.g. 7 · Factions" /></label>
+          <label class="field"><span>Title</span><input class="field__input" name="title" maxlength="80" required value="${esc(d.title)}" /></label>
+        </div>
+        <datalist id="jr-chapters">${chapters.map((c) => `<option value="${esc(c)}"></option>`).join('')}</datalist>
+        <label class="field"><span>Text (an empty line starts a new paragraph; lines starting with “- ” make a list)</span><textarea class="field__input" name="body" rows="14" maxlength="8000">${esc(d.body)}</textarea></label>
+        ${formEnd}
+      </form>`;
+    }
     return `
       <form class="jr-form" data-kind="placenote">
         <h3 class="jr-name">Notes on ${esc(mapPlace(d.place)?.name ?? 'this place')}</h3>
@@ -463,14 +544,16 @@ export function createJournalScreen(root, { entries, canEdit, mapPlaces, heroes 
     sheet.classList.toggle('is-reading', Boolean(open || editing));
     if (editing) { pageEl.innerHTML = back + editorPage(); pageEl.querySelector('input:not([type=checkbox]), textarea')?.focus(); return; }
     let html = '';
-    if (open?.type === 'map') { const m = mapPlace(open.id); if (m) html = mapPage(m); } else if (open) {
+    if (open?.type === 'map') { const m = mapPlace(open.id); if (m) html = mapPage(m); } else if (open?.type === 'codex' && open.id === 'contents') {
+      if (canEdit()) html = contentsPage();
+    } else if (open) {
       const e = byId(open.id);
-      if (e && visible(e)) html = { quest: questPage, npc: npcPage, place: placePage, item: itemPage }[kindOf(e)]?.(e) ?? '';
+      if (e && visible(e)) html = { quest: questPage, npc: npcPage, place: placePage, item: itemPage, codex: (x) => (canEdit() ? codexPage(x) : '') }[kindOf(e)]?.(e) ?? '';
     }
     if (!html) {
       open = null;
       sheet.classList.remove('is-reading');
-      html = '<p class="jr-hint">Pick something from the list to read about it.</p>';
+      html = section === 'lore' && canEdit() && all('codex').length ? contentsPage() : '<p class="jr-hint">Pick something from the list to read about it.</p>';
     }
     pageEl.innerHTML = (open ? back : '') + html;
     pageEl.scrollTop = 0;
@@ -485,7 +568,7 @@ export function createJournalScreen(root, { entries, canEdit, mapPlaces, heroes 
   function show(type, id) {
     open = { type, id };
     editing = null;
-    if (!query) section = { quest: 'quests', npc: 'people', item: 'items' }[type] ?? 'places';
+    if (!query) section = { quest: 'quests', npc: 'people', item: 'items', codex: 'lore' }[type] ?? 'places';
     render();
   }
 
@@ -601,6 +684,9 @@ export function createJournalScreen(root, { entries, canEdit, mapPlaces, heroes 
     for (const x of lore.items ?? []) {
       sync('item', x, () => ({ kind: 'item', title: x.title, type: x.type, place: resolve(x.place ?? ''), body: x.body }));
     }
+    for (const c of lore.codex ?? []) {
+      sync('codex', c, () => ({ kind: 'codex', chapter: c.chapter, title: c.title, order: c.order, body: c.body }));
+    }
     for (const r of lore.removed ?? []) {
       const current = find(r.kind, r.title);
       if (current && (current.data.body ?? '') === (r.body ?? '')) {
@@ -657,6 +743,7 @@ export function createJournalScreen(root, { entries, canEdit, mapPlaces, heroes 
       npc: { kind: 'npc', title: '', role: '', place: '', attitude: 'neutral', status: 'alive', body: '', shown: true },
       place: { kind: 'place', title: '', place: '', body: '', shown: true },
       item: { kind: 'item', title: '', type: 'book', holder: '', place: '', body: '', shown: false },
+      codex: { kind: 'codex', chapter: open?.type === 'codex' ? byId(open.id)?.data.chapter ?? '' : '', title: '', order: all('codex').length + 1, body: '', shown: false },
     }[kind];
     editing = { data: blank };
     renderPage();
@@ -710,7 +797,7 @@ export function createJournalScreen(root, { entries, canEdit, mapPlaces, heroes 
   pageEl.addEventListener('submit', (e) => {
     e.preventDefault();
     const f = e.target, kind = f.dataset.kind, d = editing.data;
-    const shown = f.shown.checked;
+    const shown = f.shown ? f.shown.checked : false;
     let data;
     if (kind === 'quest') {
       const old = new Map((d.steps ?? []).map((s) => [s.text, s.done]));
@@ -722,6 +809,8 @@ export function createJournalScreen(root, { entries, canEdit, mapPlaces, heroes 
       if (genDraft) { saveWithFigure(data, f.secret ? f.secret.value.trim() : undefined); return; }
     } else if (kind === 'place') {
       data = { kind, title: f.title.value.trim() || 'A place', place: f.place.value, body: f.body.value.trim(), shown };
+    } else if (kind === 'codex') {
+      data = { kind, chapter: f.chapter.value.trim(), title: f.title.value.trim() || 'A page', order: d.order ?? all('codex').length + 1, body: f.body.value.trim(), shown: false };
     } else if (kind === 'item') {
       data = { kind, title: f.title.value.trim() || 'Something', type: f.type.value, holder: f.holder.value, place: f.place.value, body: f.body.value, shown };
     } else {
