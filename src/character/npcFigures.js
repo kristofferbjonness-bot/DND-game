@@ -516,6 +516,97 @@ function godOfBeauty() {
   return s.done();
 }
 
+// Ferran, lesser god of heat: a towering giant of black basalt split by glowing lava seams, a molten
+// heart in the chest, boulder shoulders, fists like cooling magma, and a crater for a head with fire
+// rising out of it. Embers circle it.
+function ferran() {
+  const p = { rock: '#2b2523', rock2: '#3a312d', rock3: '#4a3f39', ash: '#6b625c', lava: '#ff7a1a', lava2: '#ffb238', core: '#fff0a0', fire: '#ff9a2a', fire2: '#ffd25a', ember: '#ff6a1a' };
+  const s = sculpt(p);
+  s.part('legs', [0, 0, 0]);
+  s.pair('legs', 1, 0, -2, 4, 1, 2, 'rock'); // wide, root-like feet
+  s.pair('legs', 1, 2, -1, 4, 11, 1, 'rock2');
+  s.pair('legs', 2, 4, 2, 2, 9, 2, 'lava'); // seams down the shins
+  s.box('legs', -1, 10, -1, 1, 11, 1, 'rock2');
+  s.parts.legs.glow.push('lava');
+  s.part('body', [0, 12, 0], 'breathe');
+  s.box('body', -4, 12, -2, 4, 14, 2, 'rock');
+  s.box('body', -6, 15, -3, 6, 24, 2, 'rock2');
+  s.box('body', -5, 18, -4, 5, 23, -4, 'rock3'); // the back
+  s.box('body', -2, 18, 3, 2, 22, 3, 'lava'); // the molten heart, glowing through a crack
+  s.box('body', -1, 19, 3, 1, 21, 3, 'core');
+  for (const [x, y0, y1] of [[-4, 15, 19], [4, 16, 21], [-3, 22, 24], [3, 12, 15], [0, 13, 17]]) s.box('body', x, y0, 3, x, y1, 3, 'lava');
+  s.pair('body', 6, 22, -3, 9, 26, 2, 'rock3'); // boulder shoulders
+  s.pair('body', 7, 27, -1, 8, 27, 0, 'ash'); // smoking vents
+  s.pair('body', 8, 25, 3, 8, 25, 3, 'lava');
+  s.parts.body.glow.push('lava', 'core');
+  s.part('head', [0, 25, 0], 'nod');
+  s.box('head', -3, 25, -2, 3, 29, 2, 'rock');
+  s.box('head', -2, 27, 3, 2, 27, 3, 'lava'); // a burning slit for eyes
+  s.box('head', -4, 29, -3, 4, 31, 3, 'rock2'); // the crater rim
+  s.box('head', -3, 31, -2, 3, 31, 2, 'lava2'); // molten inside
+  s.parts.head.glow.push('lava', 'lava2');
+  s.part('flame', [0, 32, 0], 'breathe', 0.7);
+  s.box('flame', -2, 32, -1, 2, 34, 1, 'fire');
+  s.box('flame', -1, 35, -1, 1, 38, 0, 'fire2');
+  s.box('flame', 0, 39, 0, 0, 41, 0, 'fire2');
+  s.box('flame', -3, 33, 0, -3, 35, 0, 'fire'); s.box('flame', 3, 34, -1, 3, 36, -1, 'fire');
+  s.parts.flame.glow.push('fire', 'fire2');
+  for (const side of [-1, 1]) {
+    const a = s.arm(side), x0 = side * 7, x1 = side * 10;
+    s.part(a, [side * 8, 23, 0], 'swing', side < 0 ? 0 : 1.7);
+    s.box(a, x0, 15, -2, x1, 21, 1, 'rock2');
+    s.box(a, side * 9, 16, 2, side * 9, 20, 2, 'lava');
+    s.box(a, x0, 9, -2, x1, 14, 1, 'rock'); // fists of cooling magma
+    s.box(a, x0, 9, 2, x1, 11, 2, 'lava2');
+    s.parts[a].glow.push('lava', 'lava2');
+  }
+  s.part('embers', [0, 20, 0], 'spin');
+  for (let i = 0; i < 7; i++) { const ang = i * 0.9, r = 11; s.box('embers', Math.round(Math.cos(ang) * r), 14 + (i * 5) % 22, Math.round(Math.sin(ang) * r), Math.round(Math.cos(ang) * r), 14 + (i * 5) % 22, Math.round(Math.sin(ang) * r), 'ember'); }
+  s.parts.embers.glow.push('ember');
+  return s.done();
+}
+
+// Kald hånd, lesser god of cold: a tall, gaunt figure in a tattered frost-white robe that fades into
+// mist, a deep hood with two cold blue eyes, a crown of icicles, a thin left arm, and a right arm
+// that ends in one huge hand of clear ice with long talon fingers. Snow circles it.
+function kaldHand() {
+  const p = { robe: '#dfe9f2', robe2: '#b4c9de', robe3: '#7f9bba', hood: '#141a26', eye: '#8ae8ff', ice: '#7cc8f0', ice2: '#4f9fd6', ice3: '#cdf0ff', mist: '#dff4ff', skin: '#a9bccc', snow: '#ffffff' };
+  const s = sculpt(p);
+  s.part('body', [0, 6, 0], 'hover');
+  for (let y = 2; y <= 27; y++) { // a long robe, narrowing to the shoulders, ragged at the hem
+    const w = y < 8 ? 3 : y < 20 ? 2 : y < 24 ? 3 : 2;
+    s.box('body', -w, y, -w + 1, w, y, w - 1, y % 4 === 0 ? 'robe2' : y > 22 ? 'robe3' : 'robe');
+  }
+  for (const x of [-3, -1, 2]) s.box('body', x, 0, 1, x, 1, 1, 'robe3'); // tatters
+  for (let a = 0; a < 16; a++) s.box('body', Math.round(Math.cos(a / 16 * 6.28) * 5), 1, Math.round(Math.sin(a / 16 * 6.28) * 5), Math.round(Math.cos(a / 16 * 6.28) * 5), 1, Math.round(Math.sin(a / 16 * 6.28) * 5), 'mist');
+  s.box('body', -3, 24, -2, 3, 26, 1, 'robe3'); // a frost mantle
+  s.parts.body.glow.push('mist');
+  s.part('head', [0, 28, 0], 'nod');
+  s.box('head', -2, 28, -2, 2, 32, 2, 'robe2'); // the hood
+  s.box('head', -1, 28, 2, 1, 31, 2, 'hood'); // darkness inside
+  s.box('head', -1, 30, 2, -1, 30, 2, 'eye'); s.box('head', 1, 30, 2, 1, 30, 2, 'eye');
+  s.box('head', -1, 33, -1, 1, 33, 1, 'robe2');
+  for (const [x, z, h] of [[-2, 0, 3], [0, -1, 5], [2, 0, 3], [-1, 1, 2], [1, 1, 2], [0, 1, 4]]) s.box('head', x, 34, z, x, 33 + h, z, 'ice'); // icicle crown
+  s.parts.head.glow.push('eye', 'ice');
+  // The left arm: thin, in a long sleeve.
+  s.part('armL', [3, 25, 0], 'swing', 1.7);
+  s.box('armL', 3, 16, 0, 3, 25, 0, 'robe');
+  s.box('armL', 3, 14, 0, 3, 15, 0, 'skin');
+  // The right arm: the cold hand, a huge hand of blue ice held out in front at chest height.
+  s.part('armR', [-3, 25, 0], 'nod', 0.5);
+  s.box('armR', -4, 21, 0, -3, 25, 2, 'robe2'); // the sleeve, reaching forward
+  s.box('armR', -5, 20, 3, -3, 22, 5, 'ice2'); // the wrist turns to ice
+  s.box('armR', -7, 15, 6, -2, 21, 8, 'ice'); // the palm, facing out
+  s.box('armR', -6, 16, 9, -3, 19, 9, 'ice2');
+  for (const [x, len] of [[-7, 5], [-5, 6], [-4, 6], [-2, 5]]) s.box('armR', x, 22, 7, x, 21 + len, 7, 'ice3'); // long talon fingers, raised
+  s.box('armR', -1, 16, 7, 0, 18, 8, 'ice3'); // the thumb
+  s.parts.armR.glow.push('ice3');
+  s.part('snow', [0, 18, 0], 'spin');
+  for (let i = 0; i < 9; i++) { const ang = i * 0.7, r = 8 + (i % 3); s.box('snow', Math.round(Math.cos(ang) * r), 8 + (i * 7) % 28, Math.round(Math.sin(ang) * r), Math.round(Math.cos(ang) * r), 8 + (i * 7) % 28, Math.round(Math.sin(ang) * r), 'snow'); }
+  s.parts.snow.glow.push('snow');
+  return s.done();
+}
+
 // id → { name, match (for journal titles), recipe }.
 export const NPC_FIGURES = {
   'lord-wolf': { name: 'Lord Wolf', match: /lord wolf|toucher of girls/i, build: lordWolf },
@@ -537,6 +628,8 @@ export const NPC_FIGURES = {
   lasse: { name: 'Lasse (bar drunk)', match: /^lasse$/i, build: lasse },
   accordion: { name: 'The Accordion', match: /accordion/i, build: accordion },
   'god-of-beauty': { name: 'The God of Beauty', match: /god of beauty/i, build: godOfBeauty },
+  ferran: { name: 'Ferran (god of heat)', match: /^ferran\b|god of heat/i, build: ferran },
+  'kald-hand': { name: 'Kald hånd (god of cold)', match: /kald h[åa]nd|god of cold/i, build: kaldHand },
   varg: { name: 'Varg (Edbart’s wolf)', match: /^varg$/i, build: null }, // built in model.js (MONSTER_LOOKS)
 };
 
@@ -549,6 +642,7 @@ export const FIGURE_TOWN = {
   'per-hul-oye': 'Sirivik', paul: 'Sirivik', 'hostel-owner': 'Sirivik', lasse: 'Sirivik', accordion: 'Sirivik', 'god-of-beauty': 'Sirivik',
   findus: 'Bartedalen', eggen: 'Bartedalen',
   'bridge-troll': 'On the road', 'lighthouse-keeper': 'At sea', varg: 'With the party',
+  ferran: 'The gods', 'kald-hand': 'The gods',
 };
 
 // The figure id for a journal person: their chosen figure, or one matching their name.

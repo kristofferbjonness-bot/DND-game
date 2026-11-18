@@ -133,6 +133,16 @@ export const MONSTERS = {
     attacks: [{ name: 'Radiant touch', toHit: 12, dice: '4d10', bonus: 6, type: 'radiant' }, { name: 'Unbearable gaze', toHit: 12, dice: '3d8', bonus: 6, type: 'psychic' }],
     note: 'One of the lesser gods. Fighting it is unwise.', model: 'npc-god-of-beauty',
   },
+  ferran: {
+    name: 'Ferran', short: 'Ferran', kind: 'Elemental · lesser god of heat', ac: 20, hp: 280, initiative: 2, speed: 30,
+    attacks: [{ name: 'Magma fist', toHit: 13, dice: '4d10', bonus: 7, type: 'fire' }, { name: 'Eruption', toHit: 13, dice: '6d6', bonus: 0, type: 'fire' }],
+    note: 'The lesser god of heat. The ground grows hot and the air shimmers long before it arrives. Fighting it is unwise.', model: 'npc-ferran',
+  },
+  'kald-hand': {
+    name: 'Kald hånd', short: 'Kald hånd', kind: 'Elemental · lesser god of cold', ac: 19, hp: 240, initiative: 6, speed: 40,
+    attacks: [{ name: 'The cold hand', toHit: 13, dice: '4d10', bonus: 6, type: 'cold' }, { name: 'Breath of winter', toHit: 13, dice: '5d8', bonus: 0, type: 'cold' }],
+    note: 'The lesser god of cold. Frost creeps over everything it passes, and its touch stops a heart. Fighting it is unwise.', model: 'npc-kald-hand',
+  },
   accordion: {
     name: 'The Accordion', short: 'Accordion', kind: 'Monstrosity', ac: 14, hp: 85, initiative: 2, speed: 40,
     attacks: [{ name: 'Crushing fold', toHit: 7, dice: '2d8', bonus: 4, type: 'bludgeoning' }, { name: 'Grasping claws', toHit: 7, dice: '1d10', bonus: 4, type: 'slashing' }],
